@@ -77,11 +77,3 @@ class Map {
         return false;
     }
 }
-
-class Tile {
-    constructor(x, y, walkable) {
-        this.x = x;
-        this.y = y;
-        this.walkable = walkable;
-    }
-}
