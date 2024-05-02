@@ -1,4 +1,6 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
+import { Field } from "./data/field.js";
+import { Position } from "./data/position.js";
 
 const client = new DeliverooApi(
   "http://localhost:8080",
@@ -20,14 +22,15 @@ client.onYou(({ id, name, x, y, score }) => {
   me.score = score;
 });
 
-const map = new Map();
+const map = new Field();
 
 client.onMap((width, height, tiles) => {
   map.init(width, height, tiles);
 
-  let start = map.getTile({ x: 1, y: 0 });
+  let start = map.getTile(new Position(3, 2));
 
-  let end = map.getTile({ x: 13, y: 16 });
+  let end = map.getTile(new Position(13, 16));
+
   let path = map.bfs(start, end);
 
   map.printPath(start, end, path);
