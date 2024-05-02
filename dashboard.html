@@ -1,0 +1,22 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring Dashboard</title>
+</head>
+<body>
+  <h1>Monitoring Dashboard</h1>
+  <div id="updates"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    socket.on('update', (data) => {
+      document.getElementById('updates').innerText = JSON.stringify(data);
+    });
+  </script>
+</body>
+</html>

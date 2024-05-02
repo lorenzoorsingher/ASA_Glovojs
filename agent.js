@@ -1,10 +1,33 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 import { Field } from "./data/field.js";
 import { Position } from "./data/position.js";
+import monitoringScript from "./monitoringScript.js";
+
+import { Server } from "socket.io";
+import http from "http";
+import express from "express";
+import path from "path";
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+// Serve dashboard interface
+app.get("/", (req, res) => {
+  const dashboardPath = new URL("./dashboard.html", import.meta.url).pathname;
+  console.log(dashboardPath);
+  const normalizedPath = path.normalize(dashboardPath);
+  res.sendFile(normalizedPath);
+});
+
+// Start listening
+server.listen(3000, () => {
+  console.log("Server running on http://localhost:3000");
+});
 
 const client = new DeliverooApi(
   "http://localhost:8080",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA0ODQzNzkwZWVhIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTI2NTcwMjh9.Kyuu4Gx3Volxzl-ygypFmEQYHaDaVz2liYo8T7-o0-I"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImE0MTIxNmNkYzA4IiwibmFtZSI6ImFzZCIsImlhdCI6MTcxMTU1MzY3OX0.Kao6aPiygwyrdlHlakHXy1uix5rFLoYPIE7W8yRUWqk"
 );
 
 function distance({ x: x1, y: y1 }, { x: x2, y: y2 }) {
@@ -40,200 +63,205 @@ client.onMap((width, height, tiles) => {
 const parcels = new Map();
 
 client.onParcelsSensing(async (perceived_parcels) => {
+  console.log("perceived_parcels", perceived_parcels);
+  const data = "New data from agent.js: " + JSON.stringify(perceived_parcels);
+  monitoringScript.emit("update", data);
+
+  io.emit("update", data);
   for (const p of perceived_parcels) {
     parcels.set(p.id, p);
   }
 });
 
-function options() {
-  const options = [];
-  for (const parcel of parcels.values())
-    options.push({ intention: "pick up parcel", args: [parcel] });
-  for (const tile of tiles.values())
-    if (tile.delivery) options.push({ intention: "deliver to", args: [tile] });
-}
-
-function select(options) {
-  for (const option of options) {
-    if (option.intention == "pick up parcel" && picked_up.length == 0)
-      return option;
-  }
-}
-
-function astar({ x, y }, agent) {}
-
-/**
- * Beliefset revision loop
- */
-
-// function agentLoop() {
-//   // belief_revision_function()
-//   // const options = options() // desire pick up parcel p1 or p2
-//   // const selected = select(options) // p1 is closer!
-//   // intention_queue.push( [ selected.intention, selected.args ] );
+// function options() {
+//   const options = [];
+//   for (const parcel of parcels.values())
+//     options.push({ intention: "pick up parcel", args: [parcel] });
+//   for (const tile of tiles.values())
+//     if (tile.delivery) options.push({ intention: "deliver to", args: [tile] });
 // }
-// client.onParcelsSensing(agentLoop);
-// client.onAgentsSensing(agentLoop);
-// client.onYou(agentLoop);
 
-/**
- * Intention execution loop
- */
-class Agent {
-  intention_queue = new Array();
+// function select(options) {
+//   for (const option of options) {
+//     if (option.intention == "pick up parcel" && picked_up.length == 0)
+//       return option;
+//   }
+// }
 
-  async intentionLoop() {
-    while (true) {
-      const intention = this.intention_queue.shift();
-      if (intention) await intention.achieve();
-      await new Promise((res) => setImmediate(res));
-    }
-  }
+// function astar({ x, y }, agent) {}
 
-  async queue(desire, ...args) {
-    const last = this.intention_queue.at(this.intention_queue.length - 1);
-    const current = new Intention(desire, ...args);
-    this.intention_queue.push(current);
-  }
+// /**
+//  * Beliefset revision loop
+//  */
 
-  async stop() {
-    console.log("stop agent queued intentions");
-    for (const intention of this.intention_queue) {
-      intention.stop();
-    }
-  }
-}
+// // function agentLoop() {
+// //   // belief_revision_function()
+// //   // const options = options() // desire pick up parcel p1 or p2
+// //   // const selected = select(options) // p1 is closer!
+// //   // intention_queue.push( [ selected.intention, selected.args ] );
+// // }
+// // client.onParcelsSensing(agentLoop);
+// // client.onAgentsSensing(agentLoop);
+// // client.onYou(agentLoop);
 
-/**
- * Intention
- */
-class Intention extends Promise {
-  #current_plan;
-  stop() {
-    console.log("stop intention and current plan");
-    this.#current_plan.stop();
-  }
+// /**
+//  * Intention execution loop
+//  */
+// class Agent {
+//   intention_queue = new Array();
 
-  #desire;
-  #args;
+//   async intentionLoop() {
+//     while (true) {
+//       const intention = this.intention_queue.shift();
+//       if (intention) await intention.achieve();
+//       await new Promise((res) => setImmediate(res));
+//     }
+//   }
 
-  #resolve;
-  #reject;
+//   async queue(desire, ...args) {
+//     const last = this.intention_queue.at(this.intention_queue.length - 1);
+//     const current = new Intention(desire, ...args);
+//     this.intention_queue.push(current);
+//   }
 
-  constructor(desire, ...args) {
-    var resolve, reject;
-    super(async (res, rej) => {
-      resolve = res;
-      reject = rej;
-    });
-    this.#resolve = resolve;
-    this.#reject = reject;
-    this.#desire = desire;
-    this.#args = args;
-  }
+//   async stop() {
+//     console.log("stop agent queued intentions");
+//     for (const intention of this.intention_queue) {
+//       intention.stop();
+//     }
+//   }
+// }
 
-  #started = false;
-  async achieve() {
-    if (this.#started) return this;
-    else this.#started = true;
+// /**
+//  * Intention
+//  */
+// class Intention extends Promise {
+//   #current_plan;
+//   stop() {
+//     console.log("stop intention and current plan");
+//     this.#current_plan.stop();
+//   }
 
-    for (const plan of plans) {
-      if (plan.isApplicableTo(this.#desire)) {
-        this.#current_plan = plan;
-        console.log(
-          "achieving desire",
-          this.#desire,
-          ...this.#args,
-          "with plan",
-          plan
-        );
-        try {
-          const plan_res = await plan.execute(...this.#args);
-          this.#resolve(plan_res);
-          console.log(
-            "plan",
-            plan,
-            "succesfully achieved intention",
-            this.#desire,
-            ...this.#args,
-            "with result",
-            plan_res
-          );
-          return plan_res;
-        } catch (error) {
-          console.log(
-            "plan",
-            plan,
-            "failed while trying to achieve intention",
-            this.#desire,
-            ...this.#args,
-            "with error",
-            error
-          );
-        }
-      }
-    }
+//   #desire;
+//   #args;
 
-    this.#reject();
-    console.log("no plan satisfied the desire ", this.#desire, ...this.#args);
-    throw "no plan satisfied the desire " + this.#desire;
-  }
-}
+//   #resolve;
+//   #reject;
 
-/**
- * Plan library
- */
-const plans = [];
+//   constructor(desire, ...args) {
+//     var resolve, reject;
+//     super(async (res, rej) => {
+//       resolve = res;
+//       reject = rej;
+//     });
+//     this.#resolve = resolve;
+//     this.#reject = reject;
+//     this.#desire = desire;
+//     this.#args = args;
+//   }
 
-class Plan {
-  stop() {
-    console.log("stop plan and all sub intentions");
-    for (const i of this.#sub_intentions) {
-      i.stop();
-    }
-  }
+//   #started = false;
+//   async achieve() {
+//     if (this.#started) return this;
+//     else this.#started = true;
 
-  #sub_intentions = [];
+//     for (const plan of plans) {
+//       if (plan.isApplicableTo(this.#desire)) {
+//         this.#current_plan = plan;
+//         console.log(
+//           "achieving desire",
+//           this.#desire,
+//           ...this.#args,
+//           "with plan",
+//           plan
+//         );
+//         try {
+//           const plan_res = await plan.execute(...this.#args);
+//           this.#resolve(plan_res);
+//           console.log(
+//             "plan",
+//             plan,
+//             "succesfully achieved intention",
+//             this.#desire,
+//             ...this.#args,
+//             "with result",
+//             plan_res
+//           );
+//           return plan_res;
+//         } catch (error) {
+//           console.log(
+//             "plan",
+//             plan,
+//             "failed while trying to achieve intention",
+//             this.#desire,
+//             ...this.#args,
+//             "with error",
+//             error
+//           );
+//         }
+//       }
+//     }
 
-  async subIntention(desire, ...args) {
-    const sub_intention = new Intention(desire, ...args);
-    this.#sub_intentions.push(sub_intention);
-    return await sub_intention.achieve();
-  }
-}
+//     this.#reject();
+//     console.log("no plan satisfied the desire ", this.#desire, ...this.#args);
+//     throw "no plan satisfied the desire " + this.#desire;
+//   }
+// }
 
-class GoPickUp extends Plan {
-  isApplicableTo(desire) {
-    return desire == "go_pick_up";
-  }
+// /**
+//  * Plan library
+//  */
+// const plans = [];
 
-  async execute({ x, y }) {
-    await this.subIntention("go_to", { x, y });
-    await client.pickup();
-  }
-}
+// class Plan {
+//   stop() {
+//     console.log("stop plan and all sub intentions");
+//     for (const i of this.#sub_intentions) {
+//       i.stop();
+//     }
+//   }
 
-class BlindMove extends Plan {
-  isApplicableTo(desire) {
-    return desire == "go_to";
-  }
+//   #sub_intentions = [];
 
-  async execute({ x, y }) {
-    while (me.x != x || me.y != y) {
-      //console.log("I wanna go ", { x, y });
-    }
-  }
-}
+//   async subIntention(desire, ...args) {
+//     const sub_intention = new Intention(desire, ...args);
+//     this.#sub_intentions.push(sub_intention);
+//     return await sub_intention.achieve();
+//   }
+// }
 
-plans.push(new GoPickUp());
-plans.push(new BlindMove());
+// class GoPickUp extends Plan {
+//   isApplicableTo(desire) {
+//     return desire == "go_pick_up";
+//   }
 
-const myAgent = new Agent();
-myAgent.intentionLoop();
-// client.onYou( () => myAgent.queue( 'go_to', {x:11, y:6} ) )
+//   async execute({ x, y }) {
+//     await this.subIntention("go_to", { x, y });
+//     await client.pickup();
+//   }
+// }
 
-client.onParcelsSensing((parcels) => {
-  for (const { x, y, carriedBy } of parcels) {
-    if (!carriedBy) myAgent.queue("go_pick_up", { x, y });
-  }
-});
+// class BlindMove extends Plan {
+//   isApplicableTo(desire) {
+//     return desire == "go_to";
+//   }
+
+//   async execute({ x, y }) {
+//     while (me.x != x || me.y != y) {
+//       //console.log("I wanna go ", { x, y });
+//     }
+//   }
+// }
+
+// plans.push(new GoPickUp());
+// plans.push(new BlindMove());
+
+// const myAgent = new Agent();
+// myAgent.intentionLoop();
+// // client.onYou( () => myAgent.queue( 'go_to', {x:11, y:6} ) )
+
+// client.onParcelsSensing((parcels) => {
+//   for (const { x, y, carriedBy } of parcels) {
+//     if (!carriedBy) myAgent.queue("go_pick_up", { x, y });
+//   }
+// });

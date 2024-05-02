@@ -7,14 +7,16 @@
   "module": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node agent.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@unitn-asa/deliveroo-js-client": "^0.0.31",
     "@unitn-asa/pddl-client": "^0.0.29",
+    "express": "^4.19.2",
     "node-fetch": "^3.3.0",
+    "socket.io": "^4.7.5",
     "socket.io-client": "^4.6.0"
   }
 }
