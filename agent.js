@@ -23,7 +23,7 @@ client.onYou(({ id, name, x, y, score }) => {
 const map = new Map();
 
 client.onMap((width, height, tiles) => {
-  map.fill(width, height, tiles);
+  map.init(width, height, tiles);
 
   let start = map.getTile({ x: 1, y: 0 });
 
