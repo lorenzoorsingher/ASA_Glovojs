@@ -1,3 +1,10 @@
 # ASA_Glovojs
 
-helo
+
+## TODO
+
+- [ ] Define interfaces
+- [ ] Implement actions data structure
+- [ ] Implement actions actuation
+- [ ] Implement dashboard
+- [ ] Implement planner
