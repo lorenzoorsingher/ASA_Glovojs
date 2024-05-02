@@ -105,12 +105,10 @@ export class Field {
 
     distance[start.id] = 0;
     queue.push(this.getTile(start.position));
-    console.log("AAAAAAAAAAAAAAAAAAAAAAAAA");
     while (queue.length > 0) {
       const node = queue.shift();
       for (const n of node.neighbors) {
         console.log(node.neighbors);
-        console.log("n ", n.x, " ", n.y);
         const n_tile = this.getTile(n);
         if (distance[n_tile.id] == undefined) {
           par[n_tile.id] = node;
