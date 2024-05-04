@@ -2,32 +2,37 @@
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
-import monitoringScript from "./monitoringScript.js";
 import path from "path";
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+class MyServer {
+  constructor() {
+    this.app = express();
+    this.server = http.createServer(this.app);
+    this.io = new Server(this.server);
 
-// Serve dashboard interface
-app.get("/", (req, res) => {
-  const dashboardPath = new URL("./dashboard.html", import.meta.url).pathname;
-  console.log(dashboardPath);
-  const normalizedPath = path.normalize(dashboardPath);
-  res.sendFile(normalizedPath);
-});
+    this.start();
+    this.serveDashboard();
+  }
 
-// Start listening
-server.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
-});
+  serveDashboard() {
+    this.app.get("/", (req, res) => {
+      const dashboardPath = new URL("./dashboard.html", import.meta.url)
+        .pathname;
+      console.log(dashboardPath);
+      const normalizedPath = path.normalize(dashboardPath);
+      res.sendFile(normalizedPath);
+    });
+  }
 
-// Monitoring script
-monitoringScript.on("update", (data) => {
-  console.log("EMITTING");
-  io.emit("update", data); // Send updates to dashboard
-});
+  start() {
+    this.server.listen(3000, () => {
+      console.log("Dashboard server running on http://localhost:3000");
+    });
+  }
 
-monitoringScript.on("update", (data) => {
-  console.log("Update event emitted with data:", data);
-});
+  emitMessage(event, data) {
+    this.io.emit(event, data);
+  }
+}
+
+export default new MyServer();

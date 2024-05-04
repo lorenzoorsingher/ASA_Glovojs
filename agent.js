@@ -1,33 +1,15 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 import { Field } from "./data/field.js";
 import { Position } from "./data/position.js";
-import monitoringScript from "./monitoringScript.js";
 
-import { Server } from "socket.io";
-import http from "http";
-import express from "express";
-import path from "path";
+import myServer from "./server.js";
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
-
-// Serve dashboard interface
-app.get("/", (req, res) => {
-  const dashboardPath = new URL("./dashboard.html", import.meta.url).pathname;
-  console.log(dashboardPath);
-  const normalizedPath = path.normalize(dashboardPath);
-  res.sendFile(normalizedPath);
-});
-
-// Start listening
-server.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
-});
+// myServer.start();
+// myServer.serveDashboard();
 
 const client = new DeliverooApi(
   "http://localhost:8080",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImE0MTIxNmNkYzA4IiwibmFtZSI6ImFzZCIsImlhdCI6MTcxMTU1MzY3OX0.Kao6aPiygwyrdlHlakHXy1uix5rFLoYPIE7W8yRUWqk"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA0ODQzNzkwZWVhIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTI2NTcwMjh9.Kyuu4Gx3Volxzl-ygypFmEQYHaDaVz2liYo8T7-o0-I"
 );
 
 function distance({ x: x1, y: y1 }, { x: x2, y: y2 }) {
@@ -50,28 +32,30 @@ const map = new Field();
 client.onMap((width, height, tiles) => {
   map.init(width, height, tiles);
 
-  let start = map.getTile(new Position(3, 2));
-
-  let end = map.getTile(new Position(13, 16));
-
-  let path = map.bfs(start, end);
-
-  map.printPath(start, end, path);
-  console.log(path);
+  // let start = map.getTile(new Position(3, 2));
+  // let end = map.getTile(new Position(13, 16));
+  // let path = map.bfs(start, end);
+  // map.printPath(start, end, path);
+  // console.log(path);
 });
 
 const parcels = new Map();
 
 client.onParcelsSensing(async (perceived_parcels) => {
-  console.log("perceived_parcels", perceived_parcels);
-  const data = "New data from agent.js: " + JSON.stringify(perceived_parcels);
-  monitoringScript.emit("update", data);
-
-  io.emit("update", data);
-  for (const p of perceived_parcels) {
-    parcels.set(p.id, p);
-  }
+  map.set_parcels(perceived_parcels);
 });
+
+setInterval(() => {
+  let update_map = map.getMap();
+
+  let dash_data = {
+    map_size: [map.width, map.height],
+    tiles: update_map,
+    agent: [me.x, me.y],
+  };
+
+  myServer.emitMessage("map", dash_data);
+}, 100);
 
 // function options() {
 //   const options = [];
