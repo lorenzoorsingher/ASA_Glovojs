@@ -6,18 +6,23 @@ export class Field {
     this.width = width;
     this.height = height;
     this.field = [];
+
+    this.parcels = new Map();
+
     for (let i = 0; i < height; i++) {
       this.field[i] = [];
       for (let j = 0; j < width; j++) {
         let found = false;
+        let delivery = false;
         for (const t of tiles) {
           if (t.x == j && t.y == i) {
             found = true;
+            delivery = t.delivery;
             break;
           }
         }
         let pos = new Position(j, i);
-        this.field[i][j] = new Tile(pos, found, false);
+        this.field[i][j] = new Tile(pos, found, delivery);
       }
     }
 
@@ -29,6 +34,44 @@ export class Field {
         }
       }
     }
+  }
+
+  set_parcels(perceived_parcels) {
+    this.update_map();
+    for (const p of perceived_parcels) {
+      if (p.carriedBy == null) {
+        this.field[p.y][p.x].set_parcel(p.reward);
+        //console.log(this.field[p.y][p.x]);
+      }
+    }
+  }
+
+  update_map() {
+    for (let i = 0; i < this.height; i++) {
+      for (let j = 0; j < this.width; j++) {
+        this.field[i][j].parcel = -1;
+      }
+    }
+  }
+
+  getMap() {
+    let tiles = [];
+    for (let i = 0; i < this.height; i++) {
+      tiles[i] = [];
+      for (let j = 0; j < this.width; j++) {
+        let cell = { type: "X", parcel: -1 };
+        if (this.field[i][j].walkable) {
+          cell["type"] = "W";
+        }
+        if (this.field[i][j].delivery) {
+          cell["type"] = "D";
+        }
+        cell["parcel"] = this.field[i][j].parcel;
+        tiles[i][j] = cell;
+      }
+    }
+
+    return tiles;
   }
 
   getTile(pos) {
@@ -75,10 +118,6 @@ export class Field {
     }
   }
 
-  // figure out which of the two neighbors functions we'll keep
-  /**
-   * @param {Position} pos The position
-   */
   neighbors(pos) {
     let x = pos.x;
     let y = pos.y;
@@ -108,7 +147,7 @@ export class Field {
     while (queue.length > 0) {
       const node = queue.shift();
       for (const n of node.neighbors) {
-        console.log(node.neighbors);
+        //console.log(node.neighbors);
         const n_tile = this.getTile(n);
         if (distance[n_tile.id] == undefined) {
           par[n_tile.id] = node;
@@ -117,7 +156,7 @@ export class Field {
         }
       }
     }
-    console.log(distance[end.id]);
+    //console.log(distance[end.id]);
 
     const path = [];
     let currentNode = end.id;

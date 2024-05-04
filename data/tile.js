@@ -7,6 +7,8 @@ export class Tile {
     this.position = position;
     this.id = position.serialize();
     this.neighbors = [];
+
+    this.parcel = -1;
   }
 
   get_x() {
@@ -19,5 +21,9 @@ export class Tile {
 
   set_neighbors(neigh) {
     this.neighbors = neigh;
+  }
+
+  set_parcel(parcel_score) {
+    this.parcel = parcel_score;
   }
 }

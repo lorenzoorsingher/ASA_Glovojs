@@ -1,14 +1,20 @@
 <!-- index.html -->
+<link href="/path/to/dashboard.css">
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitoring Dashboard</title>
+  <title>dashboard</title>
 </head>
 <body>
-  <h1>Monitoring Dashboard</h1>
-  <div id="updates"></div>
+  <h1>Dashboard</h1>
+
+
+  <div id="mapdiv">
+    <table id="myTable" class="table table-borderless table-striped table-earning">
+    <tbody id="mapTable"></tbody>
+  </table></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -16,6 +22,52 @@
 
     socket.on('update', (data) => {
       document.getElementById('updates').innerText = JSON.stringify(data);
+    });
+
+
+    socket.on('map', (data) => {
+
+
+      
+      w = data["map_size"][0];
+      h = data["map_size"][1];
+      tiles = data["tiles"];
+      console.log("w: " + w + " h: " + h);
+      
+
+      const table = document.getElementById("mapTable");
+      table.innerHTML = "";
+      for (let i = 0; i < h; i++) {
+        let row = table.insertRow();
+        for (let j = 0; j < w; j++) {
+          let tile = row.insertCell();
+
+            tile.innerHTML = "<div></div>";
+            tile.style.width = "20px";
+            tile.style.height = "20px";
+
+            switch (tiles[i][j]["type"]) {
+              case "W":
+                tile.style.backgroundColor = "green";
+                break;
+              case "D":
+                tile.style.backgroundColor = "red";
+                break;
+              default:
+                tile.style.backgroundColor = "black";
+            }
+            
+            if (tiles[i][j]["parcel"] > 0) {
+              tile.innerHTML = tiles[i][j]["parcel"];
+              tile.style.backgroundColor = "yellow";
+              console.log("parc: ", tiles[i][j]["parcel"]);
+
+            }
+        }
+      }
+
+      agent = data["agent"];
+      table.rows[agent[1]].cells[agent[0]].style.backgroundColor = "purple";;
     });
   </script>
 </body>
