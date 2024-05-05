@@ -3,8 +3,8 @@
 
 ## TODO
 
-- [ ] Define interfaces
-- [ ] Implement actions data structure
+- [x] Define interfaces
+- [x] Implement actions data structure
 - [ ] Implement actions actuation
-- [ ] Implement dashboard
+- [x] Implement dashboard
 - [ ] Implement planner

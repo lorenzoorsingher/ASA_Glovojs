@@ -1,11 +1,14 @@
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 import { Field } from "./data/field.js";
 import { Position } from "./data/position.js";
+import { Reasoning_1 } from "./brain.js";
 
 const client = new DeliverooApi(
   "http://localhost:8080",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA0ODQzNzkwZWVhIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTI2NTcwMjh9.Kyuu4Gx3Volxzl-ygypFmEQYHaDaVz2liYo8T7-o0-I"
 );
+
+export const VERBOSE = false;
 
 function distance({ x: x1, y: y1 }, { x: x2, y: y2 }) {
   const dx = Math.abs(Math.round(x1) - Math.round(x2));
@@ -19,31 +22,54 @@ client.onYou(({ id, name, x, y, score }) => {
   me.name = name;
   me.x = x;
   me.y = y;
-  me.score = score;
+  console.log("New position: ", x, y);
 });
 
 const map = new Field();
 
+// note that this happens before the onYou event
 client.onMap((width, height, tiles) => {
   map.init(width, height, tiles);
-
-  let start = map.getTile(new Position(3, 2));
-
-  let end = map.getTile(new Position(13, 16));
-
+  let start = map.getTile(new Position(2, 2));
+  let end = map.getTile(new Position(5, 4));
   let path = map.bfs(start, end);
 
-  map.printPath(start, end, path);
-  console.log(path);
+  if(VERBOSE) {
+    map.printPath(start, end, path);
+    console.log(path);
+  }
 });
 
 const parcels = new Map();
 
 client.onParcelsSensing(async (perceived_parcels) => {
   for (const p of perceived_parcels) {
+    if (!parcels.has(p.id))
+      console.log("New parcel found at x: ", p.x, "y:", p.y, "id:", p.id, "reward:", p.reward);
+    
     parcels.set(p.id, p);
+    startParcelTimer(p.id);
   }
 });
+
+function startParcelTimer(id) {
+  const intervalId = setInterval(() => {
+    const parcel = parcels.get(id);
+    if(parcel) {
+      parcel.reward -= 1;
+      if (parcel.reward < 0) {
+        clearInterval(intervalId);
+        parcels.delete(id);
+        console.log("Parcel", id, "expired");
+      }
+    } else {
+      // If parcel data is not found (possibly removed already), clear the interval
+      clearInterval(intervalId);
+    }
+  }, 1000);
+}
+
+const Brain = new Reasoning_1();
 
 function options() {
   const options = [];
@@ -232,8 +258,8 @@ const myAgent = new Agent();
 myAgent.intentionLoop();
 // client.onYou( () => myAgent.queue( 'go_to', {x:11, y:6} ) )
 
-client.onParcelsSensing((parcels) => {
-  for (const { x, y, carriedBy } of parcels) {
-    if (!carriedBy) myAgent.queue("go_pick_up", { x, y });
-  }
-});
+// client.onParcelsSensing((parcels) => {
+//   for (const { x, y, carriedBy } of parcels) {
+//     if (!carriedBy) myAgent.queue("go_pick_up", { x, y });
+//   }
+// });
