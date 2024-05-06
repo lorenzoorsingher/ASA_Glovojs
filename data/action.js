@@ -1,7 +1,9 @@
+import { Position } from "./position.js";
+
 export const ActionType = Object.freeze({
-  MOVE: "move",
-  PICKUP: "pick_up",
-  PUTDOWN: "put_down",
+  MOVE: "🔀 move",
+  PICKUP: "🟡 pick_up",
+  PUTDOWN: "🟢 put_down",
   WAIT: "wait",
 });
 
@@ -12,11 +14,12 @@ export class Action {
     this.type = type;
   }
 
-  static pathToAction(path) {
+  static pathToAction(path, type) {
     const actions = [];
+    const lastPosition = new Position();
     for (let i = 0; i < path.length - 1; i++) {
-      const current = path[i];
-      const next = path[i + 1];
+      const current = Position.deserialize(path[i]);
+      const next = Position.deserialize(path[i + 1]);
       if (current.x === next.x) {
         if (current.y < next.y) {
           actions.push(new Action(current, next, ActionType.MOVE));
@@ -30,13 +33,21 @@ export class Action {
           actions.push(new Action(current, next, ActionType.MOVE));
         }
       }
+      lastPosition.x = next.x;
+      lastPosition.y = next.y;
+    }
+    type === ActionType.PICKUP
+      ? actions.push(new Action(lastPosition, lastPosition, ActionType.PICKUP))
+      : actions.push(
+          new Action(lastPosition, lastPosition, ActionType.PUTDOWN)
+        );
+    for (let action of actions) {
+      action.printAction(true);
     }
     return actions;
   }
 
   printAction(opt) {
-    if (opt == true) {
-      console.log(this.type, " from ", this.source, " to ", this.target);
-    }
+    console.log("\t", this.type, " from ", this.source, " to ", this.target);
   }
 }

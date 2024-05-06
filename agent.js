@@ -40,8 +40,11 @@ client.onYou(({ id, name, x, y, score }) => {
   //playerPosition = new Position(x, y);
   brain && brain.updatePlayerPosition(playerPosition);
   VERBOSE && console.log("Agent moved to: ", x, y);
-
-  wait_load = false;
+  if (brain && parcels.size === 0) {
+    brain.createPlan(
+      map.bfs(map.getTile(playerPosition), map.getRandomWalkableTile())
+    );
+  }
 });
 
 // note that this happens before the onYou event
@@ -67,23 +70,24 @@ const activeIntervals = new Set();
 
 client.onParcelsSensing(async (perceived_parcels) => {
   map.set_parcels(perceived_parcels);
-  // for (const p of perceived_parcels) {
-  //   if (!parcels.has(p.id)) {
-  //     console.log(
-  //       "New parcel found at x: ",
-  //       p.x,
-  //       "y:",
-  //       p.y,
-  //       "id:",
-  //       p.id,
-  //       "reward:",
-  //       p.reward
-  //     );
-  //     parcels.set(p.id, p);
-  //     brain && brain.addParcelandOrder(p.id);
-  //     startParcelTimer(p.id);
-  //   }
-  // }
+
+  for (const p of perceived_parcels) {
+    if (!parcels.has(p.id)) {
+      console.log(
+        "New parcel found at x: ",
+        p.x,
+        "y:",
+        p.y,
+        "id:",
+        p.id,
+        "reward:",
+        p.reward
+      );
+      parcels.set(p.id, p);
+      brain.updateParcelsQueue();
+      startParcelTimer(p.id);
+    }
+  }
 });
 
 function startParcelTimer(id) {
@@ -96,7 +100,7 @@ function startParcelTimer(id) {
           clearInterval(intervalId);
           parcels.delete(id);
           console.log("Parcel", id, "expired");
-          // brain && brain.removeParcel(id);
+          brain.updateParcelsQueue();
           activeIntervals.delete(id);
         }
       } else {
@@ -108,13 +112,6 @@ function startParcelTimer(id) {
     activeIntervals.add(id);
   }
 }
-
-console.log(
-  "Creating brain with parcels",
-  parcels,
-  "and player position",
-  playerPosition
-);
 
 function options() {
   const options = [];

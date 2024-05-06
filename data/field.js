@@ -165,19 +165,18 @@ export class Field {
       path.push(par[currentNode].id);
       currentNode = par[currentNode].id;
     }
-    console.log(
-      "It takes ",
-      path.length - 1,
-      " steps to reach the destination"
-    );
+    VERBOSE &&
+      console.log(
+        "It takes ",
+        path.length - 1,
+        " steps to reach the destination"
+      );
     return path;
   }
 
   getClosestDeliveryZone(pos) {
     const x = pos.x;
     const y = pos.y;
-
-    console.log("Finding closest delivery zone to ", x, y);
 
     let closest = null;
     let smallestDistance = Infinity;
@@ -189,7 +188,8 @@ export class Field {
         closest = d;
       }
     }
-    console.log("Closest delivery zone is at ", closest.x, closest.y);
+    VERBOSE &&
+      console.log("Closest delivery zone is at ", closest.x, closest.y);
     return this.getTile(closest);
   }
 
@@ -213,8 +213,9 @@ export class Field {
       x = Math.floor(Math.random() * this.width);
       y = Math.floor(Math.random() * this.height);
     }
-
-    console.log("TILE: ", this.field[y][x].position);
-    return this.field[y][x].position;
+    const pos = new Position(x, y);
+    const tile = this.getTile(pos);
+    console.log("TILE: ", tile);
+    return tile;
   }
 }

@@ -1,6 +1,5 @@
 import { Position } from "./data/position.js";
-import { Field } from "./data/field.js";
-import { Action } from "./data/action.js";
+import { Action, ActionType } from "./data/action.js";
 import { VERBOSE } from "./agent.js";
 
 export class Reasoning_1 {
@@ -22,35 +21,42 @@ export class Reasoning_1 {
         this.y = pos.y;
     }
 
+    updateParcelsQueue() {
+        this.parcelsQueue = this.orderParcelsByScore(this.parcels);
+        this.createPlan();
+    }
+
     orderParcelsByScore(parcels) {
-        console.log(parcels.size)
+        console.log("––––––––––––––––––––––––––––––––-")
+        console.log("––––––––––––––––––––––––––––––––-")
+        console.log(parcels.size, " parcels sensed.")
         if (parcels.size === 0) {
             return [];
         }
     
         const parcelScores = [];
-
         for (const [parcelId, parcel] of parcels.entries()) {
-            console.log("Computing score for parcel: ", parcelId);
             const score = this.computeRealScore(parcel);
-            parcelScores.push({ parcelId, score });
+            VERBOSE && console.log("Best score for: ", parcelId, " is: ", score);
+            let position = new Position(parcel.x, parcel.y);
+            parcelScores.push({ parcelId, score, position });
         }
 
         parcelScores.sort((a, b) => b.score - a.score);
-        console.log(parcelScores[0].parcelId + " is the best parcel to deliver.")
+        console.log("📦", parcelScores[0].parcelId + " is the best parcel to deliver with score: " + parcelScores[0].score)
         return parcelScores.map(entry => entry.parcelId);
     }
 
-    addParcelandOrder(parcel) {
-        this.parcels.set(parcel.id, parcel);
-        this.parcelsQueue = this.orderParcelsByScore(this.parcels);
-        console.log("Added parcel to agent's parcels: ", this.parcelsQueue)
-    }
+    // addParcelandOrder(parcel) {
+    //     this.parcels.set(parcel.id, parcel);
+    //     this.parcelsQueue = this.orderParcelsByScore(this.parcels);
+    //     console.log("Added parcel to agent's parcels: ", this.parcelsQueue)
+    // }
 
-    removeParcel(parcelId) {
-        this.parcels.delete(parcelId);
-        this.parcelsQueue = this.orderParcelsByScore(this.parcels);
-    }
+    // removeParcel(parcelId) {
+    //     this.parcels.delete(parcelId);
+    //     this.parcelsQueue = this.orderParcelsByScore(this.parcels);
+    // }
 
     computeRealScore(parcel) {
         const playerPosition = new Position(this.x, this.y);
@@ -64,16 +70,27 @@ export class Reasoning_1 {
 
         const deliveryZoneTile = this.field.getClosestDeliveryZone(parcelPosition); // returns a tile
         const distanceToDeliveryZone = this.field.bfs(parcelTile, deliveryZoneTile).length - 1;
-        return parcel.score - distanceToParcel - distanceToDeliveryZone;
+        const score = parcel.reward - distanceToParcel - distanceToDeliveryZone;
+        return score;
     }
 
-    createPlan(currentBestScore, goals) {
-        const path = bfs(new Position(this.x, this.y), goals[0]);
-        const actions = [];
-        actions.concat(Action.pathToAction(path));
-        const pathToDeliveryZone = field.bfs(goals[0], field.getClosestDeliveryZone(goals[0])); 
-        actions.concat(Action.pathToAction(pathToDeliveryZone));
-        return actions;
+    createPlan() {
+        if (this.parcelsQueue.length === 0) {
+            // walk randomly
+            return [];
+        } else {
+            const bestParcel = this.parcels.get(this.parcelsQueue[0]);
+            const bestParcelPosition = new Position(bestParcel.x, bestParcel.y)
+            const bestParcelTile = this.field.getTile(bestParcelPosition);
+
+            console.log("🧠 Creating plan for parcel: ", bestParcel, " with position ", bestParcelPosition.x, bestParcelPosition.y)
+            const playerTile = this.field.getTile(new Position(this.x, this.y));
+            const path = this.field.bfs(playerTile, bestParcelTile);
+            const pathToDeliveryZone = this.field.bfs(bestParcelTile, this.field.getClosestDeliveryZone(bestParcelPosition));
+            const goPickUpActions = Action.pathToAction(path, ActionType.PICKUP);
+            const goDeliverActions = Action.pathToAction(pathToDeliveryZone, ActionType.PUTDOWN);
+            return goPickUpActions.concat(goDeliverActions);
+        }
     }
 }
 
