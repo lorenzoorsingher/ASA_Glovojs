@@ -206,7 +206,7 @@ export class Field {
     return positions;
   }
 
-  getRandWalkableTile() {
+  getRandomWalkableTile() {
     let x = Math.floor(Math.random() * this.width);
     let y = Math.floor(Math.random() * this.height);
     while (!this.field[y][x].walkable) {
