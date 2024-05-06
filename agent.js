@@ -4,14 +4,14 @@ import { Position } from "./data/position.js";
 import { Reasoning_1 } from "./brain.js";
 
 import myServer from "./server.js";
-import { Action } from "./data/action.js";
+import { Action, ActionType } from "./data/action.js";
 
 // myServer.start();
 // myServer.serveDashboard();
 
 const client = new DeliverooApi(
   "http://localhost:8080/",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA0ODQzNzkwZWVhIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTI2NTcwMjh9.Kyuu4Gx3Volxzl-ygypFmEQYHaDaVz2liYo8T7-o0-I"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg2OTFmNjUzMjJjIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTUwMjQ0MTF9.8L79LEzZejQAcKjuWEa_OMKfeChXnVcwn1sY-q2eCu8"
 );
 
 export const VERBOSE = false;
@@ -201,9 +201,26 @@ async function loop() {
       // console.log(nextAction, " ", move);
 
       // console.log(trg, " ", playerPosition);
-      let stat = await client.move(move);
-      if (trg.equals(new Position(stat.x, stat.y))) {
-        nextAction = null;
+
+      switch (nextAction.type) {
+        case ActionType.MOVE:
+          let stat = await client.move(move);
+          if (trg.equals(new Position(stat.x, stat.y))) {
+            nextAction = null;
+          } else if (stat == false) {
+            console.log("REPLAN");
+            plan = fakePlan();
+            nextAction = null;
+          }
+          break;
+        case ActionType.PICKUP:
+          await client.pickUp();
+          nextAction = null;
+          break;
+        case ActionType.PUTDOWN:
+          await client.putDown();
+          nextAction = null;
+          break;
       }
     } else {
       plan = fakePlan();

@@ -19,15 +19,15 @@ export class Action {
       const next = path[i + 1];
       if (current.x === next.x) {
         if (current.y < next.y) {
-          actions.push(new Action(current, next, "MOVE"));
+          actions.push(new Action(current, next, ActionType.MOVE));
         } else {
-          actions.push(new Action(current, next, "MOVE"));
+          actions.push(new Action(current, next, ActionType.MOVE));
         }
       } else {
         if (current.x < next.x) {
-          actions.push(new Action(current, next, "MOVE"));
+          actions.push(new Action(current, next, ActionType.MOVE));
         } else {
-          actions.push(new Action(current, next, "MOVE"));
+          actions.push(new Action(current, next, ActionType.MOVE));
         }
       }
     }
