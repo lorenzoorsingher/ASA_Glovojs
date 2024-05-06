@@ -7,7 +7,6 @@ export class Field {
     this.width = width;
     this.height = height;
     this.field = [];
-    this.deliveryZones = this.getDeliveryZones();
 
     for (let i = 0; i < height; i++) {
       this.field[i] = [];
@@ -32,6 +31,7 @@ export class Field {
         }
       }
     }
+    this.deliveryZones = this.getDeliveryZones();
   }
 
   getTile(pos) {

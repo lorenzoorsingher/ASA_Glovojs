@@ -8,7 +8,7 @@ const client = new DeliverooApi(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA0ODQzNzkwZWVhIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTI2NTcwMjh9.Kyuu4Gx3Volxzl-ygypFmEQYHaDaVz2liYo8T7-o0-I"
 );
 
-export const VERBOSE = false;
+export const VERBOSE = true;
 
 function distance({ x: x1, y: y1 }, { x: x2, y: y2 }) {
   const dx = Math.abs(Math.round(x1) - Math.round(x2));
@@ -42,34 +42,42 @@ client.onMap((width, height, tiles) => {
 
 const parcels = new Map();
 
+const activeIntervals = new Set();
+
 client.onParcelsSensing(async (perceived_parcels) => {
   for (const p of perceived_parcels) {
-    if (!parcels.has(p.id))
+    if (!parcels.has(p.id)) {
       console.log("New parcel found at x: ", p.x, "y:", p.y, "id:", p.id, "reward:", p.reward);
-    
-    parcels.set(p.id, p);
-    startParcelTimer(p.id);
+      parcels.set(p.id, p);
+      startParcelTimer(p.id);
+    }
   }
 });
 
 function startParcelTimer(id) {
-  const intervalId = setInterval(() => {
-    const parcel = parcels.get(id);
-    if(parcel) {
-      parcel.reward -= 1;
-      if (parcel.reward < 0) {
+  if (!activeIntervals.has(id)) {
+    const intervalId = setInterval(() => {
+      const parcel = parcels.get(id);
+      if (parcel) {
+        parcel.reward -= 1;
+        if (parcel.reward < 0) {
+          clearInterval(intervalId);
+          parcels.delete(id);
+          console.log("Parcel", id, "expired");
+          activeIntervals.delete(id); 
+        }
+      } else {
+        // If parcel data is not found (possibly removed already), clear the interval
         clearInterval(intervalId);
-        parcels.delete(id);
-        console.log("Parcel", id, "expired");
+        activeIntervals.delete(id); 
       }
-    } else {
-      // If parcel data is not found (possibly removed already), clear the interval
-      clearInterval(intervalId);
-    }
-  }, 1000);
+    }, 1000);
+    activeIntervals.add(id); 
+  }
 }
 
-const Brain = new Reasoning_1();
+
+const Brain = new Reasoning_1(map, parcels);
 
 function options() {
   const options = [];

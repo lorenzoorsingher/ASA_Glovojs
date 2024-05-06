@@ -1,15 +1,41 @@
-import { Position } from "./data/position";
-import { Field } from "./data/field";
+import { Position } from "./data/position.js";
+import { Field } from "./data/field.js";
+import { Action } from "./data/action.js";
 
 export class Reasoning_1 {
-    // output : ordered list of actions
-    // optimize for score
-    realScore(parcel) {
+    constructor(field, parcels) {
+        this.field = field;
+        this.parcels = parcels;
+        this.parcelsQueue = this.orderParcelsByScore(parcels);
+        // this.plan = this.createPlan(parcelsQueue)
+    }
+
+    orderParcelsByScore(parcels) {
+        // Array to store parcel IDs along with their scores
+        const parcelScores = [];
+        parcels.forEach((parcel, parcelId) => {
+            const score = computeRealScore(parcel);
+            parcelScores.push({ parcelId, score });
+        });
+        parcelScores.sort((a, b) => b.score - a.score);
+        return parcelScores.map(entry => entry.parcelId);
+    }
+
+    computeRealScore(parcel) {
         const parcelPosition = new Position(parcel.x, parcel.y);
         const distanceToParcel = bfs(new Position(this.x, this.y), parcelPosition).length - 1;
         const deliveryZonePosition = Field.getClosestDeliveryZone(parcelPosition);
         const distanceToDeliveryZone = bfs(parcelPosition, deliveryZonePosition).length - 1;
         return parcel.score - distanceToParcel - distanceToDeliveryZone;
+    }
+
+    createPlan(currentBestScore, goals) {
+        const path = bfs(new Position(this.x, this.y), goals[0]);
+        const actions = [];
+        actions.concat(Action.pathToAction(path));
+        const pathToDeliveryZone = bfs(goals[0], Field.getClosestDeliveryZone(goals[0])); 
+        actions.concat(Action.pathToAction(pathToDeliveryZone));
+        return actions;
     }
 }
 
