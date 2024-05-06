@@ -36,8 +36,9 @@
       w = data["map_size"][0];
       h = data["map_size"][1];
       tiles = data["tiles"];
-      plan = data["plan"];
-
+      plan = data["plan"][0];
+      plan_target = data["plan"][1];
+      document.getElementById('info').innerHTML = "<div><h2>"+plan_target+"</h2><div>";
 
 
       console.log(plan);
@@ -79,7 +80,12 @@
             str = j + "-" + (h-i-1);
             console.log(str);
             if (plan.includes(str)) {
-              color = "blue";
+
+              if (plan_target == "RANDOM") {
+                color = "grey";
+              } else {
+                color = "blue";
+              }
             }
 
 

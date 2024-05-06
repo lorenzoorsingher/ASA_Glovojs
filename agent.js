@@ -28,6 +28,7 @@ function distance({ x: x1, y: y1 }, { x: x2, y: y2 }) {
 }
 
 let plan = [];
+let plan_target = "RANDOM";
 let wait_load = true;
 
 let playerPosition = new Position(0, 0);
@@ -37,14 +38,10 @@ client.onYou(({ id, name, x, y, score }) => {
   me.x = x;
   me.y = y;
   playerPosition = new Position(Math.round(x), Math.round(y));
-  //playerPosition = new Position(x, y);
+
   brain && brain.updatePlayerPosition(playerPosition);
   VERBOSE && console.log("Agent moved to: ", x, y);
-  // if (brain && parcels.size === 0) {
-  //   brain.createPlan(
-  //     map.bfs(map.getTile(playerPosition), map.getRandomWalkableTile())
-  //   );
-  //}
+
   wait_load = false;
 });
 
@@ -86,6 +83,7 @@ client.onParcelsSensing(async (perceived_parcels) => {
       );
       parcels.set(p.id, p);
       plan = brain.updateParcelsQueue();
+      plan_target = "TILE";
       //console.log("Plan updated: ", plan);
       startParcelTimer(p.id);
     }
@@ -102,7 +100,7 @@ function startParcelTimer(id) {
           clearInterval(intervalId);
           parcels.delete(id);
           console.log("Parcel", id, "expired");
-          plan = brain.updateParcelsQueue();
+          brain.updateParcelsQueue();
           activeIntervals.delete(id);
         }
       } else {
@@ -115,17 +113,8 @@ function startParcelTimer(id) {
   }
 }
 
-function options() {
-  const options = [];
-  for (const parcel of parcels.values())
-    options.push({ intention: "pick up parcel", args: [parcel] });
-  for (const tile of tiles.values())
-    if (tile.delivery) options.push({ intention: "deliver to", args: [tile] });
-}
-
 setInterval(() => {
   let update_map = map.getMap();
-
   let plan_s = [];
   if (plan.length > 0) {
     plan_s.push(plan[0].source.serialize());
@@ -138,26 +127,10 @@ setInterval(() => {
     map_size: [map.width, map.height],
     tiles: update_map,
     agent: [me.x, me.y],
-    plan: plan_s,
+    plan: [plan_s, plan_target],
   };
   myServer.emitMessage("map", dash_data);
 }, 100);
-
-// function fakePlan() {
-//   console.log("Creating fake plan...");
-//   let start = map.getTile(playerPosition);
-
-//   let end = map.getTile(map.getRandWalkableTile());
-//   let path = map.bfs(end, start);
-
-//   let plan = Action.pathToAction(path);
-
-//   console.log("starting position: ", start);
-//   console.log("ending position: ", end);
-//   console.log("plan: ", plan);
-
-//   return plan;
-// }
 
 let nextAction = null;
 async function loop() {
@@ -175,7 +148,7 @@ async function loop() {
       let src = nextAction.source;
       let trg = nextAction.target;
       let move = Position.getDirectionTo(src, trg);
-      console.log(nextAction, " ", move);
+      console.log(nextAction, " ------> ", move);
 
       // console.log(trg, " ", playerPosition);
 
@@ -185,9 +158,7 @@ async function loop() {
           if (trg.equals(new Position(stat.x, stat.y))) {
             nextAction = null;
           } else if (stat == false) {
-            console.log("REPLAN");
-            //plan = fakePlan();
-            nextAction = null;
+            console.log("😭 IM STUCK 😭");
           }
           break;
         case ActionType.PICKUP:
@@ -200,9 +171,16 @@ async function loop() {
           break;
       }
     } else {
-      // brain.createPlan(
-      //   map.bfs(map.getTile(playerPosition), map.getRandomWalkableTile())
-      // );
+      plan = brain.updateParcelsQueue();
+      plan_target = "TILE";
+      if (plan.length <= 0) {
+        plan_target = "RANDOM";
+        let start = map.getTile(playerPosition);
+        let end = map.getRandomWalkableTile();
+        let path = map.bfs(end, start);
+
+        plan = Action.pathToAction(path);
+      }
     }
     await new Promise((res) => setImmediate(res));
   }
