@@ -8,8 +8,8 @@ import myServer from "./server.js";
 // myServer.serveDashboard();
 
 const client = new DeliverooApi(
-  "http://localhost:8080",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA0ODQzNzkwZWVhIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTI2NTcwMjh9.Kyuu4Gx3Volxzl-ygypFmEQYHaDaVz2liYo8T7-o0-I"
+  "http://cuwu.ddns.net:8082/",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQ0ZjMyZGM5NDZjIiwibmFtZSI6ImxvbG8iLCJpYXQiOjE3MTQ5OTkxMTh9.C78PWNGJ7u9vQaMyy3paNF-L-W-IPLDCHIDAbm-8vvk"
 );
 
 function distance({ x: x1, y: y1 }, { x: x2, y: y2 }) {
