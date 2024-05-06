@@ -1,5 +1,5 @@
 import { Position } from "./data/position.js";
-import { Action } from "./data/action.js";
+import { Action, ActionType } from "./data/action.js";
 import { VERBOSE } from "./agent.js";
 
 export class Reasoning_1 {
@@ -85,8 +85,8 @@ export class Reasoning_1 {
             const playerTile = this.field.getTile(new Position(this.x, this.y));
             const path = this.field.bfs(playerTile, bestParcelTile);
             const pathToDeliveryZone = this.field.bfs(bestParcelTile, this.field.getClosestDeliveryZone(bestParcelPosition));
-            const goPickUpActions = Action.pathToAction(path);
-            const goDeliverActions = Action.pathToAction(pathToDeliveryZone);
+            const goPickUpActions = Action.pathToAction(path, ActionType.PICKUP);
+            const goDeliverActions = Action.pathToAction(pathToDeliveryZone, ActionType.PUTDOWN);
             console.log("Instructions to pick up parcel: ", goPickUpActions);
             console.log("Instructions to deliver parcel: ", goDeliverActions);
             return goPickUpActions.concat(goDeliverActions);

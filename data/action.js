@@ -1,4 +1,3 @@
-import { VERBOSE } from "../agent.js";
 import { Position } from "./position.js";
 
 export const ActionType = Object.freeze({
@@ -15,25 +14,29 @@ export class Action {
     this.type = type;
   }
 
-  static pathToAction(path) {
+  static pathToAction(path, type) {
     const actions = [];
+    const lastPosition = new Position();
     for (let i = 0; i < path.length - 1; i++) {
       const current = Position.deserialize(path[i]);
       const next = Position.deserialize(path[i + 1]);
       if (current.x === next.x) {
           if (current.y < next.y) {
-              actions.push(new Action(current, next, "MOVE"));
+              actions.push(new Action(current, next, ActionType.MOVE));
           } else {
-              actions.push(new Action(current, next, "MOVE"));
+              actions.push(new Action(current, next, ActionType.MOVE));
           }
       } else {
           if (current.x < next.x) {
-              actions.push(new Action(current, next, "MOVE"));
+              actions.push(new Action(current, next, ActionType.MOVE));
           } else {
-              actions.push(new Action(current, next, "MOVE"));
+              actions.push(new Action(current, next, ActionType.MOVE));
           }
       }
+      lastPosition.x = next.x;
+      lastPosition.y = next.y;
     }
+    type === ActionType.PICKUP ? actions.push(new Action(lastPosition, lastPosition, ActionType.PICKUP)) : actions.push(new Action(lastPosition, lastPosition, ActionType.PUTDOWN));
     for (let action of actions) {
       action.printAction(true);
     }
