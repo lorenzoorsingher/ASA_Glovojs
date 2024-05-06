@@ -12,18 +12,16 @@ export class Field {
       this.field[i] = [];
       for (let j = 0; j < width; j++) {
         let found = false;
-        let deliverZone = false;
-        for (const t of tiles) {[j]
+        let delivery = false;
+        for (const t of tiles) {
           if (t.x == j && t.y == i) {
             found = true;
-            if (t.delivery) {
-              deliverZone = true;
-            }
+            delivery = t.delivery;
             break;
           }
         }
         let pos = new Position(j, i);
-        this.field[i][j] = new Tile(pos, found, deliverZone);
+        this.field[i][j] = new Tile(pos, found, delivery);
       }
     }
 
@@ -36,6 +34,44 @@ export class Field {
       }
     }
     this.deliveryZones = this.getDeliveryZones();
+  }
+
+  set_parcels(perceived_parcels) {
+    this.update_map();
+    for (const p of perceived_parcels) {
+      if (p.carriedBy == null) {
+        this.field[p.y][p.x].set_parcel(p.reward);
+        //console.log(this.field[p.y][p.x]);
+      }
+    }
+  }
+
+  update_map() {
+    for (let i = 0; i < this.height; i++) {
+      for (let j = 0; j < this.width; j++) {
+        this.field[i][j].parcel = -1;
+      }
+    }
+  }
+
+  getMap() {
+    let tiles = [];
+    for (let i = 0; i < this.height; i++) {
+      tiles[i] = [];
+      for (let j = 0; j < this.width; j++) {
+        let cell = { type: "X", parcel: -1 };
+        if (this.field[i][j].walkable) {
+          cell["type"] = "W";
+        }
+        if (this.field[i][j].delivery) {
+          cell["type"] = "D";
+        }
+        cell["parcel"] = this.field[i][j].parcel;
+        tiles[i][j] = cell;
+      }
+    }
+
+    return tiles;
   }
 
   getTile(pos) {
@@ -82,10 +118,6 @@ export class Field {
     }
   }
 
-  // figure out which of the two neighbors functions we'll keep
-  /**
-   * @param {Position} pos The position
-   */
   neighbors(pos) {
     let x = pos.x;
     let y = pos.y;
@@ -133,7 +165,12 @@ export class Field {
       path.push(par[currentNode].id);
       currentNode = par[currentNode].id;
     }
-    VERBOSE && console.log("It takes ", path.length - 1, " steps to reach the destination");
+    VERBOSE &&
+      console.log(
+        "It takes ",
+        path.length - 1,
+        " steps to reach the destination"
+      );
     return path;
   }
 
@@ -144,24 +181,25 @@ export class Field {
     let closest = null;
     let smallestDistance = Infinity;
 
-    for(let d of this.deliveryZones) {
-      const distance = this.bfs(this.getTile(pos), this.getTile(d)).length - 1;
-      if(distance < smallestDistance) {
+    for (let d of this.deliveryZones) {
+      const distance = this.bfs(this.getTile(d), this.getTile(pos)).length - 1;
+      if (distance < smallestDistance) {
         smallestDistance = distance;
         closest = d;
       }
     }
-    VERBOSE && console.log("Closest delivery zone is at ", closest.x, closest.y);
-    return this.getTile(closest)
+    VERBOSE &&
+      console.log("Closest delivery zone is at ", closest.x, closest.y);
+    return this.getTile(closest);
   }
 
-  getDeliveryZones(){
+  getDeliveryZones() {
     const positions = [];
-    for(let y = 0; y < this.height; y++){
-      for(let x = 0; x < this.width; x++){
-        if(this.field[y][x].delivery){
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (this.field[y][x].delivery) {
           positions.push(new Position(x, y));
-          VERBOSE && console.log("Found delivery zone at ", x, y)
+          VERBOSE && console.log("Found delivery zone at ", x, y);
         }
       }
     }
@@ -169,15 +207,15 @@ export class Field {
   }
 
   getRandomWalkableTile() {
-    let x, y;
-    let tile;
-
-    do {
-        x = Math.floor(Math.random() * this.width);
-        y = Math.floor(Math.random() * this.height);
-        tile = this.getTile(new Position(x, y));
-    } while (!tile.walkable);
-
+    let x = Math.floor(Math.random() * this.width);
+    let y = Math.floor(Math.random() * this.height);
+    while (!this.field[y][x].walkable) {
+      x = Math.floor(Math.random() * this.width);
+      y = Math.floor(Math.random() * this.height);
+    }
+    const pos = new Position(x, y);
+    const tile = this.getTile(pos);
+    console.log("TILE: ", tile);
     return tile;
   }
 }

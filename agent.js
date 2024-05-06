@@ -27,8 +27,8 @@ client.onYou(({ id, name, x, y, score }) => {
   me.name = name;
   me.x = x;
   me.y = y;
+  playerPosition = new Position(x, y);
   if(hasCompletedMovement(playerPosition)) {
-    playerPosition = new Position(x, y);
     brain && brain.updatePlayerPosition(playerPosition);
     VERBOSE && console.log("Agent moved to: ", x, y);
     if(brain && parcels.size === 0.0) {
@@ -79,8 +79,10 @@ function startParcelTimer(id) {
           clearInterval(intervalId);
           parcels.delete(id);
           console.log("Parcel", id, "expired");
-          brain.updateParcelsQueue();
-          activeIntervals.delete(id); 
+          if(hasCompletedMovement(playerPosition)) {
+            brain.updateParcelsQueue();
+            activeIntervals.delete(id);
+          }
         }
       } else {
         // If parcel data is not found (possibly removed already), clear the interval
@@ -93,7 +95,7 @@ function startParcelTimer(id) {
 }
 
 function hasCompletedMovement(pos) {
-  return pos.x % 1 === 0 && pos.y % 1 === 0;
+  return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
 }
 
 function options() {
