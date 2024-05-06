@@ -37,12 +37,12 @@ client.onYou(({ id, name, x, y, score }) => {
   me.name = name;
   me.x = x;
   me.y = y;
-  playerPosition = new Position(Math.round(x), Math.round(y));
-
-  brain && brain.updatePlayerPosition(playerPosition);
-  VERBOSE && console.log("Agent moved to: ", x, y);
-
-  wait_load = false;
+  playerPosition = new Position(x, y);
+  if (hasCompletedMovement(playerPosition)) {
+    brain && brain.updatePlayerPosition(playerPosition);
+    VERBOSE && console.log("Agent moved to: ", x, y);
+    wait_load = false;
+  }
 });
 
 // note that this happens before the onYou event
@@ -70,7 +70,7 @@ client.onParcelsSensing(async (perceived_parcels) => {
   map.set_parcels(perceived_parcels);
 
   for (const p of perceived_parcels) {
-    if (!parcels.has(p.id)) {
+    if (!parcels.has(p.id) && hasCompletedMovement(playerPosition)) {
       console.log(
         "New parcel found at x: ",
         p.x,
@@ -100,8 +100,10 @@ function startParcelTimer(id) {
           clearInterval(intervalId);
           parcels.delete(id);
           console.log("Parcel", id, "expired");
-          brain.updateParcelsQueue();
-          activeIntervals.delete(id);
+          if (hasCompletedMovement(playerPosition)) {
+            brain.updateParcelsQueue();
+            activeIntervals.delete(id);
+          }
         }
       } else {
         // If parcel data is not found (possibly removed already), clear the interval
@@ -120,16 +122,15 @@ setInterval(() => {
     plan_s.push(plan[0].source.serialize());
     for (const p of plan) {
       plan_s.push(p.target.serialize());
+      let dash_data = {
+        map_size: [map.width, map.height],
+        tiles: update_map,
+        agent: [me.x, me.y],
+        plan: [plan_s, plan_target],
+      };
+      myServer.emitMessage("map", dash_data);
     }
   }
-
-  let dash_data = {
-    map_size: [map.width, map.height],
-    tiles: update_map,
-    agent: [me.x, me.y],
-    plan: [plan_s, plan_target],
-  };
-  myServer.emitMessage("map", dash_data);
 }, 100);
 
 let nextAction = null;
