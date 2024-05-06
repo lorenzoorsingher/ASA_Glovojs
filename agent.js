@@ -115,6 +115,10 @@ function startParcelTimer(id) {
   }
 }
 
+function hasCompletedMovement(pos) {
+  return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
+}
+
 setInterval(() => {
   let update_map = map.getMap();
   let plan_s = [];
@@ -122,15 +126,15 @@ setInterval(() => {
     plan_s.push(plan[0].source.serialize());
     for (const p of plan) {
       plan_s.push(p.target.serialize());
-      let dash_data = {
-        map_size: [map.width, map.height],
-        tiles: update_map,
-        agent: [me.x, me.y],
-        plan: [plan_s, plan_target],
-      };
-      myServer.emitMessage("map", dash_data);
     }
   }
+  let dash_data = {
+    map_size: [map.width, map.height],
+    tiles: update_map,
+    agent: [me.x, me.y],
+    plan: [plan_s, plan_target],
+  };
+  myServer.emitMessage("map", dash_data);
 }, 100);
 
 let nextAction = null;
