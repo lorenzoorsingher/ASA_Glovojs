@@ -1,13 +1,12 @@
 import { Tile } from "./tile.js";
 import { Position, Direction } from "./position.js";
+import { VERBOSE } from "../agent.js";
 
 export class Field {
   init(width, height, tiles) {
     this.width = width;
     this.height = height;
     this.field = [];
-
-    this.parcels = new Map();
 
     for (let i = 0; i < height; i++) {
       this.field[i] = [];
@@ -34,6 +33,7 @@ export class Field {
         }
       }
     }
+    this.deliveryZones = this.getDeliveryZones();
   }
 
   set_parcels(perceived_parcels) {
@@ -88,7 +88,7 @@ export class Field {
           row += "  ";
         }
       }
-      console.log(row);
+      VERBOSE && console.log(row);
     }
   }
 
@@ -97,7 +97,7 @@ export class Field {
     for (let i = 1; i <= this.width; i += 1) {
       s += i - 1 + " ".repeat(2 - i / 10);
     }
-    console.log(s);
+    VERBOSE && console.log(s);
 
     for (let i = 0; i < this.height; i++) {
       let row = i + " " + " ".repeat(2 - (i + 1) / 10);
@@ -114,7 +114,7 @@ export class Field {
           row += "  ";
         }
       }
-      console.log(row);
+      VERBOSE && console.log(row);
     }
   }
 
@@ -147,7 +147,7 @@ export class Field {
     while (queue.length > 0) {
       const node = queue.shift();
       for (const n of node.neighbors) {
-        //console.log(node.neighbors);
+        VERBOSE && console.log(node.neighbors);
         const n_tile = this.getTile(n);
         if (distance[n_tile.id] == undefined) {
           par[n_tile.id] = node;
@@ -156,7 +156,7 @@ export class Field {
         }
       }
     }
-    //console.log(distance[end.id]);
+    VERBOSE && console.log(distance[end.id]);
 
     const path = [];
     let currentNode = end.id;
@@ -165,7 +165,44 @@ export class Field {
       path.push(par[currentNode].id);
       currentNode = par[currentNode].id;
     }
-
+    console.log(
+      "It takes ",
+      path.length - 1,
+      " steps to reach the destination"
+    );
     return path;
+  }
+
+  getClosestDeliveryZone(pos) {
+    const x = pos.x;
+    const y = pos.y;
+
+    console.log("Finding closest delivery zone to ", x, y);
+
+    let closest = null;
+    let smallestDistance = Infinity;
+
+    for (let d of this.deliveryZones) {
+      const distance = this.bfs(this.getTile(pos), this.getTile(d)).length - 1;
+      if (distance < smallestDistance) {
+        smallestDistance = distance;
+        closest = d;
+      }
+    }
+    console.log("Closest delivery zone is at ", closest.x, closest.y);
+    return this.getTile(closest);
+  }
+
+  getDeliveryZones() {
+    const positions = [];
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (this.field[y][x].delivery) {
+          positions.push(new Position(x, y));
+          VERBOSE && console.log("Found delivery zone at ", x, y);
+        }
+      }
+    }
+    return positions;
   }
 }
