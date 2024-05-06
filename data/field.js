@@ -205,4 +205,16 @@ export class Field {
     }
     return positions;
   }
+
+  getRandWalkableTile() {
+    let x = Math.floor(Math.random() * this.width);
+    let y = Math.floor(Math.random() * this.height);
+    while (!this.field[y][x].walkable) {
+      x = Math.floor(Math.random() * this.width);
+      y = Math.floor(Math.random() * this.height);
+    }
+
+    console.log("TILE: ", this.field[y][x].position);
+    return this.field[y][x].position;
+  }
 }
