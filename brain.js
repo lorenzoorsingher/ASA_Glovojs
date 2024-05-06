@@ -105,10 +105,12 @@ export class Reasoning_1 {
         bestParcelPosition.y
       );
       const playerTile = this.field.getTile(new Position(this.x, this.y));
-      const path = this.field.bfs(playerTile, bestParcelTile);
+
+      console.log("🧍 Starting from player tile ", playerTile.id);
+      const path = this.field.bfs(bestParcelTile, playerTile);
       const pathToDeliveryZone = this.field.bfs(
-        bestParcelTile,
-        this.field.getClosestDeliveryZone(bestParcelPosition)
+        this.field.getClosestDeliveryZone(bestParcelPosition),
+        bestParcelTile
       );
       const goPickUpActions = Action.pathToAction(path, ActionType.PICKUP);
       const goDeliverActions = Action.pathToAction(

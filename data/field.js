@@ -182,7 +182,7 @@ export class Field {
     let smallestDistance = Infinity;
 
     for (let d of this.deliveryZones) {
-      const distance = this.bfs(this.getTile(pos), this.getTile(d)).length - 1;
+      const distance = this.bfs(this.getTile(d), this.getTile(pos)).length - 1;
       if (distance < smallestDistance) {
         smallestDistance = distance;
         closest = d;

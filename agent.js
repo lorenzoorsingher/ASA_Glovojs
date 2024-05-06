@@ -102,7 +102,7 @@ function startParcelTimer(id) {
           clearInterval(intervalId);
           parcels.delete(id);
           console.log("Parcel", id, "expired");
-          brain.updateParcelsQueue();
+          plan = brain.updateParcelsQueue();
           activeIntervals.delete(id);
         }
       } else {
