@@ -14,7 +14,11 @@
   <div id="mapdiv">
     <table id="myTable" class="table table-borderless table-striped table-earning">
     <tbody id="mapTable"></tbody>
-  </table></div>
+    </table>
+  </div>
+  <div id="info">
+
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -32,6 +36,11 @@
       w = data["map_size"][0];
       h = data["map_size"][1];
       tiles = data["tiles"];
+      plan = data["plan"];
+
+
+
+      console.log(plan);
       console.log("w: " + w + " h: " + h);
       
 
@@ -45,29 +54,41 @@
             tile.innerHTML = "<div></div>";
             tile.style.width = "20px";
             tile.style.height = "20px";
-
-            switch (tiles[i][j]["type"]) {
+            let color = "black";
+            switch (tiles[h-i-1][j]["type"]) {
               case "W":
-                tile.style.backgroundColor = "green";
+                color = "green";
                 break;
               case "D":
-                tile.style.backgroundColor = "red";
+                color = "red";
                 break;
-              default:
-                tile.style.backgroundColor = "black";
-            }
-            
-            if (tiles[i][j]["parcel"] > 0) {
-              tile.innerHTML = tiles[i][j]["parcel"];
-              tile.style.backgroundColor = "yellow";
-              console.log("parc: ", tiles[i][j]["parcel"]);
 
             }
+            
+            if (tiles[h-i-1][j]["parcel"] > 0) {
+              tile.innerHTML = tiles[h-i-1][j]["parcel"];
+              color = "yellow";
+              console.log("parc: ", tiles[h-i-1][j]["parcel"]);
+
+            }
+            
+            str = j + "-" + (h-i-1);
+            console.log(str);
+            if (plan.includes(str)) {
+              color = "blue";
+            }
+
+
+            tile.style.backgroundColor = color;
         }
       }
 
       agent = data["agent"];
-      table.rows[agent[1]].cells[agent[0]].style.backgroundColor = "purple";;
+
+      console.log(Math.round(h-agent[1]), " ", Math.round(agent[0]));
+      table.rows[Math.round(h-agent[1])-1].cells[Math.round(agent[0])].style.backgroundColor = "purple";
+
+
     });
   </script>
 </body>
