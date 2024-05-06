@@ -22,6 +22,10 @@ export class Reasoning_1 {
         this.y = pos.y;
     }
 
+    updateParcelsQueue() {
+        this.parcelsQueue = this.orderParcelsByScore(this.parcels);
+    }
+
     orderParcelsByScore(parcels) {
         console.log(parcels.size)
         if (parcels.size === 0) {
@@ -29,7 +33,6 @@ export class Reasoning_1 {
         }
     
         const parcelScores = [];
-
         for (const [parcelId, parcel] of parcels.entries()) {
             console.log("Computing score for parcel: ", parcelId);
             const score = this.computeRealScore(parcel);
@@ -37,7 +40,7 @@ export class Reasoning_1 {
         }
 
         parcelScores.sort((a, b) => b.score - a.score);
-        console.log(parcelScores[0].parcelId + " is the best parcel to deliver.")
+        console.log(parcelScores[0].parcelId + " is the best parcel to deliver with score: " + parcelScores[0].score)
         return parcelScores.map(entry => entry.parcelId);
     }
 
@@ -64,7 +67,9 @@ export class Reasoning_1 {
 
         const deliveryZoneTile = this.field.getClosestDeliveryZone(parcelPosition); // returns a tile
         const distanceToDeliveryZone = this.field.bfs(parcelTile, deliveryZoneTile).length - 1;
-        return parcel.score - distanceToParcel - distanceToDeliveryZone;
+        const score = parcel.reward - distanceToParcel - distanceToDeliveryZone;
+
+        return score;
     }
 
     createPlan(currentBestScore, goals) {

@@ -58,7 +58,8 @@ client.onParcelsSensing(async (perceived_parcels) => {
     if (!parcels.has(p.id)) {
       console.log("New parcel found at x: ", p.x, "y:", p.y, "id:", p.id, "reward:", p.reward);
       parcels.set(p.id, p);
-      brain && brain.addParcelandOrder(p.id);
+      brain.updateParcelsQueue();
+      // brain && brain.addParcelandOrder(p.id);
       startParcelTimer(p.id);
     }
   }
@@ -74,6 +75,7 @@ function startParcelTimer(id) {
           clearInterval(intervalId);
           parcels.delete(id);
           console.log("Parcel", id, "expired");
+          brain.updateParcelsQueue();
           // brain && brain.removeParcel(id);
           activeIntervals.delete(id); 
         }

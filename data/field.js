@@ -133,15 +133,13 @@ export class Field {
       path.push(par[currentNode].id);
       currentNode = par[currentNode].id;
     }
-    console.log("It takes ", path.length - 1, " steps to reach the destination");
+    VERBOSE && console.log("It takes ", path.length - 1, " steps to reach the destination");
     return path;
   }
 
   getClosestDeliveryZone(pos) {
     const x = pos.x;
     const y = pos.y;
-    
-    console.log("Finding closest delivery zone to ", x, y)
 
     let closest = null;
     let smallestDistance = Infinity;
