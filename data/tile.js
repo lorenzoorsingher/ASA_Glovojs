@@ -2,9 +2,9 @@ import { Position, Direction } from "./position.js";
 
 export class Tile {
   constructor(position, walk, delivery) {
+    this.position = position;
     this.walkable = walk;
     this.delivery = delivery;
-    this.position = position;
     this.id = position.serialize();
     this.neighbors = [];
   }

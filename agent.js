@@ -8,7 +8,12 @@ const client = new DeliverooApi(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA0ODQzNzkwZWVhIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTI2NTcwMjh9.Kyuu4Gx3Volxzl-ygypFmEQYHaDaVz2liYo8T7-o0-I"
 );
 
-export const VERBOSE = true;
+export const VERBOSE = false;
+
+const me = {};
+const map = new Field();
+const brain = new Reasoning_1();
+const parcels = new Map();
 
 function distance({ x: x1, y: y1 }, { x: x2, y: y2 }) {
   const dx = Math.abs(Math.round(x1) - Math.round(x2));
@@ -16,20 +21,26 @@ function distance({ x: x1, y: y1 }, { x: x2, y: y2 }) {
   return dx + dy;
 }
 
-const me = {};
+let playerPosition = new Position(0, 0);
 client.onYou(({ id, name, x, y, score }) => {
   me.id = id;
   me.name = name;
   me.x = x;
   me.y = y;
-  console.log("New position: ", x, y);
+  playerPosition = new Position(x, y);
+  brain && brain.updatePlayerPosition(playerPosition);
+  VERBOSE && console.log("Agent moved to: ", x, y);
 });
-
-const map = new Field();
 
 // note that this happens before the onYou event
 client.onMap((width, height, tiles) => {
+  VERBOSE && console.log("Map received. Initializing...");
+  // runMapTest()
   map.init(width, height, tiles);
+  brain.init(map, parcels, playerPosition);
+});
+
+function runMapTest() {
   let start = map.getTile(new Position(2, 2));
   let end = map.getTile(new Position(5, 4));
   let path = map.bfs(start, end);
@@ -38,9 +49,7 @@ client.onMap((width, height, tiles) => {
     map.printPath(start, end, path);
     console.log(path);
   }
-});
-
-const parcels = new Map();
+}
 
 const activeIntervals = new Set();
 
@@ -49,6 +58,7 @@ client.onParcelsSensing(async (perceived_parcels) => {
     if (!parcels.has(p.id)) {
       console.log("New parcel found at x: ", p.x, "y:", p.y, "id:", p.id, "reward:", p.reward);
       parcels.set(p.id, p);
+      brain && brain.addParcelandOrder(p.id);
       startParcelTimer(p.id);
     }
   }
@@ -64,6 +74,7 @@ function startParcelTimer(id) {
           clearInterval(intervalId);
           parcels.delete(id);
           console.log("Parcel", id, "expired");
+          // brain && brain.removeParcel(id);
           activeIntervals.delete(id); 
         }
       } else {
@@ -76,8 +87,7 @@ function startParcelTimer(id) {
   }
 }
 
-
-const Brain = new Reasoning_1(map, parcels);
+console.log("Creating brain with parcels", parcels, "and player position", playerPosition);
 
 function options() {
   const options = [];

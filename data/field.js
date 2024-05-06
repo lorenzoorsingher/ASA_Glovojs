@@ -12,14 +12,18 @@ export class Field {
       this.field[i] = [];
       for (let j = 0; j < width; j++) {
         let found = false;
-        for (const t of tiles) {
+        let deliverZone = false;
+        for (const t of tiles) {[j]
           if (t.x == j && t.y == i) {
             found = true;
+            if (t.delivery) {
+              deliverZone = true;
+            }
             break;
           }
         }
         let pos = new Position(j, i);
-        this.field[i][j] = new Tile(pos, found, false);
+        this.field[i][j] = new Tile(pos, found, deliverZone);
       }
     }
 
@@ -137,27 +141,29 @@ export class Field {
     const x = pos.x;
     const y = pos.y;
     
+    console.log("Finding closest delivery zone to ", x, y)
+
     let closest = null;
     let smallestDistance = Infinity;
 
-    for(d of this.deliveryZones) {
-      const distance = this.bfs(pos, d).length - 1;
+    for(let d of this.deliveryZones) {
+      const distance = this.bfs(this.getTile(pos), this.getTile(d)).length - 1;
       if(distance < smallestDistance) {
         smallestDistance = distance;
         closest = d;
       }
     }
     console.log("Closest delivery zone is at ", closest.x, closest.y);
-    return closest
+    return this.getTile(closest)
   }
 
   getDeliveryZones(){
     const positions = [];
-
     for(let y = 0; y < this.height; y++){
       for(let x = 0; x < this.width; x++){
-        if(this.field[y][x]===2){
+        if(this.field[y][x].delivery){
           positions.push(new Position(x, y));
+          VERBOSE && console.log("Found delivery zone at ", x, y)
         }
       }
     }

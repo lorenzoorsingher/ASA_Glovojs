@@ -1,31 +1,69 @@
 import { Position } from "./data/position.js";
 import { Field } from "./data/field.js";
 import { Action } from "./data/action.js";
+import { VERBOSE } from "./agent.js";
 
 export class Reasoning_1 {
-    constructor(field, parcels) {
+    init(field, parcels, playerPosition) {
         this.field = field;
         this.parcels = parcels;
+        this.x = playerPosition.x;
+        this.y = playerPosition.y;
         this.parcelsQueue = this.orderParcelsByScore(parcels);
         // this.plan = this.createPlan(parcelsQueue)
     }
 
+    updateField(field) {
+        this.field = field;
+    }
+
+    updatePlayerPosition(pos) {
+        this.x = pos.x;
+        this.y = pos.y;
+    }
+
     orderParcelsByScore(parcels) {
-        // Array to store parcel IDs along with their scores
+        console.log(parcels.size)
+        if (parcels.size === 0) {
+            return [];
+        }
+    
         const parcelScores = [];
-        parcels.forEach((parcel, parcelId) => {
-            const score = computeRealScore(parcel);
+
+        for (const [parcelId, parcel] of parcels.entries()) {
+            console.log("Computing score for parcel: ", parcelId);
+            const score = this.computeRealScore(parcel);
             parcelScores.push({ parcelId, score });
-        });
+        }
+
         parcelScores.sort((a, b) => b.score - a.score);
+        console.log(parcelScores[0].parcelId + " is the best parcel to deliver.")
         return parcelScores.map(entry => entry.parcelId);
     }
 
+    addParcelandOrder(parcel) {
+        this.parcels.set(parcel.id, parcel);
+        this.parcelsQueue = this.orderParcelsByScore(this.parcels);
+        console.log("Added parcel to agent's parcels: ", this.parcelsQueue)
+    }
+
+    removeParcel(parcelId) {
+        this.parcels.delete(parcelId);
+        this.parcelsQueue = this.orderParcelsByScore(this.parcels);
+    }
+
     computeRealScore(parcel) {
+        const playerPosition = new Position(this.x, this.y);
         const parcelPosition = new Position(parcel.x, parcel.y);
-        const distanceToParcel = bfs(new Position(this.x, this.y), parcelPosition).length - 1;
-        const deliveryZonePosition = Field.getClosestDeliveryZone(parcelPosition);
-        const distanceToDeliveryZone = bfs(parcelPosition, deliveryZonePosition).length - 1;
+
+        const playerTile = this.field.getTile(playerPosition);
+        const parcelTile = this.field.getTile(parcelPosition);
+
+        VERBOSE && console.log("Calculating distance from player in position: ", playerPosition.x, playerPosition.y, "to parcel in position: ",  parcelPosition.x, parcelPosition.y);
+        const distanceToParcel = this.field.bfs(playerTile, parcelTile).length - 1;
+
+        const deliveryZoneTile = this.field.getClosestDeliveryZone(parcelPosition); // returns a tile
+        const distanceToDeliveryZone = this.field.bfs(parcelTile, deliveryZoneTile).length - 1;
         return parcel.score - distanceToParcel - distanceToDeliveryZone;
     }
 
@@ -33,7 +71,7 @@ export class Reasoning_1 {
         const path = bfs(new Position(this.x, this.y), goals[0]);
         const actions = [];
         actions.concat(Action.pathToAction(path));
-        const pathToDeliveryZone = bfs(goals[0], Field.getClosestDeliveryZone(goals[0])); 
+        const pathToDeliveryZone = field.bfs(goals[0], field.getClosestDeliveryZone(goals[0])); 
         actions.concat(Action.pathToAction(pathToDeliveryZone));
         return actions;
     }
