@@ -30,6 +30,9 @@ client.onYou(({ id, name, x, y, score }) => {
   playerPosition = new Position(x, y);
   brain && brain.updatePlayerPosition(playerPosition);
   VERBOSE && console.log("Agent moved to: ", x, y);
+  if(brain && parcels.size === 0) {
+    brain.createPlan(map.bfs(map.getTile(playerPosition), map.getRandomWalkableTile()));
+  }
 });
 
 // note that this happens before the onYou event

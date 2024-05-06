@@ -27,6 +27,8 @@ export class Reasoning_1 {
     }
 
     orderParcelsByScore(parcels) {
+        console.log("––––––––––––––––––––––––––––––––-")
+        console.log("––––––––––––––––––––––––––––––––-")
         console.log(parcels.size, " parcels sensed.")
         if (parcels.size === 0) {
             return [];
@@ -35,13 +37,13 @@ export class Reasoning_1 {
         const parcelScores = [];
         for (const [parcelId, parcel] of parcels.entries()) {
             const score = this.computeRealScore(parcel);
-            console.log("Best score for: ", parcelId, " is: ", score);
+            VERBOSE && console.log("Best score for: ", parcelId, " is: ", score);
             let position = new Position(parcel.x, parcel.y);
             parcelScores.push({ parcelId, score, position });
         }
 
         parcelScores.sort((a, b) => b.score - a.score);
-        console.log(parcelScores[0].parcelId + " is the best parcel to deliver with score: " + parcelScores[0].score)
+        console.log("📦", parcelScores[0].parcelId + " is the best parcel to deliver with score: " + parcelScores[0].score)
         return parcelScores.map(entry => entry.parcelId);
     }
 
@@ -81,14 +83,12 @@ export class Reasoning_1 {
             const bestParcelPosition = new Position(bestParcel.x, bestParcel.y)
             const bestParcelTile = this.field.getTile(bestParcelPosition);
 
-            console.log("Creating plan for parcel: ", bestParcel, " with position ", bestParcelPosition.x, bestParcelPosition.y)
+            console.log("🧠 Creating plan for parcel: ", bestParcel, " with position ", bestParcelPosition.x, bestParcelPosition.y)
             const playerTile = this.field.getTile(new Position(this.x, this.y));
             const path = this.field.bfs(playerTile, bestParcelTile);
             const pathToDeliveryZone = this.field.bfs(bestParcelTile, this.field.getClosestDeliveryZone(bestParcelPosition));
             const goPickUpActions = Action.pathToAction(path, ActionType.PICKUP);
             const goDeliverActions = Action.pathToAction(pathToDeliveryZone, ActionType.PUTDOWN);
-            console.log("Instructions to pick up parcel: ", goPickUpActions);
-            console.log("Instructions to deliver parcel: ", goDeliverActions);
             return goPickUpActions.concat(goDeliverActions);
         }
     }

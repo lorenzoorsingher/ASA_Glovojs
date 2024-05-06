@@ -1,9 +1,9 @@
 import { Position } from "./position.js";
 
 export const ActionType = Object.freeze({
-  MOVE : "move",
-  PICKUP : "pick_up",
-  PUTDOWN : "put_down",
+  MOVE : "🔀 move",
+  PICKUP : "🟡 pick_up",
+  PUTDOWN : "🟢 put_down",
   WAIT : "wait"
 });
 
@@ -44,6 +44,6 @@ export class Action {
   }
 
   printAction(opt) {
-    console.log(this.type, " from ", this.source, " to ", this.target);
+    console.log("\t", this.type, " from ", this.source, " to ", this.target);
   }
 }
