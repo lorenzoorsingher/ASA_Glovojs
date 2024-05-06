@@ -37,7 +37,7 @@ export class Position {
         return `${this.x}-${this.y}`;
     }
 
-    deserialize(str) {
+    static deserialize(str) {
         const [x, y] = str.split('-');
         return new Position(x, y);
     }

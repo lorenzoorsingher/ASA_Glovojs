@@ -1,3 +1,6 @@
+import { VERBOSE } from "../agent.js";
+import { Position } from "./position.js";
+
 export const ActionType = Object.freeze({
   MOVE : "move",
   PICKUP : "pick_up",
@@ -12,11 +15,11 @@ export class Action {
     this.type = type;
   }
 
-  pathToAction(path) {
+  static pathToAction(path) {
     const actions = [];
     for (let i = 0; i < path.length - 1; i++) {
-      const current = path[i];
-      const next = path[i + 1];
+      const current = Position.deserialize(path[i]);
+      const next = Position.deserialize(path[i + 1]);
       if (current.x === next.x) {
           if (current.y < next.y) {
               actions.push(new Action(current, next, "MOVE"));
@@ -31,12 +34,13 @@ export class Action {
           }
       }
     }
+    for (let action of actions) {
+      action.printAction(true);
+    }
     return actions;
   }
 
   printAction(opt) {
-    if(opt == true) {
-      console.log(this.type, " from ", this.source, " to ", this.target);
-    }
+    console.log(this.type, " from ", this.source, " to ", this.target);
   }
 }

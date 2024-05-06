@@ -151,7 +151,7 @@ export class Field {
         closest = d;
       }
     }
-    console.log("Closest delivery zone is at ", closest.x, closest.y);
+    VERBOSE && console.log("Closest delivery zone is at ", closest.x, closest.y);
     return this.getTile(closest)
   }
 
