@@ -46,8 +46,12 @@
 
       const table = document.getElementById("mapTable");
       table.innerHTML = "";
+
+      
+      
       for (let i = 0; i < h; i++) {
         let row = table.insertRow();
+        
         for (let j = 0; j < w; j++) {
           let tile = row.insertCell();
 
@@ -81,8 +85,14 @@
 
             tile.style.backgroundColor = color;
         }
+        let tile = row.insertCell();
+        tile.innerHTML = "<div>"+(h-i-1)+"</div>";
       }
-
+      let row = table.insertRow();
+      for (let j = 0; j < w; j++) {
+        let tile = row.insertCell();
+        tile.innerHTML = "<div>"+j+"</div>";
+      }
       agent = data["agent"];
 
       console.log(Math.round(h-agent[1]), " ", Math.round(agent[0]));

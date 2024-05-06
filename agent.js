@@ -40,11 +40,12 @@ client.onYou(({ id, name, x, y, score }) => {
   //playerPosition = new Position(x, y);
   brain && brain.updatePlayerPosition(playerPosition);
   VERBOSE && console.log("Agent moved to: ", x, y);
-  if (brain && parcels.size === 0) {
-    brain.createPlan(
-      map.bfs(map.getTile(playerPosition), map.getRandomWalkableTile())
-    );
-  }
+  // if (brain && parcels.size === 0) {
+  //   brain.createPlan(
+  //     map.bfs(map.getTile(playerPosition), map.getRandomWalkableTile())
+  //   );
+  //}
+  wait_load = false;
 });
 
 // note that this happens before the onYou event
@@ -84,7 +85,8 @@ client.onParcelsSensing(async (perceived_parcels) => {
         p.reward
       );
       parcels.set(p.id, p);
-      brain.updateParcelsQueue();
+      plan = brain.updateParcelsQueue();
+      //console.log("Plan updated: ", plan);
       startParcelTimer(p.id);
     }
   }
@@ -126,9 +128,9 @@ setInterval(() => {
 
   let plan_s = [];
   if (plan.length > 0) {
-    plan_s.push(plan[0].source);
+    plan_s.push(plan[0].source.serialize());
     for (const p of plan) {
-      plan_s.push(p.target);
+      plan_s.push(p.target.serialize());
     }
   }
 
@@ -141,43 +143,21 @@ setInterval(() => {
   myServer.emitMessage("map", dash_data);
 }, 100);
 
-function fakePlan() {
-  console.log("Creating fake plan...");
-  let start = map.getTile(playerPosition);
+// function fakePlan() {
+//   console.log("Creating fake plan...");
+//   let start = map.getTile(playerPosition);
 
-  let end = map.getTile(map.getRandWalkableTile());
-  let path = map.bfs(end, start);
+//   let end = map.getTile(map.getRandWalkableTile());
+//   let path = map.bfs(end, start);
 
-  let plan = Action.pathToAction(path);
+//   let plan = Action.pathToAction(path);
 
-  console.log("starting position: ", start);
-  console.log("ending position: ", end);
-  console.log("plan: ", plan);
+//   console.log("starting position: ", start);
+//   console.log("ending position: ", end);
+//   console.log("plan: ", plan);
 
-  return plan;
-}
-
-// async function loop() {
-//   while (true) {
-//     console.log(fakeplan);
-//   }
-// while (true) {
-//   console.log(fakeplan);
-//   if (fakeplan.length > 0) {
-//     for (let i = 0; i < fakeplan.length; i++) {
-//       let action = fakeplan[i];
-//       let src = Position.deserialize(action.source);
-//       let trg = Position.deserialize(action.target);
-//       console.log(action.source);
-//       let move = Position.getDirectionTo(src, trg);
-//       console.log(action, " ", move);
-//     }
-//     let action = plan.shift();
-//     action.printAction(true);
-//     client.sendAction(action);
-//   }
+//   return plan;
 // }
-//}
 
 let nextAction = null;
 async function loop() {
@@ -189,13 +169,13 @@ async function loop() {
     if (plan.length > 0) {
       if (nextAction == null) {
         nextAction = plan.shift();
-        console.log("NEXT ACTION: ", nextAction);
+        //console.log("NEXT ACTION: ", nextAction);
       }
 
-      let src = Position.deserialize(nextAction.source);
-      let trg = Position.deserialize(nextAction.target);
+      let src = nextAction.source;
+      let trg = nextAction.target;
       let move = Position.getDirectionTo(src, trg);
-      // console.log(nextAction, " ", move);
+      console.log(nextAction, " ", move);
 
       // console.log(trg, " ", playerPosition);
 
@@ -206,21 +186,23 @@ async function loop() {
             nextAction = null;
           } else if (stat == false) {
             console.log("REPLAN");
-            plan = fakePlan();
+            //plan = fakePlan();
             nextAction = null;
           }
           break;
         case ActionType.PICKUP:
-          await client.pickUp();
+          await client.pickup();
           nextAction = null;
           break;
         case ActionType.PUTDOWN:
-          await client.putDown();
+          await client.putdown();
           nextAction = null;
           break;
       }
     } else {
-      plan = fakePlan();
+      // brain.createPlan(
+      //   map.bfs(map.getTile(playerPosition), map.getRandomWalkableTile())
+      // );
     }
     await new Promise((res) => setImmediate(res));
   }
