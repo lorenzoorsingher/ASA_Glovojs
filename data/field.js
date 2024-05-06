@@ -169,12 +169,15 @@ export class Field {
   }
 
   getRandomWalkableTile() {
-    const x = Math.floor(Math.random() * this.width);
-    const y = Math.floor(Math.random() * this.height);
-    if (this.field[y][x].walkable) {
-      const pos = new Position(x, y);
-      const tile = this.getTile(pos);
-      return tile;
-    }
+    let x, y;
+    let tile;
+
+    do {
+        x = Math.floor(Math.random() * this.width);
+        y = Math.floor(Math.random() * this.height);
+        tile = this.getTile(new Position(x, y));
+    } while (!tile.walkable);
+
+    return tile;
   }
 }

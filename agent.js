@@ -27,11 +27,13 @@ client.onYou(({ id, name, x, y, score }) => {
   me.name = name;
   me.x = x;
   me.y = y;
-  playerPosition = new Position(x, y);
-  brain && brain.updatePlayerPosition(playerPosition);
-  VERBOSE && console.log("Agent moved to: ", x, y);
-  if(brain && parcels.size === 0) {
-    brain.createPlan(map.bfs(map.getTile(playerPosition), map.getRandomWalkableTile()));
+  if(hasCompletedMovement(playerPosition)) {
+    playerPosition = new Position(x, y);
+    brain && brain.updatePlayerPosition(playerPosition);
+    VERBOSE && console.log("Agent moved to: ", x, y);
+    if(brain && parcels.size === 0.0) {
+      brain.createPlan(map.bfs(map.getTile(playerPosition), map.getRandomWalkableTile()));
+    }
   }
 });
 
@@ -58,7 +60,7 @@ const activeIntervals = new Set();
 
 client.onParcelsSensing(async (perceived_parcels) => {
   for (const p of perceived_parcels) {
-    if (!parcels.has(p.id)) {
+    if (!parcels.has(p.id) && hasCompletedMovement(playerPosition)) {
       console.log("New parcel found at x: ", p.x, "y:", p.y, "id:", p.id, "reward:", p.reward);
       parcels.set(p.id, p);
       brain.updateParcelsQueue();
@@ -88,6 +90,10 @@ function startParcelTimer(id) {
     }, 1000);
     activeIntervals.add(id); 
   }
+}
+
+function hasCompletedMovement(pos) {
+  return pos.x % 1 === 0 && pos.y % 1 === 0;
 }
 
 function options() {
