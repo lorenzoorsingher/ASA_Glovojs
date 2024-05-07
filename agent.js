@@ -11,32 +11,32 @@ import { Action, ActionType } from "./data/action.js";
 export const VERBOSE = false;
 const LOCAL = true;
 const TOKEN =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg2OTFmNjUzMjJjIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTUwMjQ0MTF9.8L79LEzZejQAcKjuWEa_OMKfeChXnVcwn1sY-q2eCu8";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhYmM4ZTE4ZjY2IiwibmFtZSI6ImxvbGxvIiwiaWF0IjoxNzE1MDkyODQ5fQ.PqPFemZ93idl9DKzOCMXDe0FaB9mgB0WWeVnA9j_Sao";
 
 let client = null;
 
 if (LOCAL) {
-  client = new DeliverooApi("http://localhost:8080/", TOKEN);
+  client = new DeliverooApi(
+    "http://localhost:8080/",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE4OTMwMGVhOTE0IiwibmFtZSI6ImhlbG8iLCJpYXQiOjE3MTE0NTExNzF9.MaEAYnfg0Vr9iAcFrW5kUJ8QBY_f2GMzPHB6V8brLCI"
+  );
 } else {
-  client = new DeliverooApi("https://deliveroojs.onrender.com/", TOKEN);
+  client = new DeliverooApi("http://cuwu.ddns.net:8082", TOKEN);
 }
 
 const me = {};
 const map = new Field();
 const brain = new Reasoning_1();
-const parcels = new Map();
 
-function distance({ x: x1, y: y1 }, { x: x2, y: y2 }) {
-  const dx = Math.abs(Math.round(x1) - Math.round(x2));
-  const dy = Math.abs(Math.round(y1) - Math.round(y2));
-  return dx + dy;
-}
+const parcels2 = new Map();
 
 let plan = [];
 let plan_target = "RANDOM";
 let wait_load = true;
 
 let playerPosition = new Position(0, 0);
+let playerParcels = new Map();
+
 client.onYou(({ id, name, x, y, score }) => {
   me.id = id;
   me.name = name;
@@ -48,6 +48,8 @@ client.onYou(({ id, name, x, y, score }) => {
     VERBOSE && console.log("Agent moved to: ", x, y);
     wait_load = false;
   }
+
+  //console.log("p ", parcels.entries());
 });
 
 // note that this happens before the onYou event
@@ -55,7 +57,7 @@ client.onMap((width, height, tiles) => {
   VERBOSE && console.log("Map received. Initializing...");
   // runMapTest()
   map.init(width, height, tiles);
-  brain.init(map, parcels, playerPosition);
+  brain.init(map, parcels2, playerPosition);
 });
 
 const activeIntervals = new Set();
@@ -69,72 +71,72 @@ client.onParcelsSensing(async (perceived_parcels) => {
       hasCompletedMovement(playerPosition) &&
       p.carriedBy == null
     ) {
-      console.log(
-        "New parcel found at x: ",
-        p.x,
-        "y:",
-        p.y,
-        "id:",
-        p.id,
-        "reward:",
-        p.reward
-      );
-      parcels.set(p.id, p);
-
+      parcels2.set(p.id, p);
       plan = brain.updateParcelsQueue();
       plan_target = "TILE";
-      //console.log("Plan updated: ", plan);
-      startParcelTimer(p.id);
     }
   }
 });
 
-function startParcelTimer(id) {
-  if (!activeIntervals.has(id)) {
-    const intervalId = setInterval(() => {
-      const parcel = parcels.get(id);
-      if (parcel) {
-        parcel.reward -= 1;
-        if (parcel.reward < 0) {
-          clearInterval(intervalId);
-          parcels.delete(id);
-          console.log("Parcel", id, "expired");
-          if (hasCompletedMovement(playerPosition)) {
-            brain.updateParcelsQueue();
-            activeIntervals.delete(id);
-          }
-        }
-      } else {
-        // If parcel data is not found (possibly removed already), clear the interval
-        clearInterval(intervalId);
-        activeIntervals.delete(id);
-      }
-    }, 1000);
-    activeIntervals.add(id);
+// PARCELS CLOCK
+setInterval(() => {
+  for (const [key, value] of parcels2.entries()) {
+    value.reward--;
+    if (value.reward <= 0) {
+      parcels2.delete(key);
+    } else {
+      parcels2.set(key, value);
+    }
   }
-}
+}, 1000);
 
-function hasCompletedMovement(pos) {
-  return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
-}
-
+// DASHBOARD UPDATE
 setInterval(() => {
   let update_map = map.getMap();
-  let plan_s = [];
+  let plan_move = [];
+  let plan_pickup = [];
+  let plan_drop = [];
+
+  let agent_parcels = [];
+
   if (plan.length > 0) {
-    plan_s.push(plan[0].source.serialize());
     for (const p of plan) {
-      plan_s.push(p.target.serialize());
+      switch (p.type) {
+        case ActionType.MOVE:
+          plan_move.push(p.source.serialize());
+          break;
+        case ActionType.PICKUP:
+          plan_pickup.push(p.source.serialize());
+          break;
+        case ActionType.PUTDOWN:
+          plan_drop.push(p.source.serialize());
+          break;
+      }
     }
+  }
+
+  for (const [key, p] of parcels2.entries()) {
+    agent_parcels.push({ x: p.x, y: p.y, reward: p.reward });
+  }
+
+  let car = "";
+  for (const [key, p] of playerParcels.entries()) {
+    car += key + " ";
   }
   let dash_data = {
     map_size: [map.width, map.height],
     tiles: update_map,
     agent: [me.x, me.y],
-    plan: [plan_s, plan_target],
+    plan: [plan_move, plan_pickup, plan_drop, plan_target],
+    parc: agent_parcels,
+    carrying: car,
   };
   myServer.emitMessage("map", dash_data);
 }, 100);
+
+function hasCompletedMovement(pos) {
+  return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
+}
 
 let nextAction = null;
 let isMoving = false;
@@ -150,34 +152,14 @@ async function loop() {
       continue;
     }
     if (plan.length > 0) {
-      // console.log(
-      //   "Player position: ",
-      //   playerPosition,
-      //   " moving: ",
-      //   !hasCompletedMovement(playerPosition)
-      // );
-
-      // console.log(trg, " ", playerPosition);
-      //console.log(trg, " -- ", playerPosition);
-
       if (trg == null) {
         trg = playerPosition;
       }
 
       if (trg && trg.equals(playerPosition)) {
         initial = false;
-        console.log("Player reached target ", trg.serialize());
         isMoving = false;
         nextAction = plan.shift();
-
-        console.log(
-          "Fetching action ",
-          nextAction.source.serialize(),
-          " -> ",
-          nextAction.target.serialize(),
-          " ",
-          nextAction.type
-        );
       }
       if (stat == false) {
         isMoving = false;
@@ -189,48 +171,32 @@ async function loop() {
         let move = Position.getDirectionTo(src, trg);
 
         if (!src.equals(playerPosition)) {
-          console.log(
-            "!!!! DESYNC !!!! ",
-            src.serialize(),
-            " != ",
-            playerPosition
-          );
-
           plan = brain.createPlan();
           trg = null;
           continue;
         }
 
-        console.log(
-          nextAction.source.serialize(),
-          " ---> ",
-          nextAction.target.serialize(),
-          " ",
-          move
-        );
-
         switch (nextAction.type) {
           case ActionType.MOVE:
             var stat = await client.move(move);
-            await client.pickup();
-            if (map.isDeliveryZone(playerPosition)) {
-              await client.putdown();
-            }
-            console.log("Player has started moving");
-            console.log(src.serialize(), " -> ", trg.serialize());
+
             isMoving = true;
-            //nextAction = null;
 
             break;
           case ActionType.PICKUP:
             console.log("PICKING UP");
             await client.pickup();
-            parcels.delete(nextAction.bestParcel);
+
+            playerParcels.set(nextAction.bestParcel.id, true);
+            parcels2.delete(nextAction.bestParcel.id);
             brain.updateParcelsQueue();
+
             nextAction = null;
+
             break;
           case ActionType.PUTDOWN:
             console.log("PUTTING DOWN");
+            playerParcels = new Map();
             await client.putdown();
             nextAction = null;
             break;

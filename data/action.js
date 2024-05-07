@@ -45,16 +45,13 @@ export class Action {
     }
 
     if (type === ActionType.PICKUP) {
-      // if (!lastPosition) {
-      //   console.log("lastPosition is null");
-      //   console.log(lastPosition);
-      // } else {
-      //   console.log("lastPosition is not null");
-      //   console.log(lastPosition);
-      // }
-      actions.push(new Action(lastPosition, lastPosition, ActionType.PICKUP, null));
+      actions.push(
+        new Action(lastPosition, lastPosition, ActionType.PICKUP, bestParcel)
+      );
     } else {
-      actions.push(new Action(lastPosition, lastPosition, ActionType.PUTDOWN, bestParcel));
+      actions.push(
+        new Action(lastPosition, lastPosition, ActionType.PUTDOWN, null)
+      );
     }
 
     for (let action of actions) {
@@ -64,6 +61,15 @@ export class Action {
   }
 
   printAction() {
-    console.log("\t", this.type, " from ", this.source, " to ", this.target);
+    console.log(
+      "\t",
+      this.type,
+      " from ",
+      this.source,
+      " to ",
+      this.target,
+      " -> ",
+      this.bestParcel
+    );
   }
 }
