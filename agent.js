@@ -10,8 +10,8 @@ import { Action, ActionType } from "./data/action.js";
 // myServer.serveDashboard();
 
 const client = new DeliverooApi(
-  "http://deliveroojs.onrender.com/",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUzNWE4MTg3MjNmIiwibmFtZSI6Imdsb3ZvanMiLCJpYXQiOjE3MTUwNzUwMzl9.XDoc-DCQQtyVI91mrgCu0ThzZoAxtq2R6qs3F1tfWVs"
+  "https://deliveroojs.onrender.com/",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQzNGM4Y2U2OTcxIiwibmFtZSI6Imdsb3ZvanMiLCJpYXQiOjE3MTUwNzY3MDd9.VGzTJlHQSue98GhmjgR8jLKYue09CyAHupnoSC3oVhs"
 );
 
 export const VERBOSE = false;
@@ -59,7 +59,11 @@ client.onParcelsSensing(async (perceived_parcels) => {
   map.set_parcels(perceived_parcels);
 
   for (const p of perceived_parcels) {
-    if (!parcels.has(p.id) && hasCompletedMovement(playerPosition)) {
+    if (
+      !parcels.has(p.id) &&
+      hasCompletedMovement(playerPosition) &&
+      p.carriedBy == null
+    ) {
       console.log(
         "New parcel found at x: ",
         p.x,
