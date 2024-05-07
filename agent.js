@@ -10,8 +10,8 @@ import { Action, ActionType } from "./data/action.js";
 // myServer.serveDashboard();
 
 const client = new DeliverooApi(
-  "http://localhost:8080/",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg2OTFmNjUzMjJjIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTUwMjQ0MTF9.8L79LEzZejQAcKjuWEa_OMKfeChXnVcwn1sY-q2eCu8"
+  "http://deliveroojs.onrender.com/",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUzNWE4MTg3MjNmIiwibmFtZSI6Imdsb3ZvanMiLCJpYXQiOjE3MTUwNzUwMzl9.XDoc-DCQQtyVI91mrgCu0ThzZoAxtq2R6qs3F1tfWVs"
 );
 
 export const VERBOSE = false;

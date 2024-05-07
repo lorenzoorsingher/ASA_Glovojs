@@ -146,8 +146,8 @@ export class Field {
     queue.push(this.getTile(start.position));
     while (queue.length > 0) {
       const node = queue.shift();
-      for (const n of node.neighbors) {
-        VERBOSE && console.log(node.neighbors);
+      for (const n of node.getNeighbors()) {
+        VERBOSE && console.log(node.getNeighbors());
         const n_tile = this.getTile(n);
         if (distance[n_tile.id] == undefined) {
           par[n_tile.id] = node;

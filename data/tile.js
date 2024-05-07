@@ -4,6 +4,7 @@ export class Tile {
   constructor(position, walk, delivery) {
     this.position = position;
     this.walkable = walk;
+    this.hasAgent = false;
     this.delivery = delivery;
     this.id = position.serialize();
     this.neighbors = [];
@@ -25,5 +26,13 @@ export class Tile {
 
   set_parcel(parcel_score) {
     this.parcel = parcel_score;
+  }
+
+  setAgent(bool) {
+    this.hasAgent = bool;
+  }
+
+  getNeighbors() {
+    return this.neighbors;
   }
 }
