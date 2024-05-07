@@ -53,17 +53,6 @@ client.onMap((width, height, tiles) => {
   brain.init(map, parcels, playerPosition);
 });
 
-// function runMapTest() {
-//   let start = map.getTile(new Position(2, 2));
-//   let end = map.getTile(new Position(5, 4));
-//   let path = map.bfs(start, end);
-
-//   if (VERBOSE) {
-//     map.printPath(start, end, path);
-//     console.log(path);
-//   }
-// }
-
 const activeIntervals = new Set();
 
 client.onParcelsSensing(async (perceived_parcels) => {
@@ -82,9 +71,7 @@ client.onParcelsSensing(async (perceived_parcels) => {
         p.reward
       );
       parcels.set(p.id, p);
-      while (!hasCompletedMovement(playerPosition)) {
-        console.log("still moving");
-      }
+
       plan = brain.updateParcelsQueue();
       plan_target = "TILE";
       //console.log("Plan updated: ", plan);
@@ -196,6 +183,10 @@ async function loop() {
             " != ",
             playerPosition
           );
+
+          plan = brain.createPlan();
+          trg = null;
+          continue;
         }
 
         console.log(
