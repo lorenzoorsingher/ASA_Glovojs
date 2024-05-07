@@ -10,23 +10,16 @@ import { Action, ActionType } from "./data/action.js";
 // myServer.serveDashboard();
 export const VERBOSE = false;
 const LOCAL = true;
-const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg2OTFmNjUzMjJjIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTUwMjQ0MTF9.8L79LEzZejQAcKjuWEa_OMKfeChXnVcwn1sY-q2eCu8"
+const TOKEN =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg2OTFmNjUzMjJjIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTUwMjQ0MTF9.8L79LEzZejQAcKjuWEa_OMKfeChXnVcwn1sY-q2eCu8";
 
 let client = null;
 
-if(LOCAL){
-  client = new DeliverooApi(
-    "http://localhost:8080/",
-    TOKEN
-  );
+if (LOCAL) {
+  client = new DeliverooApi("http://localhost:8080/", TOKEN);
 } else {
-  client = new DeliverooApi(
-    "https://deliveroojs.onrender.com/",
-    TOKEN
-  );
+  client = new DeliverooApi("https://deliveroojs.onrender.com/", TOKEN);
 }
-
-
 
 const me = {};
 const map = new Field();
@@ -122,7 +115,6 @@ function startParcelTimer(id) {
 }
 
 function hasCompletedMovement(pos) {
-  // ensures that only discrete positions are considered valid
   return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
 }
 
@@ -221,7 +213,7 @@ async function loop() {
           case ActionType.MOVE:
             var stat = await client.move(move);
             await client.pickup();
-            if(map.isDeliveryZone(playerPosition)) {
+            if (map.isDeliveryZone(playerPosition)) {
               await client.putdown();
             }
             console.log("Player has started moving");
