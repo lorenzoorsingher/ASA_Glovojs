@@ -5,6 +5,7 @@ import { Reasoning_1 } from "./brain.js";
 
 import myServer from "./server.js";
 import { Action, ActionType } from "./data/action.js";
+import e from "express";
 
 // myServer.start();
 // myServer.serveDashboard();
@@ -21,14 +22,16 @@ if (LOCAL) {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE4OTMwMGVhOTE0IiwibmFtZSI6ImhlbG8iLCJpYXQiOjE3MTE0NTExNzF9.MaEAYnfg0Vr9iAcFrW5kUJ8QBY_f2GMzPHB6V8brLCI"
   );
 } else {
-  client = new DeliverooApi("http://cuwu.ddns.net:8082", TOKEN);
+  client = new DeliverooApi("http://cuwu.ddns.net:8082", "");
 }
 
 const me = {};
 const map = new Field();
 const brain = new Reasoning_1();
 
-const parcels2 = new Map();
+const parcels = new Map();
+const agents = new Map();
+const blocking_agents = new Map();
 
 // contains the current plan
 let plan = [];
@@ -43,11 +46,11 @@ let playerPosition = new Position(0, 0);
 let playerParcels = new Map();
 
 // note that this happens before the onYou event
-await client.onMap((width, height, tiles) => {
+client.onMap((width, height, tiles) => {
   VERBOSE && console.log("Map received. Initializing...");
   // runMapTest()
-  map.init(width, height, tiles);
-  brain.init(map, parcels2, playerPosition);
+  map.init(width, height, tiles, blocking_agents);
+  brain.init(map, parcels, playerPosition);
 });
 
 client.onYou(({ id, name, x, y, score }) => {
@@ -68,25 +71,41 @@ client.onParcelsSensing(async (perceived_parcels) => {
 
   for (const p of perceived_parcels) {
     if (
-      !parcels2.has(p.id) &&
+      !parcels.has(p.id) &&
       hasCompletedMovement(playerPosition) &&
       p.carriedBy == null
     ) {
-      parcels2.set(p.id, p);
+      parcels.set(p.id, p);
       plan = brain.updateParcelsQueue();
       plan_target = "TILE";
     }
   }
 });
 
+function distance(a, b) {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+client.onAgentsSensing(async (perceived_agents) => {
+  agents.clear();
+  blocking_agents.clear();
+  for (const a of perceived_agents) {
+    if (distance(playerPosition, a) < 2) {
+      blocking_agents.set(a.id, a);
+    } else {
+      agents.set(a.id, a);
+    }
+  }
+});
+
 // PARCELS CLOCK
 setInterval(() => {
-  for (const [key, value] of parcels2.entries()) {
+  for (const [key, value] of parcels.entries()) {
     value.reward--;
     if (value.reward <= 0) {
-      parcels2.delete(key);
+      parcels.delete(key);
     } else {
-      parcels2.set(key, value);
+      parcels.set(key, value);
     }
   }
 }, 1000);
@@ -100,6 +119,8 @@ setInterval(() => {
 
   let agent_parcels = [];
 
+  let adv_agents = [];
+  let blk_agents = [];
   if (plan.length > 0) {
     for (const p of plan) {
       switch (p.type) {
@@ -116,10 +137,15 @@ setInterval(() => {
     }
   }
 
-  for (const [key, p] of parcels2.entries()) {
+  for (const [key, p] of parcels.entries()) {
     agent_parcels.push({ x: p.x, y: p.y, reward: p.reward });
   }
-
+  for (const [key, p] of agents.entries()) {
+    adv_agents.push({ x: p.x, y: p.y });
+  }
+  for (const [key, p] of blocking_agents.entries()) {
+    blk_agents.push({ x: p.x, y: p.y });
+  }
   let car = "";
   for (const [key, p] of playerParcels.entries()) {
     car += key + " ";
@@ -131,6 +157,8 @@ setInterval(() => {
     plan: [plan_move, plan_pickup, plan_drop, plan_target],
     parc: agent_parcels,
     carrying: car,
+    agents: adv_agents,
+    blk_agents: blk_agents,
   };
   myServer.emitMessage("map", dash_data);
 }, 100);
@@ -177,6 +205,25 @@ async function loop() {
           continue;
         }
 
+        let blocked = false;
+        for (const a of blocking_agents.values()) {
+          if (a.x == trg.x && a.y == trg.y) {
+            console.log("Agent in the way. Recalculating plan");
+            let start = map.getTile(playerPosition);
+            let end = map.getTile(plan[plan.length - 1].target);
+            if (a.x == end.x && a.y == end.y) {
+              end = map.getRandomWalkableTile();
+            }
+            let path = map.bfs(end, start);
+            plan = Action.pathToAction(path);
+            trg = null;
+            blocked = true;
+            break;
+          }
+        }
+        if (blocked) {
+          continue;
+        }
         switch (nextAction.type) {
           case ActionType.MOVE:
             var stat = await client.move(move);
@@ -189,17 +236,13 @@ async function loop() {
             await client.pickup();
 
             playerParcels.set(nextAction.bestParcel.id, true);
-            parcels2.delete(nextAction.bestParcel.id);
+            parcels.delete(nextAction.bestParcel.id);
             brain.updateParcelsQueue();
-
-            nextAction = null;
-
             break;
           case ActionType.PUTDOWN:
             console.log("PUTTING DOWN");
-            playerParcels = new Map();
             await client.putdown();
-            nextAction = null;
+            playerParcels.clear();
             break;
         }
       }

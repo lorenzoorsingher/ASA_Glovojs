@@ -3,7 +3,8 @@ import { Position, Direction } from "./position.js";
 import { VERBOSE } from "../agent.js";
 
 export class Field {
-  init(width, height, tiles) {
+  init(width, height, tiles, agents) {
+    this.agents = agents;
     this.width = width;
     this.height = height;
     this.field = [];
@@ -147,17 +148,29 @@ export class Field {
       return [];
     }
 
+    let blocking = [];
+    for (const a of this.agents.values()) {
+      blocking.push(a.x + "-" + a.y);
+      console.log("Agen ", a);
+    }
+    console.log("Agents tiles: ", this.agents);
+    console.log("Blocking tiles: ", blocking);
     distance[start.id] = 0;
     queue.push(this.getTile(start.position));
     while (queue.length > 0) {
       const node = queue.shift();
       for (const n of node.getNeighbors()) {
-        VERBOSE && console.log(node.getNeighbors());
-        const n_tile = this.getTile(n);
-        if (distance[n_tile.id] == undefined) {
-          par[n_tile.id] = node;
-          distance[n_tile.id] = distance[node.id] + 1;
-          queue.push(n_tile);
+        //console.log("Checking tile ", n);
+        if (!blocking.includes(n.x + "-" + n.y)) {
+          VERBOSE && console.log(node.getNeighbors());
+          const n_tile = this.getTile(n);
+          if (distance[n_tile.id] == undefined) {
+            par[n_tile.id] = node;
+            distance[n_tile.id] = distance[node.id] + 1;
+            queue.push(n_tile);
+          }
+        } else {
+          console.log("Tile " + this.getTile(n).position + " is blocked");
         }
       }
     }

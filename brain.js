@@ -26,12 +26,6 @@ export class Reasoning_1 {
     return this.createPlan();
   }
 
-  tempUpdateParcels(parcels) {
-    this.parcels = parcels;
-    this.parcelsQueue = this.orderParcelsByScore(this.parcels);
-    return this.createPlan();
-  }
-
   orderParcelsByScore(parcels) {
     console.log("––––––––––––––––––––––––––––––––-");
     console.log("––––––––––––––––––––––––––––––––-");
