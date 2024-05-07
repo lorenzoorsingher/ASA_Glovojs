@@ -27,8 +27,8 @@ export class Reasoning_1 {
     }
 
     orderParcelsByScore(parcels) {
-        console.log("––––––––––––––––––––––––––––––––-")
-        console.log("––––––––––––––––––––––––––––––––-")
+        console.log("––––––––––––––––––––––––––––––––––––––––––––––")
+        console.log("––––––––––––––––––––––––––––––––––––––––––––––")
         console.log(parcels.size, " parcels sensed.")
         if (parcels.size === 0) {
             return [];
