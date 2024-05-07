@@ -17,7 +17,8 @@
     </table>
   </div>
   <div id="info">
-
+  </div>
+  <div id="carrying">
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -36,14 +37,16 @@
       w = data["map_size"][0];
       h = data["map_size"][1];
       tiles = data["tiles"];
-      plan = data["plan"][0];
-      plan_target = data["plan"][1];
-      document.getElementById('info').innerHTML = "<div><h2>"+plan_target+"</h2><div>";
-
-
-      console.log(plan);
-      console.log("w: " + w + " h: " + h);
+      plan_move = data["plan"][0]; 
+      plan_pickup = data["plan"][1]; 
+      plan_drop = data["plan"][2]; 
+      plan_target  = data["plan"][3];
+      parcels = data["parc"];
+      carrying = data["carrying"];
       
+
+      document.getElementById('info').innerHTML = "<div><h2>"+plan_target+"</h2><div>";
+      document.getElementById('carrying').innerHTML = "<div><h2>"+carrying+"</h2><div>";
 
       const table = document.getElementById("mapTable");
       table.innerHTML = "";
@@ -51,16 +54,21 @@
       
       
       for (let i = 0; i < h; i++) {
+        let y = h-i-1;
         let row = table.insertRow();
         
         for (let j = 0; j < w; j++) {
+
+          let x = j;
+          
+
           let tile = row.insertCell();
 
             tile.innerHTML = "<div></div>";
             tile.style.width = "20px";
             tile.style.height = "20px";
             let color = "black";
-            switch (tiles[h-i-1][j]["type"]) {
+            switch (tiles[y][j]["type"]) {
               case "W":
                 color = "green";
                 break;
@@ -70,17 +78,10 @@
 
             }
             
-            if (tiles[h-i-1][j]["parcel"] > 0) {
-              tile.innerHTML = tiles[h-i-1][j]["parcel"];
-              color = "yellow";
-              console.log("parc: ", tiles[h-i-1][j]["parcel"]);
 
-            }
-            
-            str = j + "-" + (h-i-1);
-            console.log(str);
-            if (plan.includes(str)) {
-
+            str = j + "-" + (y);
+            //console.log(str);
+            if (plan_move.includes(str)) {
               if (plan_target == "RANDOM") {
                 color = "grey";
               } else {
@@ -88,11 +89,25 @@
               }
             }
 
+            for (p of parcels) {
+
+              if (p.x == j && p.y == y) {
+                color = "yellow";
+                tile.innerHTML = "<div><b>"+p.reward+"</b></div>";
+              }
+            }
+
+            if (plan_pickup.includes(str)) {
+              color = "GreenYellow";
+            }else if (plan_drop.includes(str)) {
+              color = "orange";
+            }
+
 
             tile.style.backgroundColor = color;
         }
         let tile = row.insertCell();
-        tile.innerHTML = "<div>"+(h-i-1)+"</div>";
+        tile.innerHTML = "<div>"+(y)+"</div>";
       }
       let row = table.insertRow();
       for (let j = 0; j < w; j++) {
@@ -101,8 +116,10 @@
       }
       agent = data["agent"];
 
-      console.log(Math.round(h-agent[1]), " ", Math.round(agent[0]));
+      //console.log(Math.round(h-agent[1]), " ", Math.round(agent[0]));
       table.rows[Math.round(h-agent[1])-1].cells[Math.round(agent[0])].style.backgroundColor = "purple";
+
+
 
 
     });
