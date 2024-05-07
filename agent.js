@@ -170,6 +170,9 @@ async function loop() {
           nextAction.type
         );
       }
+      if (stat == false) {
+        isMoving = false;
+      }
 
       if (!isMoving) {
         src = nextAction.source;
