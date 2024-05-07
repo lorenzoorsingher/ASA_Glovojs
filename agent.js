@@ -95,6 +95,7 @@ function startParcelTimer(id) {
 }
 
 function hasCompletedMovement(pos) {
+  // ensures that only discrete positions are considered valid
   return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
 }
 
