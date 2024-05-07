@@ -5,6 +5,11 @@
 
 - [x] Define interfaces
 - [x] Implement actions data structure
-- [ ] Implement actions actuation
+- [x] Implement actions actuation
 - [x] Implement dashboard
-- [ ] Implement planner
+- [x] Implement planner
+- [ ] Improve reasoning to pick up multiple parcels instead of delivering asap
+- [ ] Stop going after parcels that have already been delivered
+- [x] Anytime the agent steps on a parcel, pick it up
+- [x] Anytime the agent steps on a delivery zone, deliver
+- [ ] Prevent moving to unreachable tiles

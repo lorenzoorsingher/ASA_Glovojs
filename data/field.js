@@ -218,4 +218,8 @@ export class Field {
 
     return tile;
   }
+
+  isDeliveryZone(pos) {
+    return this.field[pos.y][pos.x].delivery;
+  }
 }

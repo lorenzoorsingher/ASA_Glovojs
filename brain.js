@@ -119,10 +119,11 @@ export class Reasoning_1 {
         this.field.getClosestDeliveryZone(bestParcelPosition),
         bestParcelTile
       );
-      const goPickUpActions = Action.pathToAction(path, ActionType.PICKUP);
+      const goPickUpActions = Action.pathToAction(path, ActionType.PICKUP, bestParcel);
       const goDeliverActions = Action.pathToAction(
         pathToDeliveryZone,
-        ActionType.PUTDOWN
+        ActionType.PUTDOWN,
+        null
       );
       return goPickUpActions.concat(goDeliverActions);
     }

@@ -8,13 +8,25 @@ import { Action, ActionType } from "./data/action.js";
 
 // myServer.start();
 // myServer.serveDashboard();
-
-const client = new DeliverooApi(
-  "https://deliveroojs.onrender.com/",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQzNGM4Y2U2OTcxIiwibmFtZSI6Imdsb3ZvanMiLCJpYXQiOjE3MTUwNzY3MDd9.VGzTJlHQSue98GhmjgR8jLKYue09CyAHupnoSC3oVhs"
-);
-
 export const VERBOSE = false;
+const LOCAL = true;
+const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg2OTFmNjUzMjJjIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTUwMjQ0MTF9.8L79LEzZejQAcKjuWEa_OMKfeChXnVcwn1sY-q2eCu8"
+
+let client = null;
+
+if(LOCAL){
+  client = new DeliverooApi(
+    "http://localhost:8080/",
+    TOKEN
+  );
+} else {
+  client = new DeliverooApi(
+    "https://deliveroojs.onrender.com/",
+    TOKEN
+  );
+}
+
+
 
 const me = {};
 const map = new Field();
@@ -207,6 +219,10 @@ async function loop() {
         switch (nextAction.type) {
           case ActionType.MOVE:
             var stat = await client.move(move);
+            await client.pickup();
+            if(map.isDeliveryZone(playerPosition)) {
+              await client.putdown();
+            }
             console.log("Player has started moving");
             console.log(src.serialize(), " -> ", trg.serialize());
             isMoving = true;
@@ -216,6 +232,8 @@ async function loop() {
           case ActionType.PICKUP:
             console.log("PICKING UP");
             await client.pickup();
+            parcels.delete(nextAction.bestParcel);
+            brain.updateParcelsQueue();
             nextAction = null;
             break;
           case ActionType.PUTDOWN:
