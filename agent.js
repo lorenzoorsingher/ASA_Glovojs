@@ -82,6 +82,9 @@ client.onParcelsSensing(async (perceived_parcels) => {
         p.reward
       );
       parcels.set(p.id, p);
+      while (!hasCompletedMovement(playerPosition)) {
+        console.log("still moving");
+      }
       plan = brain.updateParcelsQueue();
       plan_target = "TILE";
       //console.log("Plan updated: ", plan);
@@ -138,6 +141,7 @@ setInterval(() => {
 }, 100);
 
 let nextAction = null;
+
 async function loop() {
   while (true) {
     if (wait_load) {
@@ -150,41 +154,47 @@ async function loop() {
         //console.log("NEXT ACTION: ", nextAction);
       }
 
-      let src = nextAction.source;
-      let trg = nextAction.target;
-      let move = Position.getDirectionTo(src, trg);
-      console.log(nextAction, " ------> ", move);
-
+      console.log(
+        "Player position: ",
+        playerPosition,
+        " moving: ",
+        !hasCompletedMovement(playerPosition)
+      );
       // console.log(trg, " ", playerPosition);
+      if (hasCompletedMovement(playerPosition)) {
+        let src = nextAction.source;
+        let trg = nextAction.target;
+        let move = Position.getDirectionTo(src, trg);
 
-      switch (nextAction.type) {
-        case ActionType.MOVE:
-          let stat = await client.move(move);
-          if (trg.equals(new Position(stat.x, stat.y))) {
+        if (!src.equals(playerPosition)) {
+          console.log("!!!! DESYNC !!!!");
+        }
+
+        console.log(
+          nextAction.source.serialize(),
+          " ---> ",
+          nextAction.target.serialize(),
+          " ",
+          move
+        );
+
+        switch (nextAction.type) {
+          case ActionType.MOVE:
+            var stat = await client.move(move);
             nextAction = null;
-          } else if (stat == false) {
-            console.log("😭 IM STUCK 😭");
-          }
-          break;
-        case ActionType.PICKUP:
-          await client.pickup();
-          nextAction = null;
-          break;
-        case ActionType.PUTDOWN:
-          await client.putdown();
-          nextAction = null;
-          break;
-      }
-    } else {
-      plan = brain.updateParcelsQueue();
-      plan_target = "TILE";
-      if (plan.length <= 0) {
-        plan_target = "RANDOM";
-        let start = map.getTile(playerPosition);
-        let end = map.getRandomWalkableTile();
-        let path = map.bfs(end, start);
 
-        plan = Action.pathToAction(path);
+            break;
+          case ActionType.PICKUP:
+            console.log("PICKING UP");
+            await client.pickup();
+            nextAction = null;
+            break;
+          case ActionType.PUTDOWN:
+            console.log("PUTTING DOWN");
+            await client.putdown();
+            nextAction = null;
+            break;
+        }
       }
     }
     await new Promise((res) => setImmediate(res));
