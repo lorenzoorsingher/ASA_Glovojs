@@ -45,7 +45,9 @@ export class Reasoning_1 {
       const score = this.computeRealScore(parcel);
       VERBOSE && console.log("Best score for: ", parcelId, " is: ", score);
       let position = new Position(parcel.x, parcel.y);
-      parcelScores.push({ parcelId, score, position });
+      if(!this.field.isTileUnreachable(this.field.getTile(position))){
+        parcelScores.push({ parcelId, score, position });
+      }
     }
 
     parcelScores.sort((a, b) => b.score - a.score);
