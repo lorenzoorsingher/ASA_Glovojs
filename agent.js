@@ -3,12 +3,30 @@ import { Field } from "./data/field.js";
 import { Position } from "./data/position.js";
 import { Reasoning_1 } from "./brain.js";
 
-const client = new DeliverooApi(
-  "http://localhost:8080",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA0ODQzNzkwZWVhIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTI2NTcwMjh9.Kyuu4Gx3Volxzl-ygypFmEQYHaDaVz2liYo8T7-o0-I"
-);
+import myServer from "./server.js";
+import { Action, ActionType } from "./data/action.js";
 
+// myServer.start();
+// myServer.serveDashboard();
 export const VERBOSE = false;
+const LOCAL = true;
+const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg2OTFmNjUzMjJjIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTUwMjQ0MTF9.8L79LEzZejQAcKjuWEa_OMKfeChXnVcwn1sY-q2eCu8"
+
+let client = null;
+
+if(LOCAL){
+  client = new DeliverooApi(
+    "http://localhost:8080/",
+    TOKEN
+  );
+} else {
+  client = new DeliverooApi(
+    "https://deliveroojs.onrender.com/",
+    TOKEN
+  );
+}
+
+
 
 const me = {};
 const map = new Field();
@@ -21,6 +39,10 @@ function distance({ x: x1, y: y1 }, { x: x2, y: y2 }) {
   return dx + dy;
 }
 
+let plan = [];
+let plan_target = "RANDOM";
+let wait_load = true;
+
 let playerPosition = new Position(0, 0);
 client.onYou(({ id, name, x, y, score }) => {
   me.id = id;
@@ -28,12 +50,10 @@ client.onYou(({ id, name, x, y, score }) => {
   me.x = x;
   me.y = y;
   playerPosition = new Position(x, y);
-  if(hasCompletedMovement(playerPosition)) {
+  if (hasCompletedMovement(playerPosition)) {
     brain && brain.updatePlayerPosition(playerPosition);
     VERBOSE && console.log("Agent moved to: ", x, y);
-    if(brain && parcels.size === 0.0) {
-      brain.createPlan(map.bfs(map.getTile(playerPosition), map.getRandomWalkableTile()));
-    }
+    wait_load = false;
   }
 });
 
@@ -45,25 +65,32 @@ client.onMap((width, height, tiles) => {
   brain.init(map, parcels, playerPosition);
 });
 
-function runMapTest() {
-  let start = map.getTile(new Position(2, 2));
-  let end = map.getTile(new Position(5, 4));
-  let path = map.bfs(start, end);
-
-  if(VERBOSE) {
-    map.printPath(start, end, path);
-    console.log(path);
-  }
-}
-
 const activeIntervals = new Set();
 
 client.onParcelsSensing(async (perceived_parcels) => {
+  map.set_parcels(perceived_parcels);
+
   for (const p of perceived_parcels) {
-    if (!parcels.has(p.id) && hasCompletedMovement(playerPosition)) {
-      console.log("New parcel found at x: ", p.x, "y:", p.y, "id:", p.id, "reward:", p.reward);
+    if (
+      !parcels.has(p.id) &&
+      hasCompletedMovement(playerPosition) &&
+      p.carriedBy == null
+    ) {
+      console.log(
+        "New parcel found at x: ",
+        p.x,
+        "y:",
+        p.y,
+        "id:",
+        p.id,
+        "reward:",
+        p.reward
+      );
       parcels.set(p.id, p);
-      brain.updateParcelsQueue();
+
+      plan = brain.updateParcelsQueue();
+      plan_target = "TILE";
+      //console.log("Plan updated: ", plan);
       startParcelTimer(p.id);
     }
   }
@@ -79,7 +106,7 @@ function startParcelTimer(id) {
           clearInterval(intervalId);
           parcels.delete(id);
           console.log("Parcel", id, "expired");
-          if(hasCompletedMovement(playerPosition)) {
+          if (hasCompletedMovement(playerPosition)) {
             brain.updateParcelsQueue();
             activeIntervals.delete(id);
           }
@@ -87,10 +114,10 @@ function startParcelTimer(id) {
       } else {
         // If parcel data is not found (possibly removed already), clear the interval
         clearInterval(intervalId);
-        activeIntervals.delete(id); 
+        activeIntervals.delete(id);
       }
     }, 1000);
-    activeIntervals.add(id); 
+    activeIntervals.add(id);
   }
 }
 
@@ -99,195 +126,135 @@ function hasCompletedMovement(pos) {
   return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
 }
 
-function options() {
-  const options = [];
-  for (const parcel of parcels.values())
-    options.push({ intention: "pick up parcel", args: [parcel] });
-  for (const tile of tiles.values())
-    if (tile.delivery) options.push({ intention: "deliver to", args: [tile] });
-}
-
-function select(options) {
-  for (const option of options) {
-    if (option.intention == "pick up parcel" && picked_up.length == 0)
-      return option;
-  }
-}
-
-function astar({ x, y }, agent) {}
-
-/**
- * Beliefset revision loop
- */
-
-// function agentLoop() {
-//   // belief_revision_function()
-//   // const options = options() // desire pick up parcel p1 or p2
-//   // const selected = select(options) // p1 is closer!
-//   // intention_queue.push( [ selected.intention, selected.args ] );
-// }
-// client.onParcelsSensing(agentLoop);
-// client.onAgentsSensing(agentLoop);
-// client.onYou(agentLoop);
-
-/**
- * Intention execution loop
- */
-class Agent {
-  intention_queue = new Array();
-
-  async intentionLoop() {
-    while (true) {
-      const intention = this.intention_queue.shift();
-      if (intention) await intention.achieve();
-      await new Promise((res) => setImmediate(res));
+setInterval(() => {
+  let update_map = map.getMap();
+  let plan_s = [];
+  if (plan.length > 0) {
+    plan_s.push(plan[0].source.serialize());
+    for (const p of plan) {
+      plan_s.push(p.target.serialize());
     }
   }
+  let dash_data = {
+    map_size: [map.width, map.height],
+    tiles: update_map,
+    agent: [me.x, me.y],
+    plan: [plan_s, plan_target],
+  };
+  myServer.emitMessage("map", dash_data);
+}, 100);
 
-  async queue(desire, ...args) {
-    const last = this.intention_queue.at(this.intention_queue.length - 1);
-    const current = new Intention(desire, ...args);
-    this.intention_queue.push(current);
-  }
+let nextAction = null;
+let isMoving = false;
+let trg = null;
+let src = null;
 
-  async stop() {
-    console.log("stop agent queued intentions");
-    for (const intention of this.intention_queue) {
-      intention.stop();
+let initial = true;
+
+async function loop() {
+  while (true) {
+    if (wait_load) {
+      await new Promise((res) => setTimeout(res, 300));
+      continue;
     }
-  }
-}
+    if (plan.length > 0) {
+      // console.log(
+      //   "Player position: ",
+      //   playerPosition,
+      //   " moving: ",
+      //   !hasCompletedMovement(playerPosition)
+      // );
 
-/**
- * Intention
- */
-class Intention extends Promise {
-  #current_plan;
-  stop() {
-    console.log("stop intention and current plan");
-    this.#current_plan.stop();
-  }
+      // console.log(trg, " ", playerPosition);
+      //console.log(trg, " -- ", playerPosition);
 
-  #desire;
-  #args;
+      if (trg == null) {
+        trg = playerPosition;
+      }
 
-  #resolve;
-  #reject;
+      if (trg && trg.equals(playerPosition)) {
+        initial = false;
+        console.log("Player reached target ", trg.serialize());
+        isMoving = false;
+        nextAction = plan.shift();
 
-  constructor(desire, ...args) {
-    var resolve, reject;
-    super(async (res, rej) => {
-      resolve = res;
-      reject = rej;
-    });
-    this.#resolve = resolve;
-    this.#reject = reject;
-    this.#desire = desire;
-    this.#args = args;
-  }
-
-  #started = false;
-  async achieve() {
-    if (this.#started) return this;
-    else this.#started = true;
-
-    for (const plan of plans) {
-      if (plan.isApplicableTo(this.#desire)) {
-        this.#current_plan = plan;
         console.log(
-          "achieving desire",
-          this.#desire,
-          ...this.#args,
-          "with plan",
-          plan
+          "Fetching action ",
+          nextAction.source.serialize(),
+          " -> ",
+          nextAction.target.serialize(),
+          " ",
+          nextAction.type
         );
-        try {
-          const plan_res = await plan.execute(...this.#args);
-          this.#resolve(plan_res);
+      }
+      if (stat == false) {
+        isMoving = false;
+      }
+
+      if (!isMoving) {
+        src = nextAction.source;
+        trg = nextAction.target;
+        let move = Position.getDirectionTo(src, trg);
+
+        if (!src.equals(playerPosition)) {
           console.log(
-            "plan",
-            plan,
-            "succesfully achieved intention",
-            this.#desire,
-            ...this.#args,
-            "with result",
-            plan_res
+            "!!!! DESYNC !!!! ",
+            src.serialize(),
+            " != ",
+            playerPosition
           );
-          return plan_res;
-        } catch (error) {
-          console.log(
-            "plan",
-            plan,
-            "failed while trying to achieve intention",
-            this.#desire,
-            ...this.#args,
-            "with error",
-            error
-          );
+
+          plan = brain.createPlan();
+          trg = null;
+          continue;
+        }
+
+        console.log(
+          nextAction.source.serialize(),
+          " ---> ",
+          nextAction.target.serialize(),
+          " ",
+          move
+        );
+
+        switch (nextAction.type) {
+          case ActionType.MOVE:
+            var stat = await client.move(move);
+            await client.pickup();
+            if(map.isDeliveryZone(playerPosition)) {
+              await client.putdown();
+            }
+            console.log("Player has started moving");
+            console.log(src.serialize(), " -> ", trg.serialize());
+            isMoving = true;
+            //nextAction = null;
+
+            break;
+          case ActionType.PICKUP:
+            console.log("PICKING UP");
+            await client.pickup();
+            parcels.delete(nextAction.bestParcel);
+            brain.updateParcelsQueue();
+            nextAction = null;
+            break;
+          case ActionType.PUTDOWN:
+            console.log("PUTTING DOWN");
+            await client.putdown();
+            nextAction = null;
+            break;
         }
       }
+    } else {
+      console.log("No plan found. Generating random plan");
+      plan_target = "RANDOM";
+      let start = map.getTile(playerPosition);
+      let end = map.getRandomWalkableTile();
+      let path = map.bfs(end, start);
+
+      plan = Action.pathToAction(path);
     }
-
-    this.#reject();
-    console.log("no plan satisfied the desire ", this.#desire, ...this.#args);
-    throw "no plan satisfied the desire " + this.#desire;
+    await new Promise((res) => setImmediate(res));
   }
 }
 
-/**
- * Plan library
- */
-const plans = [];
-
-class Plan {
-  stop() {
-    console.log("stop plan and all sub intentions");
-    for (const i of this.#sub_intentions) {
-      i.stop();
-    }
-  }
-
-  #sub_intentions = [];
-
-  async subIntention(desire, ...args) {
-    const sub_intention = new Intention(desire, ...args);
-    this.#sub_intentions.push(sub_intention);
-    return await sub_intention.achieve();
-  }
-}
-
-class GoPickUp extends Plan {
-  isApplicableTo(desire) {
-    return desire == "go_pick_up";
-  }
-
-  async execute({ x, y }) {
-    await this.subIntention("go_to", { x, y });
-    await client.pickup();
-  }
-}
-
-class BlindMove extends Plan {
-  isApplicableTo(desire) {
-    return desire == "go_to";
-  }
-
-  async execute({ x, y }) {
-    while (me.x != x || me.y != y) {
-      //console.log("I wanna go ", { x, y });
-    }
-  }
-}
-
-plans.push(new GoPickUp());
-plans.push(new BlindMove());
-
-const myAgent = new Agent();
-myAgent.intentionLoop();
-// client.onYou( () => myAgent.queue( 'go_to', {x:11, y:6} ) )
-
-// client.onParcelsSensing((parcels) => {
-//   for (const { x, y, carriedBy } of parcels) {
-//     if (!carriedBy) myAgent.queue("go_pick_up", { x, y });
-//   }
-// });
+loop();

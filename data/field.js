@@ -142,12 +142,17 @@ export class Field {
     const queue = [];
     const distance = {};
 
+    if (this.isTileUnreachable(start) || this.isTileUnreachable(end)) {
+      console.log("BFS: Start or End tile is unreachable");
+      return [];
+    }
+
     distance[start.id] = 0;
     queue.push(this.getTile(start.position));
     while (queue.length > 0) {
       const node = queue.shift();
-      for (const n of node.neighbors) {
-        VERBOSE && console.log(node.neighbors);
+      for (const n of node.getNeighbors()) {
+        VERBOSE && console.log(node.getNeighbors());
         const n_tile = this.getTile(n);
         if (distance[n_tile.id] == undefined) {
           par[n_tile.id] = node;
@@ -211,11 +216,46 @@ export class Field {
     let tile;
 
     do {
-        x = Math.floor(Math.random() * this.width);
-        y = Math.floor(Math.random() * this.height);
-        tile = this.getTile(new Position(x, y));
-    } while (!tile.walkable);
+      x = Math.floor(Math.random() * this.width);
+      y = Math.floor(Math.random() * this.height);
+      tile = this.getTile(new Position(x, y));
+    } while (!tile.walkable || this.isTileUnreachable(tile));
 
     return tile;
+  }
+
+  isDeliveryZone(pos) {
+    return this.field[pos.y][pos.x].delivery;
+  }
+
+  isTileUnreachable(tile) {
+    if (tile == null) {
+      console.log(
+        "Tile in position: ",
+        tile.position,
+        " is unreachable. Error: tile is null"
+      );
+      return true;
+    }
+    if (!tile.walkable) {
+      console.log(
+        "Tile in position: ",
+        tile.position,
+        " is unreachable. Error: tile is not walkable"
+      );
+      return true;
+    }
+
+    for (let n of tile.neighbors) {
+      if (this.field[n.y][n.x].walkable) {
+        return false;
+      }
+    }
+    console.log(
+      "Tile in position: ",
+      tile.position,
+      " is unreachable. Error: all neighbors are not walkable"
+    );
+    return true;
   }
 }

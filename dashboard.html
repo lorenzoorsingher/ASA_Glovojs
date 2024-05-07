@@ -1,0 +1,111 @@
+<!-- index.html -->
+<link href="/path/to/dashboard.css">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dashboard</title>
+</head>
+<body>
+  <h1>Dashboard</h1>
+
+
+  <div id="mapdiv">
+    <table id="myTable" class="table table-borderless table-striped table-earning">
+    <tbody id="mapTable"></tbody>
+    </table>
+  </div>
+  <div id="info">
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    socket.on('update', (data) => {
+      document.getElementById('updates').innerText = JSON.stringify(data);
+    });
+
+
+    socket.on('map', (data) => {
+
+
+      
+      w = data["map_size"][0];
+      h = data["map_size"][1];
+      tiles = data["tiles"];
+      plan = data["plan"][0];
+      plan_target = data["plan"][1];
+      document.getElementById('info').innerHTML = "<div><h2>"+plan_target+"</h2><div>";
+
+
+      console.log(plan);
+      console.log("w: " + w + " h: " + h);
+      
+
+      const table = document.getElementById("mapTable");
+      table.innerHTML = "";
+
+      
+      
+      for (let i = 0; i < h; i++) {
+        let row = table.insertRow();
+        
+        for (let j = 0; j < w; j++) {
+          let tile = row.insertCell();
+
+            tile.innerHTML = "<div></div>";
+            tile.style.width = "20px";
+            tile.style.height = "20px";
+            let color = "black";
+            switch (tiles[h-i-1][j]["type"]) {
+              case "W":
+                color = "green";
+                break;
+              case "D":
+                color = "red";
+                break;
+
+            }
+            
+            if (tiles[h-i-1][j]["parcel"] > 0) {
+              tile.innerHTML = tiles[h-i-1][j]["parcel"];
+              color = "yellow";
+              console.log("parc: ", tiles[h-i-1][j]["parcel"]);
+
+            }
+            
+            str = j + "-" + (h-i-1);
+            console.log(str);
+            if (plan.includes(str)) {
+
+              if (plan_target == "RANDOM") {
+                color = "grey";
+              } else {
+                color = "blue";
+              }
+            }
+
+
+            tile.style.backgroundColor = color;
+        }
+        let tile = row.insertCell();
+        tile.innerHTML = "<div>"+(h-i-1)+"</div>";
+      }
+      let row = table.insertRow();
+      for (let j = 0; j < w; j++) {
+        let tile = row.insertCell();
+        tile.innerHTML = "<div>"+j+"</div>";
+      }
+      agent = data["agent"];
+
+      console.log(Math.round(h-agent[1]), " ", Math.round(agent[0]));
+      table.rows[Math.round(h-agent[1])-1].cells[Math.round(agent[0])].style.backgroundColor = "purple";
+
+
+    });
+  </script>
+</body>
+</html>
