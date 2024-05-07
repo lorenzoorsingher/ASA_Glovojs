@@ -30,12 +30,25 @@ const brain = new Reasoning_1();
 
 const parcels2 = new Map();
 
+// contains the current plan
 let plan = [];
+// contains weather the plan is to a random tile or to a parcel
 let plan_target = "RANDOM";
+// hold loop until the map is loaded
 let wait_load = true;
 
+// player position
 let playerPosition = new Position(0, 0);
+// parcels carried by the player
 let playerParcels = new Map();
+
+// note that this happens before the onYou event
+await client.onMap((width, height, tiles) => {
+  VERBOSE && console.log("Map received. Initializing...");
+  // runMapTest()
+  map.init(width, height, tiles);
+  brain.init(map, parcels2, playerPosition);
+});
 
 client.onYou(({ id, name, x, y, score }) => {
   me.id = id;
@@ -48,26 +61,14 @@ client.onYou(({ id, name, x, y, score }) => {
     VERBOSE && console.log("Agent moved to: ", x, y);
     wait_load = false;
   }
-
-  //console.log("p ", parcels.entries());
 });
-
-// note that this happens before the onYou event
-client.onMap((width, height, tiles) => {
-  VERBOSE && console.log("Map received. Initializing...");
-  // runMapTest()
-  map.init(width, height, tiles);
-  brain.init(map, parcels2, playerPosition);
-});
-
-const activeIntervals = new Set();
 
 client.onParcelsSensing(async (perceived_parcels) => {
   map.set_parcels(perceived_parcels);
 
   for (const p of perceived_parcels) {
     if (
-      !parcels.has(p.id) &&
+      !parcels2.has(p.id) &&
       hasCompletedMovement(playerPosition) &&
       p.carriedBy == null
     ) {
