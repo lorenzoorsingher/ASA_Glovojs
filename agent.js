@@ -53,16 +53,16 @@ client.onMap((width, height, tiles) => {
   brain.init(map, parcels, playerPosition);
 });
 
-function runMapTest() {
-  let start = map.getTile(new Position(2, 2));
-  let end = map.getTile(new Position(5, 4));
-  let path = map.bfs(start, end);
+// function runMapTest() {
+//   let start = map.getTile(new Position(2, 2));
+//   let end = map.getTile(new Position(5, 4));
+//   let path = map.bfs(start, end);
 
-  if (VERBOSE) {
-    map.printPath(start, end, path);
-    console.log(path);
-  }
-}
+//   if (VERBOSE) {
+//     map.printPath(start, end, path);
+//     console.log(path);
+//   }
+// }
 
 const activeIntervals = new Set();
 
@@ -141,6 +141,11 @@ setInterval(() => {
 }, 100);
 
 let nextAction = null;
+let isMoving = false;
+let trg = null;
+let src = null;
+
+let initial = true;
 
 async function loop() {
   while (true) {
@@ -149,25 +154,48 @@ async function loop() {
       continue;
     }
     if (plan.length > 0) {
-      if (nextAction == null) {
-        nextAction = plan.shift();
-        //console.log("NEXT ACTION: ", nextAction);
+      // console.log(
+      //   "Player position: ",
+      //   playerPosition,
+      //   " moving: ",
+      //   !hasCompletedMovement(playerPosition)
+      // );
+
+      // console.log(trg, " ", playerPosition);
+      //console.log(trg, " -- ", playerPosition);
+
+      if (trg == null) {
+        trg = playerPosition;
       }
 
-      console.log(
-        "Player position: ",
-        playerPosition,
-        " moving: ",
-        !hasCompletedMovement(playerPosition)
-      );
-      // console.log(trg, " ", playerPosition);
-      if (hasCompletedMovement(playerPosition)) {
-        let src = nextAction.source;
-        let trg = nextAction.target;
+      if (trg && trg.equals(playerPosition)) {
+        initial = false;
+        console.log("Player reached target ", trg.serialize());
+        isMoving = false;
+        nextAction = plan.shift();
+
+        console.log(
+          "Fetching action ",
+          nextAction.source.serialize(),
+          " -> ",
+          nextAction.target.serialize(),
+          " ",
+          nextAction.type
+        );
+      }
+
+      if (!isMoving) {
+        src = nextAction.source;
+        trg = nextAction.target;
         let move = Position.getDirectionTo(src, trg);
 
         if (!src.equals(playerPosition)) {
-          console.log("!!!! DESYNC !!!!");
+          console.log(
+            "!!!! DESYNC !!!! ",
+            src.serialize(),
+            " != ",
+            playerPosition
+          );
         }
 
         console.log(
@@ -181,7 +209,10 @@ async function loop() {
         switch (nextAction.type) {
           case ActionType.MOVE:
             var stat = await client.move(move);
-            nextAction = null;
+            console.log("Player has started moving");
+            console.log(src.serialize(), " -> ", trg.serialize());
+            isMoving = true;
+            //nextAction = null;
 
             break;
           case ActionType.PICKUP:
@@ -196,6 +227,14 @@ async function loop() {
             break;
         }
       }
+    } else {
+      console.log("No plan found. Generating random plan");
+      plan_target = "RANDOM";
+      let start = map.getTile(playerPosition);
+      let end = map.getRandomWalkableTile();
+      let path = map.bfs(end, start);
+
+      plan = Action.pathToAction(path);
     }
     await new Promise((res) => setImmediate(res));
   }
