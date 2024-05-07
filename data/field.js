@@ -151,16 +151,13 @@ export class Field {
     let blocking = [];
     for (const a of this.agents.values()) {
       blocking.push(a.x + "-" + a.y);
-      console.log("Agen ", a);
     }
-    console.log("Agents tiles: ", this.agents);
-    console.log("Blocking tiles: ", blocking);
+
     distance[start.id] = 0;
     queue.push(this.getTile(start.position));
     while (queue.length > 0) {
       const node = queue.shift();
       for (const n of node.getNeighbors()) {
-        //console.log("Checking tile ", n);
         if (!blocking.includes(n.x + "-" + n.y)) {
           VERBOSE && console.log(node.getNeighbors());
           const n_tile = this.getTile(n);
@@ -170,7 +167,8 @@ export class Field {
             queue.push(n_tile);
           }
         } else {
-          console.log("Tile " + this.getTile(n).position + " is blocked");
+          VERBOSE &&
+            console.log("Tile " + this.getTile(n).position + " is blocked");
         }
       }
     }

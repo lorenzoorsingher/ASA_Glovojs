@@ -9,7 +9,7 @@
 - [x] Implement dashboard
 - [x] Implement planner
 - [ ] Improve reasoning to pick up multiple parcels instead of delivering asap
-- [ ] Stop going after parcels that have already been delivered
+- [X] Stop going after parcels that have already been delivered
 - [x] Anytime the agent steps on a parcel, pick it up
 - [x] Anytime the agent steps on a delivery zone, deliver
-- [ ] Prevent moving to unreachable tiles
+- [/](kinda) Prevent moving to unreachable tiles
