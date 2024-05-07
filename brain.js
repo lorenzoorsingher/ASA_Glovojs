@@ -114,6 +114,7 @@ export class Reasoning_1 {
 
       console.log("🧍 Starting from player tile ", playerTile.id);
       const path = this.field.bfs(bestParcelTile, playerTile);
+
       const pathToDeliveryZone = this.field.bfs(
         this.field.getClosestDeliveryZone(bestParcelPosition),
         bestParcelTile
