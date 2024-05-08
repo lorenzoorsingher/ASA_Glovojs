@@ -10,7 +10,7 @@ import e from "express";
 // myServer.start();
 // myServer.serveDashboard();
 export const VERBOSE = false;
-const LOCAL = true;
+const LOCAL = false;
 const TOKEN =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhYmM4ZTE4ZjY2IiwibmFtZSI6ImxvbGxvIiwiaWF0IjoxNzE1MDkyODQ5fQ.PqPFemZ93idl9DKzOCMXDe0FaB9mgB0WWeVnA9j_Sao";
 
@@ -22,7 +22,10 @@ if (LOCAL) {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE4OTMwMGVhOTE0IiwibmFtZSI6ImhlbG8iLCJpYXQiOjE3MTE0NTExNzF9.MaEAYnfg0Vr9iAcFrW5kUJ8QBY_f2GMzPHB6V8brLCI"
   );
 } else {
-  client = new DeliverooApi("http://cuwu.ddns.net:8082", "");
+  client = new DeliverooApi(
+    "http://rtibdi.disi.unitn.it:8080",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE5OWFmMGQ2YmJkIiwibmFtZSI6Imdsb3ZvIiwiaWF0IjoxNzE1MTU3OTkwfQ.st5vWWHKQmXyX2Sb4r6TtkUXdO0ZJJDHxu2XZHpxENE"
+  );
 }
 
 const me = {};
@@ -211,8 +214,7 @@ async function loop() {
             console.log("Agent in the way. Recalculating plan");
             let start = map.getTile(playerPosition);
             let end = map.getTile(plan[plan.length - 1].target);
-            console.log("a: ", a);
-            console.log("end: ", end);
+
             if (a.x == end.position.x && a.y == end.position.y) {
               console.log("Agent is blocking the target. Recalculating plan");
               end = map.getRandomWalkableTile();
@@ -227,6 +229,7 @@ async function loop() {
         if (blocked) {
           continue;
         }
+
         switch (nextAction.type) {
           case ActionType.MOVE:
             var stat = await client.move(move);

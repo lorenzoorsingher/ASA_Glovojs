@@ -17,3 +17,5 @@
 - [ ] Make sure planner doesnt miss new or previously discovered parcels
 - [ ] Planner must consider other agent's positions
 - [ ] Planner must make sure agent can get unstuck
+- [ ] Make sure planner doesnt forget he's carrying parcels when replanning
+- [ ] Double check for closest delivery point
