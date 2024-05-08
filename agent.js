@@ -211,7 +211,10 @@ async function loop() {
             console.log("Agent in the way. Recalculating plan");
             let start = map.getTile(playerPosition);
             let end = map.getTile(plan[plan.length - 1].target);
-            if (a.x == end.x && a.y == end.y) {
+            console.log("a: ", a);
+            console.log("end: ", end);
+            if (a.x == end.position.x && a.y == end.position.y) {
+              console.log("Agent is blocking the target. Recalculating plan");
               end = map.getRandomWalkableTile();
             }
             let path = map.bfs(end, start);

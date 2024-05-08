@@ -13,3 +13,7 @@
 - [x] Anytime the agent steps on a parcel, pick it up
 - [x] Anytime the agent steps on a delivery zone, deliver
 - [/](kinda) Prevent moving to unreachable tiles
+- [ ] Contain all planning inside the brain
+- [ ] Make sure planner doesnt miss new or previously discovered parcels
+- [ ] Planner must consider other agent's positions
+- [ ] Planner must make sure agent can get unstuck
