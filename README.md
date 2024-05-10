@@ -12,7 +12,7 @@
 - [X] Stop going after parcels that have already been delivered
 - [x] Anytime the agent steps on a parcel, pick it up
 - [x] Anytime the agent steps on a delivery zone, deliver
-- [ ](kinda) Prevent moving to unreachable tiles
+- [ ] (kinda) Prevent moving to unreachable tiles
 - [ ] Contain all planning inside the brain
 - [ ] Make sure planner doesnt miss new or previously discovered parcels
 - [ ] Planner must consider other agent's positions
