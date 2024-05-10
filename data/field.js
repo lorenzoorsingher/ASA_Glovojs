@@ -209,6 +209,29 @@ export class Field {
     return this.getTile(closest);
   }
 
+  getClosestDeliveryZones(pos) {
+    const x = pos.x;
+    const y = pos.y;
+
+    let closest = [];
+
+    for (let d of this.deliveryZones) {
+      const distance = this.bfs(this.getTile(d), this.getTile(pos)).length - 1;
+      closest.push({ x: d.x, y: d.y, distance: distance });
+    }
+
+    closest = this.sort_by_key(closest, "distance");
+
+    return closest;
+  }
+
+  sort_by_key(array, key) {
+    return array.sort(function (a, b) {
+      var x = a[key];
+      var y = b[key];
+      return x < y ? -1 : x > y ? 1 : 0;
+    });
+  }
   getDeliveryZones() {
     const positions = [];
     for (let y = 0; y < this.height; y++) {
