@@ -18,7 +18,10 @@ const TOKEN =
 let client = null;
 
 if (LOCAL) {
-  client = new DeliverooApi("http://localhost:8080/", "");
+  client = new DeliverooApi(
+    "http://localhost:8080/",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg2OTFmNjUzMjJjIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTUwMjQ0MTF9.8L79LEzZejQAcKjuWEa_OMKfeChXnVcwn1sY-q2eCu8"
+  );
 } else {
   client = new DeliverooApi(
     "http://rtibdi.disi.unitn.it:8080",

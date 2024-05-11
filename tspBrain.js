@@ -26,8 +26,8 @@ export class TSP {
 
     let delivery = new Position(closest[0].x, closest[0].y);
 
-    console.log("Closest delivery zone: ", delivery);
-    console.log("parcels: ", this.parcels);
+    // console.log("Closest delivery zone: ", delivery);
+    // console.log("parcels: ", this.parcels);
 
     let nodes = [];
 
@@ -78,9 +78,69 @@ export class TSP {
     return [costs, nodes];
   }
 
-  createPlan() {
-    let [costs, nodes] = this.buildGraph();
+  buildSubGraph(parc) {
+    //console.log("Nodes: ", nodes);
+    let costs = [];
 
+    for (let i = 0; i < parc.length; i++) {
+      costs[i] = [];
+
+      for (let j = 0; j < parc.length; j++) {
+        if (i == j) {
+          costs[i][j] = Infinity;
+        } else {
+          let stTile = this.field.getTile({
+            x: parc[i].x,
+            y: parc[i].y,
+          });
+
+          let endTile = this.field.getTile({
+            x: parc[j].x,
+            y: parc[j].y,
+          });
+
+          costs[i][j] = this.field.bfs(endTile, stTile).length;
+        }
+      }
+    }
+
+    this.printMat(costs);
+    return costs;
+  }
+
+  bruteTSP(costs, nodes) {}
+
+  createPlan() {
+    //let zones = this.field.getClosestDeliveryZones({ x: this.x, y: this.y });
+    const MUL = 10;
+    let prep_parcels = [];
+    for (const [key, p] of this.parcels.entries()) {
+      let fromPlayer =
+        this.field.bfs(
+          this.field.getTile({ x: this.x, y: this.y }),
+          this.field.getTile({ x: p.x, y: p.y })
+        ).length - 1;
+      let toZone =
+        this.field.getClosestDeliveryZones({
+          x: p.x,
+          y: p.y,
+        })[0].distance - 1;
+
+      let score = p.reward * MUL - fromPlayer - toZone;
+      if (score > 0) {
+        prep_parcels.push({
+          x: p.x,
+          y: p.y,
+          reward: score,
+        });
+      }
+    }
+
+    console.log("PParcels: ", prep_parcels);
+
+    let costs = this.buildSubGraph(prep_parcels);
+
+    this.bruteTSP(costs, prep_parcels);
     // costs = [
     //   [Infinity, 4, Infinity, Infinity, 1],
     //   [Infinity, Infinity, Infinity, Infinity, Infinity],
@@ -93,7 +153,7 @@ export class TSP {
     // console.log(nodes);
     //this.printMat(costs);
     //this.floydWarshall(costs, nodes);
-    this.johnsonSP(costs, 0, 1);
+    //this.johnsonSP(costs, 0, 1);
     return [];
   }
 
@@ -209,7 +269,7 @@ export class TSP {
     return costs;
   }
 
-  floydWarshall(costs, nodes) {
+  floydWarshallSP(costs, nodes) {
     let n = costs.length;
     let dp = costs.slice();
     let next = Array(n)
