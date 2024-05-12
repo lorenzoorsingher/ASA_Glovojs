@@ -417,7 +417,8 @@ export class TSP {
       // console.log("from node : ", dna[i - 1], " to node : ", dna[i]);
       // console.log("costs: ", costs[dna[i - 1]][dna[i]]);
       // console.log("reward: ", nodes[dna[i]].rew);
-      rew += nodes[dna[i]].rew - costs[dna[i - 1]][dna[i]];
+      let penality = 0.8 * i * costs[dna[i - 1]][dna[i]];
+      rew += nodes[dna[i]].rew - costs[dna[i - 1]][dna[i]] - penality;
     }
     rew += -nodes[dna[dna.length - 1]].out_c;
 
