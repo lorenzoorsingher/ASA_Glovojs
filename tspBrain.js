@@ -107,12 +107,17 @@ export class TSP {
     this.printMat(costs);
     return costs;
   }
+  sort_by_key(array, key) {
+    return array.sort(function (a, b) {
+      var x = a[key];
+      var y = b[key];
+      return x < y ? -1 : x > y ? 1 : 0;
+    });
+  }
 
-  bruteTSP(costs, nodes) {}
+  builGraphInOut(parc) {
+    const MUL = 2;
 
-  createPlan() {
-    //let zones = this.field.getClosestDeliveryZones({ x: this.x, y: this.y });
-    const MUL = 10;
     let prep_parcels = [];
     for (const [key, p] of this.parcels.entries()) {
       let fromPlayer =
@@ -126,21 +131,194 @@ export class TSP {
           y: p.y,
         })[0].distance - 1;
 
-      let score = p.reward * MUL - fromPlayer - toZone;
-      if (score > 0) {
-        prep_parcels.push({
-          x: p.x,
-          y: p.y,
-          reward: score,
-        });
+      let inc = fromPlayer;
+      let outc = toZone;
+
+      prep_parcels.push({
+        x: p.x,
+        y: p.y,
+        rew: p.reward,
+        in_c: inc,
+        out_c: outc,
+      });
+    }
+
+    let costs = [];
+
+    for (let i = 0; i < prep_parcels.length; i++) {
+      costs[i] = [];
+
+      for (let j = 0; j < prep_parcels.length; j++) {
+        if (i == j) {
+          costs[i][j] = Infinity;
+        } else {
+          let stTile = this.field.getTile({
+            x: prep_parcels[i].x,
+            y: prep_parcels[i].y,
+          });
+
+          let endTile = this.field.getTile({
+            x: prep_parcels[j].x,
+            y: prep_parcels[j].y,
+          });
+
+          costs[i][j] = this.field.bfs(endTile, stTile).length;
+        }
       }
     }
 
-    console.log("PParcels: ", prep_parcels);
+    //this.printMat(costs);
+    return [costs, prep_parcels];
+  }
+  sort_by_key(array, key) {
+    return array.sort(function (a, b) {
+      var x = a[key];
+      var y = b[key];
+      return x < y ? -1 : x > y ? 1 : 0;
+    });
+  }
 
-    let costs = this.buildSubGraph(prep_parcels);
+  bruteTSP(costs, nodes) {
+    console.log("Brute forcing TSP...");
 
-    this.bruteTSP(costs, prep_parcels);
+    let best = this.sort_by_key(nodes, "reward").reverse();
+    console.log("Nodes: ", best);
+
+    let size = best.length;
+
+    let best_path = [];
+    let best_score = -Infinity;
+    const res = [];
+    const comb_num = 2 ** size;
+    for (let comb_idx = 0; comb_idx < comb_num; comb_idx += 1) {
+      const subSet = [];
+      for (let el_idx = 0; el_idx < nodes.length; el_idx += 1) {
+        if (comb_idx & (1 << el_idx)) {
+          subSet.push(el_idx);
+        }
+      }
+      if (subSet.length == 0) {
+        continue;
+      }
+
+      let rew = nodes[subSet[0]].reward;
+      for (let k = 1; k < subSet.length - 1; k++) {
+        rew += costs[subSet[k]][subSet[k + 1]];
+        rew -= costs[subSet[k - 1]][subSet[k]];
+      }
+
+      res.push({ subSet, reward: rew });
+
+      if (rew > best_score) {
+        best_score = rew;
+        best_path = subSet;
+      }
+    }
+    // console.log("Res: ", res);
+    // console.log("Best path: ", best_path);
+    // console.log("Best score: ", best_score);
+
+    return [best_path, best_score];
+  }
+
+  notTSP(costs, nodes) {
+    console.log(nodes);
+    this.printMat(costs);
+
+    console.log("Brute forcing TSP...");
+
+    let best = this.sort_by_key(nodes, "reward").reverse();
+    console.log("Nodes: ", best);
+
+    let size = best.length;
+
+    let best_path = [];
+    let best_score = -Infinity;
+    const res = [];
+    const comb_num = 2 ** size;
+    for (let comb_idx = 0; comb_idx < comb_num; comb_idx += 1) {
+      const subSet = [];
+      for (let el_idx = 0; el_idx < nodes.length; el_idx += 1) {
+        if (comb_idx & (1 << el_idx)) {
+          subSet.push(el_idx);
+        }
+      }
+      if (subSet.length == 0) {
+        continue;
+      }
+
+      let best_entry = 0;
+      let best_entry_val = -1;
+      let sub_nodes = [];
+      let entry = 0;
+      for (let k = 0; k < subSet.length - 1; k++) {
+        let entry = nodes[subSet[k]];
+        if (entry.rew - entry.in_c > best_entry_val) {
+          best_entry = k;
+          best_entry_val = entry.rew - entry.in_c;
+        }
+        sub_nodes.push(entry);
+      }
+
+      let visited = [entry];
+      let curr = entry;
+
+      let next_best = entry;
+      let next_best_val = -1;
+
+      for (let l = 0; l <= subSet.length; l++) {
+        for (let k = 0; k <= subSet.length; k++) {
+          k_node = nodes[subSet[k]];
+          if (visited.includes(k_node)) {
+            continue;
+          }
+        }
+      }
+
+      console.log(sub_nodes);
+      console.log("Vis: ", visited);
+    }
+    console.log("Res: ", res);
+    // console.log("Best path: ", best_path);
+    // console.log("Best score: ", best_score);
+
+    return [best_path, best_score];
+  }
+
+  createPlan() {
+    //let zones = this.field.getClosestDeliveryZones({ x: this.x, y: this.y });
+    // const MUL = 10;
+    // let prep_parcels = [];
+    // for (const [key, p] of this.parcels.entries()) {
+    //   let fromPlayer =
+    //     this.field.bfs(
+    //       this.field.getTile({ x: this.x, y: this.y }),
+    //       this.field.getTile({ x: p.x, y: p.y })
+    //     ).length - 1;
+    //   let toZone =
+    //     this.field.getClosestDeliveryZones({
+    //       x: p.x,
+    //       y: p.y,
+    //     })[0].distance - 1;
+
+    //   let score = p.reward * MUL - fromPlayer - toZone;
+    //   if (score > 0) {
+    //     prep_parcels.push({
+    //       x: p.x,
+    //       y: p.y,
+    //       reward: score,
+    //     });
+    //   }
+    // }
+
+    // console.log("PParcels: ", prep_parcels);
+
+    // let costs = this.buildSubGraph(prep_parcels);
+
+    // const [best_path, best_score] = this.bruteTSP(costs, prep_parcels);
+
+    // console.log("Best path: ", best_path);
+    // console.log("Best score: ", best_score);
     // costs = [
     //   [Infinity, 4, Infinity, Infinity, 1],
     //   [Infinity, Infinity, Infinity, Infinity, Infinity],
@@ -154,6 +332,25 @@ export class TSP {
     //this.printMat(costs);
     //this.floydWarshall(costs, nodes);
     //this.johnsonSP(costs, 0, 1);
+
+    const [costs, parc] = this.builGraphInOut();
+
+    this.notTSP(costs, parc);
+
+    return [];
+  }
+
+  createPlanTmp() {
+    let costs = this.buildGraph();
+    // costs = [
+    //   [Infinity, 4, Infinity, Infinity, 1],
+    //   [Infinity, Infinity, Infinity, Infinity, Infinity],
+    //   [Infinity, 7, Infinity, -2, Infinity],
+    //   [Infinity, 1, Infinity, Infinity, Infinity],
+    //   [Infinity, Infinity, Infinity, -5, Infinity],
+    // ];
+    this.johnsonSP(costs, 0, 1);
+
     return [];
   }
 
