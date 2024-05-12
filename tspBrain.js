@@ -141,6 +141,7 @@ export class TSP {
         rew: p.reward,
         in_c: inc,
         out_c: outc,
+        id: key,
       });
     }
 
@@ -523,53 +524,57 @@ export class TSP {
   }
 
   createPlan() {
-    //let zones = this.field.getClosestDeliveryZones({ x: this.x, y: this.y });
-    // const MUL = 10;
-    // let prep_parcels = [];
-    // for (const [key, p] of this.parcels.entries()) {
-    //   let fromPlayer =
-    //     this.field.bfs(
-    //       this.field.getTile({ x: this.x, y: this.y }),
-    //       this.field.getTile({ x: p.x, y: p.y })
-    //     ).length - 1;
-    //   let toZone =
-    //     this.field.getClosestDeliveryZones({
-    //       x: p.x,
-    //       y: p.y,
-    //     })[0].distance - 1;
+    const [costs, parc] = this.builGraphInOut();
 
-    //   let score = p.reward * MUL - fromPlayer - toZone;
-    //   if (score > 0) {
-    //     prep_parcels.push({
-    //       x: p.x,
-    //       y: p.y,
-    //       reward: score,
-    //     });
-    //   }
-    // }
+    const [best_path, best_fit] = this.geneticTSP(
+      costs,
+      parc,
+      100,
+      100,
+      0.01,
+      0.5
+    );
 
-    // console.log("PParcels: ", prep_parcels);
+    let parcels_path = [];
+    for (const idx of best_path) {
+      let par = parc[idx];
+      parcels_path.push({ pos: new Position(par.x, par.y), parcel: par.id });
+    }
 
-    // let costs = this.buildSubGraph(prep_parcels);
+    console.log(parcels_path);
 
-    // const [best_path, best_score] = this.bruteTSP(costs, prep_parcels);
+    let plan = [];
+    let startTile = this.field.getTile(new Position(this.x, this.y));
+    let endTile = this.field.getTile(parcels_path[0].pos);
+    let path = this.field.bfs(endTile, startTile);
+    let actions = Action.pathToAction(
+      path,
+      ActionType.PICKUP,
+      parcels_path[0].parcel
+    );
+    plan = plan.concat(actions);
+    startTile = endTile;
+    for (let i = 1; i < parcels_path.length; i++) {
+      endTile = this.field.getTile(parcels_path[i].pos);
+      path = this.field.bfs(endTile, startTile);
+      actions = Action.pathToAction(
+        path,
+        ActionType.PICKUP,
+        parcels_path[i].parcel
+      );
+      plan = plan.concat(actions);
+      startTile = endTile;
+    }
 
-    // console.log("Best path: ", best_path);
-    // console.log("Best score: ", best_score);
-    // costs = [
-    //   [Infinity, 4, Infinity, Infinity, 1],
-    //   [Infinity, Infinity, Infinity, Infinity, Infinity],
-    //   [Infinity, 7, Infinity, -2, Infinity],
-    //   [Infinity, 1, Infinity, Infinity, Infinity],
-    //   [Infinity, Infinity, Infinity, -5, Infinity],
-    // ];
+    let delivery = this.field.getClosestDeliveryZone(endTile.position);
+    path = this.field.bfs(delivery, endTile);
+    actions = Action.pathToAction(path, ActionType.PUTDOWN, null);
+    plan = plan.concat(actions);
 
-    // console.log("Nodes: ");
-    // console.log(nodes);
-    //this.printMat(costs);
-    //this.floydWarshall(costs, nodes);
-    //this.johnsonSP(costs, 0, 1);
+    return plan;
+  }
 
+  testGen() {
     const [costs, parc] = this.builGraphInOut();
 
     let ers = [0.1, 0.2, 0.3, 0.4, 0.5];
@@ -605,7 +610,6 @@ export class TSP {
     }
     //console.log("Averages: ", this.avgs);
     console.log("-----------------------------");
-    return [];
   }
 
   createPlanTmp() {

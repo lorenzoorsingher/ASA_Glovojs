@@ -65,7 +65,7 @@ client.onYou(({ id, name, x, y, score }) => {
   playerPosition = new Position(x, y);
   if (hasCompletedMovement(playerPosition)) {
     brain && brain.updatePlayerPosition(playerPosition);
-    VERBOSE && console.log("Agent moved to: ", x, y);
+    console.log("Agent moved to: ", x, y);
     wait_load = false;
     //plan = brain.createPlan();
   }
@@ -74,6 +74,8 @@ client.onYou(({ id, name, x, y, score }) => {
 client.onParcelsSensing(async (perceived_parcels) => {
   map.set_parcels(perceived_parcels);
 
+  let parc_before = Array.from(parcels.keys());
+  console.log("Parcels before: ", parc_before);
   for (const p of perceived_parcels) {
     if (
       !parcels.has(p.id) &&
@@ -84,6 +86,15 @@ client.onParcelsSensing(async (perceived_parcels) => {
       // plan = brain.createPlan();
       // plan_target = "TILE";
     }
+  }
+  let parc_after = Array.from(parcels.keys());
+  console.log("Parcels after: ", parc_after);
+  //console.log(plan);
+  let changed = JSON.stringify(parc_before) != JSON.stringify(parc_after);
+  if (changed) {
+    console.log("Parcels changed. Recalculating plan");
+    plan = brain.createPlan();
+    plan_target = "TILE";
   }
 });
 
@@ -117,6 +128,7 @@ setInterval(() => {
 
 // DASHBOARD UPDATE
 setInterval(() => {
+  console.log("plan: ", plan.length);
   let update_map = map.getMap();
   let plan_move = [];
   let plan_pickup = [];
@@ -185,77 +197,78 @@ async function loop() {
       await new Promise((res) => setTimeout(res, 300));
       continue;
     }
-    plan = brain.createPlan();
-    // if (plan.length > 0) {
-    //   if (trg == null) {
-    //     trg = playerPosition;
-    //   }
 
-    //   if (trg && trg.equals(playerPosition)) {
-    //     initial = false;
-    //     isMoving = false;
-    //     nextAction = plan.shift();
-    //   }
-    //   if (stat == false) {
-    //     isMoving = false;
-    //   }
+    if (plan.length > 0) {
+      if (trg == null) {
+        trg = playerPosition;
+      }
 
-    //   if (!isMoving) {
-    //     src = nextAction.source;
-    //     trg = nextAction.target;
-    //     let move = Position.getDirectionTo(src, trg);
+      if (trg && trg.equals(playerPosition)) {
+        initial = false;
+        isMoving = false;
+        nextAction = plan.shift();
+      }
+      if (stat == false) {
+        isMoving = false;
+      }
 
-    //     if (!src.equals(playerPosition)) {
-    //       plan = brain.createPlan();
-    //       trg = null;
-    //       continue;
-    //     }
+      if (!isMoving) {
+        src = nextAction.source;
+        trg = nextAction.target;
+        let move = Position.getDirectionTo(src, trg);
 
-    //     let blocked = false;
-    //     for (const a of blocking_agents.values()) {
-    //       if (a.x == trg.x && a.y == trg.y) {
-    //         console.log("Agent in the way. Recalculating plan");
-    //         let start = map.getTile(playerPosition);
-    //         let end = map.getTile(plan[plan.length - 1].target);
+        if (!src.equals(playerPosition)) {
+          //plan = brain.createPlan();
+          trg = null;
+          continue;
+        }
 
-    //         if (a.x == end.position.x && a.y == end.position.y) {
-    //           console.log("Agent is blocking the target. Recalculating plan");
-    //           end = map.getRandomWalkableTile();
-    //           plan_target = "RANDOM";
-    //         }
-    //         let path = map.bfs(end, start);
-    //         plan = Action.pathToAction(path);
-    //         trg = null;
-    //         blocked = true;
-    //         break;
-    //       }
-    //     }
-    //     if (blocked) {
-    //       continue;
-    //     }
+        // let blocked = false;
+        // for (const a of blocking_agents.values()) {
+        //   if (a.x == trg.x && a.y == trg.y) {
+        //     console.log("Agent in the way. Recalculating plan");
+        //     let start = map.getTile(playerPosition);
+        //     let end = map.getTile(plan[plan.length - 1].target);
 
-    //     switch (nextAction.type) {
-    //       case ActionType.MOVE:
-    //         var stat = await client.move(move);
+        //     if (a.x == end.position.x && a.y == end.position.y) {
+        //       console.log("Agent is blocking the target. Recalculating plan");
+        //       end = map.getRandomWalkableTile();
+        //       plan_target = "RANDOM";
+        //     }
+        //     let path = map.bfs(end, start);
+        //     plan = Action.pathToAction(path);
+        //     trg = null;
+        //     blocked = true;
+        //     break;
+        //   }
+        // }
+        // if (blocked) {
+        //   continue;
+        // }
 
-    //         isMoving = true;
+        switch (nextAction.type) {
+          case ActionType.MOVE:
+            var stat = await client.move(move);
 
-    //         break;
-    //       case ActionType.PICKUP:
-    //         console.log("PICKING UP");
-    //         await client.pickup();
+            isMoving = true;
 
-    //         playerParcels.set(nextAction.bestParcel.id, true);
-    //         parcels.delete(nextAction.bestParcel.id);
-    //         brain.updateParcelsQueue();
-    //         break;
-    //       case ActionType.PUTDOWN:
-    //         console.log("PUTTING DOWN");
-    //         await client.putdown();
-    //         playerParcels.clear();
-    //         break;
-    //     }
-    //   }
+            break;
+          case ActionType.PICKUP:
+            console.log("PICKING UP");
+            await client.pickup();
+
+            playerParcels.set(nextAction.bestParcel.id, true);
+            parcels.delete(nextAction.bestParcel.id);
+            //brain.updateParcelsQueue();
+            break;
+          case ActionType.PUTDOWN:
+            console.log("PUTTING DOWN");
+            await client.putdown();
+            playerParcels.clear();
+            break;
+        }
+      }
+    }
     // } else {
     //   console.log("No plan found. Generating random plan");
     //   plan_target = "RANDOM";
