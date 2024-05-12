@@ -19,3 +19,6 @@
 - [ ] Planner must make sure agent can get unstuck
 - [ ] Make sure planner doesnt forget he's carrying parcels when replanning
 - [ ] Double check for closest delivery point
+
+- [ ] Make sure agent knows how much (and how many parcels) he can carry when replanning
+- [ ] Penaslize overly long paths

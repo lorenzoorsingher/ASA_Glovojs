@@ -215,6 +215,15 @@ function newPlan() {
   }
 }
 
+// function recomputePlan() {
+//   const [tmp_plan, best_fit] = brain.createPlan();
+//   if (best_fit > plan_fit) {
+//     plan_fit = best_fit;
+//     plan = tmp_plan;
+//     plan_target = "TILE";
+//   }
+// }
+
 async function loop() {
   while (true) {
     if (wait_load) {
@@ -247,28 +256,23 @@ async function loop() {
           continue;
         }
 
-        // let blocked = false;
-        // for (const a of blocking_agents.values()) {
-        //   if (a.x == trg.x && a.y == trg.y) {
-        //     console.log("Agent in the way. Recalculating plan");
-        //     let start = map.getTile(playerPosition);
-        //     let end = map.getTile(plan[plan.length - 1].target);
+        let blocked = false;
+        for (const a of blocking_agents.values()) {
+          if (a.x == trg.x && a.y == trg.y) {
+            console.log("Agent in the way. Recalculating plan");
+            //recomputePlan();
+            if (a.x == end.position.x && a.y == end.position.y) {
+              console.log("Agent is blocking the target. Recalculating plan");
+              end = map.getRandomWalkableTile();
+              plan_target = "RANDOM";
+            }
 
-        //     if (a.x == end.position.x && a.y == end.position.y) {
-        //       console.log("Agent is blocking the target. Recalculating plan");
-        //       end = map.getRandomWalkableTile();
-        //       plan_target = "RANDOM";
-        //     }
-        //     let path = map.bfs(end, start);
-        //     plan = Action.pathToAction(path);
-        //     trg = null;
-        //     blocked = true;
-        //     break;
-        //   }
-        // }
-        // if (blocked) {
-        //   continue;
-        // }
+            break;
+          }
+        }
+        if (blocked) {
+          continue;
+        }
 
         switch (nextAction.type) {
           case ActionType.MOVE:
