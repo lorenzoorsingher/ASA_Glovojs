@@ -20,7 +20,7 @@ let client = null;
 if (LOCAL) {
   client = new DeliverooApi(
     "http://localhost:8080/",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg2OTFmNjUzMjJjIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTUwMjQ0MTF9.8L79LEzZejQAcKjuWEa_OMKfeChXnVcwn1sY-q2eCu8"
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxYWZlYjEwMTkxIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTU1MzY4NDV9.jV9yKlDTGWyb-MaZcNgf6ctWaKJN-u3myK9MuRat6mQ"
   );
 } else {
   client = new DeliverooApi(
@@ -39,6 +39,7 @@ const blocking_agents = new Map();
 
 // contains the current plan
 let plan = [];
+let plan_fit = 0;
 // contains weather the plan is to a random tile or to a parcel
 let plan_target = "RANDOM";
 // hold loop until the map is loaded
@@ -49,12 +50,14 @@ let playerPosition = new Position(0, 0);
 // parcels carried by the player
 let playerParcels = new Map();
 
+//carring
+let carrying = 0;
 // note that this happens before the onYou event
 client.onMap((width, height, tiles) => {
   VERBOSE && console.log("Map received. Initializing...");
   // runMapTest()
   map.init(width, height, tiles, blocking_agents);
-  brain.init(map, parcels, playerPosition);
+  brain.init(map, parcels, playerPosition, carrying);
 });
 
 client.onYou(({ id, name, x, y, score }) => {
@@ -65,7 +68,6 @@ client.onYou(({ id, name, x, y, score }) => {
   playerPosition = new Position(x, y);
   if (hasCompletedMovement(playerPosition)) {
     brain && brain.updatePlayerPosition(playerPosition);
-    console.log("Agent moved to: ", x, y);
     wait_load = false;
     //plan = brain.createPlan();
   }
@@ -75,7 +77,7 @@ client.onParcelsSensing(async (perceived_parcels) => {
   map.set_parcels(perceived_parcels);
 
   let parc_before = Array.from(parcels.keys());
-  console.log("Parcels before: ", parc_before);
+  //console.log("Parcels before: ", parc_before);
   for (const p of perceived_parcels) {
     if (
       !parcels.has(p.id) &&
@@ -88,13 +90,14 @@ client.onParcelsSensing(async (perceived_parcels) => {
     }
   }
   let parc_after = Array.from(parcels.keys());
-  console.log("Parcels after: ", parc_after);
+  //console.log("Parcels after: ", parc_after);
   //console.log(plan);
   let changed = JSON.stringify(parc_before) != JSON.stringify(parc_after);
   if (changed) {
     console.log("Parcels changed. Recalculating plan");
-    plan = brain.createPlan();
-    plan_target = "TILE";
+
+    //let estimate = isplan.length
+    newPlan();
   }
 });
 
@@ -124,11 +127,23 @@ setInterval(() => {
       parcels.set(key, value);
     }
   }
+
+  for (let [key, value] of playerParcels.entries()) {
+    value--;
+    if (value <= 0) {
+      playerParcels.delete(key);
+    } else {
+      playerParcels.set(key, value);
+    }
+  }
+  carrying = 0;
+  for (const [key, value] of playerParcels.entries()) {
+    carrying += value;
+  }
 }, 1000);
 
 // DASHBOARD UPDATE
 setInterval(() => {
-  console.log("plan: ", plan.length);
   let update_map = map.getMap();
   let plan_move = [];
   let plan_pickup = [];
@@ -190,6 +205,15 @@ let trg = null;
 let src = null;
 
 let initial = true;
+
+function newPlan() {
+  const [tmp_plan, best_fit] = brain.createPlan();
+  if (best_fit > plan_fit) {
+    plan_fit = best_fit;
+    plan = tmp_plan;
+    plan_target = "TILE";
+  }
+}
 
 async function loop() {
   while (true) {
@@ -257,27 +281,40 @@ async function loop() {
             console.log("PICKING UP");
             await client.pickup();
 
-            playerParcels.set(nextAction.bestParcel.id, true);
-            parcels.delete(nextAction.bestParcel.id);
+            try {
+              playerParcels.set(
+                nextAction.bestParcel,
+                parcels.get(nextAction.bestParcel).reward
+              );
+              parcels.delete(nextAction.bestParcel);
+            } catch (error) {
+              console.error(
+                "Parcel either expired or was deleted while executing plan."
+              );
+            }
+            console.log("PICKING UP ", nextAction.bestParcel);
+            console.log(parcels);
             //brain.updateParcelsQueue();
             break;
           case ActionType.PUTDOWN:
             console.log("PUTTING DOWN");
             await client.putdown();
             playerParcels.clear();
+            plan_fit = 0;
+            newPlan();
+
             break;
         }
       }
-    }
-    // } else {
-    //   console.log("No plan found. Generating random plan");
-    //   plan_target = "RANDOM";
-    //   let start = map.getTile(playerPosition);
-    //   let end = map.getRandomWalkableTile();
-    //   let path = map.bfs(end, start);
+    } else {
+      console.log("No plan found. Generating random plan");
+      plan_target = "RANDOM";
+      let start = map.getTile(playerPosition);
+      let end = map.getRandomWalkableTile();
+      let path = map.bfs(end, start);
 
-    //   plan = Action.pathToAction(path);
-    // }
+      plan = Action.pathToAction(path);
+    }
     await new Promise((res) => setImmediate(res));
   }
 }

@@ -4,11 +4,12 @@ import { VERBOSE } from "./agent.js";
 import e from "express";
 
 export class TSP {
-  init(field, parcels, playerPosition) {
+  init(field, parcels, playerPosition, carrying) {
     this.field = field;
     this.parcels = parcels;
     this.x = playerPosition.x;
     this.y = playerPosition.y;
+    this.carrying = carrying;
     this.avgs = {};
 
     // this.plan = this.createPlan(parcelsQueue)
@@ -289,12 +290,13 @@ export class TSP {
   // }
 
   maskList(list, p) {
-    let num_del = list.length - Math.floor(Math.random() * list.length + 1);
+    let num_del = list.length - (Math.floor(Math.random() * list.length) + 1);
 
     for (let i = 0; i < num_del; i++) {
       let idx = Math.floor(Math.random() * list.length);
       list.splice(idx, 1);
     }
+
     return list;
   }
 
@@ -406,6 +408,7 @@ export class TSP {
     return childA;
   }
   fitness(dna, costs, nodes) {
+    //console.log("DNA: ", dna);
     let rew = 0;
     // console.log("start at node : ", dna[0]);
     rew += nodes[dna[0]].rew - nodes[dna[0]].in_c;
@@ -421,6 +424,8 @@ export class TSP {
     if (rew < 0) {
       rew = 0;
     }
+
+    rew -= this.carrying;
     //console.log("Fitness: ", rew);
     return rew;
   }
@@ -434,7 +439,10 @@ export class TSP {
     elite_rate = 0.5
   ) {
     let genes = Array.from(Array(nodes.length).keys());
-
+    console.log("Genes: ", genes);
+    if (genes.length == 0) {
+      return [[], 0];
+    }
     //this.printMat(costs);
     // console.log("Nodes: ", nodes);
     // console.log("Genes: ", genes);
@@ -452,7 +460,7 @@ export class TSP {
 
       population.push(masked);
     }
-
+    //population.push([]);
     //console.log("Population: ", population);
 
     let tot_fit = 0;
@@ -535,6 +543,23 @@ export class TSP {
       0.5
     );
 
+    // let closestDelivery = this.field.getClosestDeliveryZones({
+    //   x: this.x,
+    //   y: this.y,
+    // })[0];
+
+    // if (best_fit < this.carrying - closestDelivery.distance) {
+    //   let startTile = this.field.getTile(new Position(this.x, this.y));
+    //   let endTile = this.field.getTile(closestDelivery.x, closestDelivery.y);
+    //   let path = this.field.bfs(endTile, startTile);
+    //   let actions = Action.pathToAction(
+    //     path,
+    //     ActionType.PUTDOWN,
+    //     parcels_path[0].parcel
+    //   );
+    // }
+
+    //console.log("Closest delivery: ", closestDelivery);
     let parcels_path = [];
     for (const idx of best_path) {
       let par = parc[idx];
@@ -542,6 +567,10 @@ export class TSP {
     }
 
     console.log(parcels_path);
+
+    if (parcels_path.length == 0) {
+      return [];
+    }
 
     let plan = [];
     let startTile = this.field.getTile(new Position(this.x, this.y));
@@ -571,7 +600,7 @@ export class TSP {
     actions = Action.pathToAction(path, ActionType.PUTDOWN, null);
     plan = plan.concat(actions);
 
-    return plan;
+    return [plan, best_fit];
   }
 
   testGen() {
