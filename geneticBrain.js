@@ -459,10 +459,10 @@ export class Genetic {
 
     let delivery = this.field.getClosestDeliveryZone(endTile.position);
     if (delivery == null) {
-      console.log("No delivery zones reachable, generating random plan");
-      delivery = this.field.getRandomSpawnable();
-      path = this.field.bfs(delivery, endTile);
-      actions = Action.pathToAction(path, ActionType.MOVE, null);
+      // console.log("No delivery zones reachable, generating random plan");
+      // delivery = this.field.getRandomSpawnable();
+      // path = this.field.bfs(delivery, endTile);
+      // actions = Action.pathToAction(path, ActionType.MOVE, null);
     } else {
       path = this.field.bfs(delivery, endTile);
       actions = Action.pathToAction(path, ActionType.PUTDOWN, null);

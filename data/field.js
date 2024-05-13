@@ -148,15 +148,18 @@ export class Field {
     const queue = [];
     const distance = {};
 
-    if (this.isTileUnreachable(start) || this.isTileUnreachable(end)) {
-      console.log("BFS: Start or End tile is unreachable");
-      return [];
-    }
-
     let blocking = [];
     for (const a of this.agents.values()) {
       blocking.push(a.x + "-" + a.y);
       //console.log("Blocking: ", blocking);
+    }
+
+    if (
+      this.isTileUnreachable(start, blocking) ||
+      this.isTileUnreachable(end, blocking)
+    ) {
+      console.log("BFS: Start or End tile is unreachable");
+      return [];
     }
 
     distance[start.id] = 0;
@@ -207,7 +210,7 @@ export class Field {
 
     for (let d of this.deliveryZones) {
       const distance = this.bfs(this.getTile(d), this.getTile(pos)).length - 1;
-      if (distance < smallestDistance && distance > 1) {
+      if (distance < smallestDistance && distance > 0) {
         //console.log("Distance: ", distance, " ", this.getTile(d).position);
         smallestDistance = distance;
         closest = d;
@@ -284,7 +287,15 @@ export class Field {
     return this.field[pos.y][pos.x].delivery;
   }
 
-  isTileUnreachable(tile) {
+  isTileUnreachable(tile, blocking = []) {
+    if (blocking.includes(tile.id)) {
+      console.log(
+        "Tile in position: ",
+        tile.position,
+        " is unreachable. Error: tile is blocked"
+      );
+      return true;
+    }
     if (tile == null) {
       console.log(
         "Tile in position: ",

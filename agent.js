@@ -45,7 +45,7 @@ const parcels = new Map();
 const agents = new Map();
 const blocking_agents = new Map();
 
-let RESET_TIMEOUT = 3000;
+let RESET_TIMEOUT = 50;
 // contains the current plan
 let plan = [];
 let plan_fit = 0;
@@ -64,7 +64,7 @@ let carrying = 0;
 
 client.onConfig((config) => {
   me.config = config;
-  RESET_TIMEOUT = me.config.MOVEMENT_DURATION * 200;
+  RESET_TIMEOUT = config.RESET_TIMEOUT;
   console.log("Config received: ", config);
 });
 
@@ -186,6 +186,7 @@ setInterval(() => {
     isMoving = false;
     trg = null;
     plan_fit = 0;
+    playerParcels.clear();
     newPlan();
     //console.log("PLAN::: ", plan);
   } else {
@@ -195,7 +196,7 @@ setInterval(() => {
   console.log("Current: ", playerPosition);
   lastPosition.x = playerPosition.x;
   lastPosition.y = playerPosition.y;
-}, RESET_TIMEOUT);
+}, RESET_TIMEOUT * Math.floor(Math.random() * 100) + 50);
 
 // DASHBOARD UPDATE
 setInterval(() => {
