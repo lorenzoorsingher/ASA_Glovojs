@@ -207,7 +207,7 @@ export class Field {
 
     for (let d of this.deliveryZones) {
       const distance = this.bfs(this.getTile(d), this.getTile(pos)).length - 1;
-      if (distance < smallestDistance && distance > 0) {
+      if (distance < smallestDistance && distance > 1) {
         //console.log("Distance: ", distance, " ", this.getTile(d).position);
         smallestDistance = distance;
         closest = d;

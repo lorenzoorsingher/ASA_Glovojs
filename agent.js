@@ -45,7 +45,7 @@ const parcels = new Map();
 const agents = new Map();
 const blocking_agents = new Map();
 
-let RESET_TIMOUT = 3000;
+let RESET_TIMEOUT = 3000;
 // contains the current plan
 let plan = [];
 let plan_fit = 0;
@@ -64,7 +64,7 @@ let carrying = 0;
 
 client.onConfig((config) => {
   me.config = config;
-  RESET_TIMOUT = me.config.MOVEMENT_DURATION * 200;
+  RESET_TIMEOUT = me.config.MOVEMENT_DURATION * 200;
   console.log("Config received: ", config);
 });
 
@@ -83,7 +83,8 @@ client.onYou(({ id, name, x, y, score }) => {
   me.y = y;
   playerPosition = new Position(x, y);
   if (hasCompletedMovement(playerPosition)) {
-    brain && brain.updatePlayerPosition(playerPosition, RESET_TIMOUT);
+    brain &&
+      brain.updatePlayerPosition(playerPosition, me.config.MOVEMENT_DURATION);
     wait_load = false;
   }
 });
@@ -194,7 +195,7 @@ setInterval(() => {
   console.log("Current: ", playerPosition);
   lastPosition.x = playerPosition.x;
   lastPosition.y = playerPosition.y;
-}, RESET_TIMOUT);
+}, RESET_TIMEOUT);
 
 // DASHBOARD UPDATE
 setInterval(() => {
