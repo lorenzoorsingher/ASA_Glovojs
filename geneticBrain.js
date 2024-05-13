@@ -11,10 +11,12 @@ export class Genetic {
     this.y = playerPosition.y;
     this.pop = pop;
     this.gen = gen;
+    this.timeout = 50;
 
     this.avgs = {};
     this.avg_fit = 0;
     this.iters = 0;
+
     // this.plan = this.createPlan(parcelsQueue)
   }
 
@@ -22,9 +24,10 @@ export class Genetic {
     this.field = field;
   }
 
-  updatePlayerPosition(pos) {
+  updatePlayerPosition(pos, timeout) {
     this.x = pos.x;
     this.y = pos.y;
+    this.timeout = timeout;
   }
 
   sort_by_key(array, key) {
@@ -211,10 +214,10 @@ export class Genetic {
   }
 
   fitness(dna, costs, nodes, playerParcels) {
-    let carreidParcels = Array.from(playerParcels);
+    let carriedParcels = Array.from(playerParcels);
     let currCarr = Array.from(playerParcels).length;
     let currRew = 0;
-    for (const par of carreidParcels) {
+    for (const par of carriedParcels) {
       currRew += par[1];
     }
 
@@ -273,7 +276,7 @@ export class Genetic {
 
       population.push(masked);
     }
-    //population.push([]);
+    //console.log(population);
 
     let tot_fit = 0;
     for (const dna of population) {

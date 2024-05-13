@@ -45,6 +45,7 @@ const parcels = new Map();
 const agents = new Map();
 const blocking_agents = new Map();
 
+let RESET_TIMOUT = 3000;
 // contains the current plan
 let plan = [];
 let plan_fit = 0;
@@ -63,6 +64,7 @@ let carrying = 0;
 
 client.onConfig((config) => {
   me.config = config;
+  RESET_TIMOUT = me.config.MOVEMENT_DURATION * 200;
   console.log("Config received: ", config);
 });
 
@@ -81,7 +83,7 @@ client.onYou(({ id, name, x, y, score }) => {
   me.y = y;
   playerPosition = new Position(x, y);
   if (hasCompletedMovement(playerPosition)) {
-    brain && brain.updatePlayerPosition(playerPosition);
+    brain && brain.updatePlayerPosition(playerPosition, RESET_TIMOUT);
     wait_load = false;
   }
 });
@@ -166,6 +168,8 @@ setInterval(() => {
       playerParcels.set(key, value);
     }
   }
+
+  //TODO delete
   carrying = 0;
   for (const [key, value] of playerParcels.entries()) {
     carrying += value;
@@ -176,9 +180,7 @@ let lastPosition = new Position(0, 0);
 // HARD RESET
 setInterval(() => {
   if (lastPosition.equals(playerPosition)) {
-    console.log(
-      "HARD RESET------------------------------------------------------------------------------"
-    );
+    console.log("HARD RESET--------------------------------------------------");
 
     isMoving = false;
     trg = null;
@@ -192,7 +194,7 @@ setInterval(() => {
   console.log("Current: ", playerPosition);
   lastPosition.x = playerPosition.x;
   lastPosition.y = playerPosition.y;
-}, 3000);
+}, RESET_TIMOUT);
 
 // DASHBOARD UPDATE
 setInterval(() => {
@@ -337,7 +339,7 @@ async function loop() {
         }
 
         //console.log("elapsed: ", Date.now() - start);
-        while (Date.now() - start < 150) {
+        while (Date.now() - start < me.config.MOVEMENT_DURATION) {
           await new Promise((res) => setImmediate(res));
         }
         start = Date.now();

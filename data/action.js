@@ -59,7 +59,7 @@ export class Action {
     }
 
     for (let action of actions) {
-      //action.printAction();
+      action.printAction();
     }
     return actions;
   }
