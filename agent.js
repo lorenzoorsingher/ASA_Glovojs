@@ -17,16 +17,24 @@ const TOKEN =
 
 let client = null;
 
+let [pop, gen] = process.argv.slice(2);
+if (pop == undefined) {
+  pop = 1000;
+}
+if (gen == undefined) {
+  gen = 100;
+}
+
+console.log("Population: ", pop);
+console.log("Generations: ", gen);
+
+let randomname =
+  Math.random().toString(36).substring(5) + "_" + pop + "_" + gen;
+
 if (LOCAL) {
-  client = new DeliverooApi(
-    "http://localhost:8080/",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxYWZlYjEwMTkxIiwibmFtZSI6ImNpYW8iLCJpYXQiOjE3MTU1MzY4NDV9.jV9yKlDTGWyb-MaZcNgf6ctWaKJN-u3myK9MuRat6mQ"
-  );
+  client = new DeliverooApi("http://localhost:8080/?name=" + randomname, "");
 } else {
-  client = new DeliverooApi(
-    "http://rtibdi.disi.unitn.it:8080",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE5OWFmMGQ2YmJkIiwibmFtZSI6Imdsb3ZvIiwiaWF0IjoxNzE1MTU3OTkwfQ.st5vWWHKQmXyX2Sb4r6TtkUXdO0ZJJDHxu2XZHpxENE"
-  );
+  client = new DeliverooApi("http://cuwu.ddns.net:8082/?name=lollo", "");
 }
 
 const me = {};
@@ -49,15 +57,21 @@ let wait_load = true;
 let playerPosition = new Position(0, 0);
 // parcels carried by the player
 let playerParcels = new Map();
-
+let allParcels = [];
 //carring
 let carrying = 0;
+
+client.onConfig((config) => {
+  me.config = config;
+  console.log("Config received: ", config);
+});
+
 // note that this happens before the onYou event
 client.onMap((width, height, tiles) => {
   VERBOSE && console.log("Map received. Initializing...");
   // runMapTest()
   map.init(width, height, tiles, blocking_agents);
-  brain.init(map, parcels, playerPosition);
+  brain.init(map, parcels, playerPosition, pop, gen);
 });
 
 client.onYou(({ id, name, x, y, score }) => {
@@ -69,15 +83,34 @@ client.onYou(({ id, name, x, y, score }) => {
   if (hasCompletedMovement(playerPosition)) {
     brain && brain.updatePlayerPosition(playerPosition);
     wait_load = false;
-    //plan = brain.createPlan();
   }
 });
 
 client.onParcelsSensing(async (perceived_parcels) => {
   map.set_parcels(perceived_parcels);
-
+  allParcels = perceived_parcels.slice();
   let parc_before = Array.from(parcels.keys());
   //console.log("Parcels before: ", parc_before);
+
+  for (const [key, value] of parcels.entries()) {
+    let parc_pos = new Position(value.x, value.y);
+    let dist = manhattanDistance(playerPosition, parc_pos);
+
+    let found = false;
+    if (dist < me.config.PARCELS_OBSERVATION_DISTANCE) {
+      for (const p of perceived_parcels) {
+        if (p.id == key) {
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        parcels.delete(key);
+      }
+    }
+  }
+
   for (const p of perceived_parcels) {
     if (
       !parcels.has(p.id) &&
@@ -85,18 +118,15 @@ client.onParcelsSensing(async (perceived_parcels) => {
       p.carriedBy == null
     ) {
       parcels.set(p.id, p);
-      // plan = brain.createPlan();
-      // plan_target = "TILE";
     }
   }
+
   let parc_after = Array.from(parcels.keys());
-  //console.log("Parcels after: ", parc_after);
-  //console.log(plan);
+
   let changed = JSON.stringify(parc_before) != JSON.stringify(parc_after);
   if (changed) {
     console.log("Parcels changed. Recalculating plan");
 
-    //let estimate = isplan.length
     newPlan();
   }
 });
@@ -109,7 +139,7 @@ client.onAgentsSensing(async (perceived_agents) => {
   agents.clear();
   blocking_agents.clear();
   for (const a of perceived_agents) {
-    if (distance(playerPosition, a) < 2) {
+    if (distance(playerPosition, a) < 100) {
       blocking_agents.set(a.id, a);
     } else {
       agents.set(a.id, a);
@@ -141,6 +171,28 @@ setInterval(() => {
     carrying += value;
   }
 }, 1000);
+
+let lastPosition = new Position(0, 0);
+// HARD RESET
+setInterval(() => {
+  if (lastPosition.equals(playerPosition)) {
+    console.log(
+      "HARD RESET------------------------------------------------------------------------------"
+    );
+
+    isMoving = false;
+    trg = null;
+    plan_fit = 0;
+    newPlan();
+    //console.log("PLAN::: ", plan);
+  } else {
+    console.log("NO RESET");
+  }
+  console.log("Last: ", lastPosition);
+  console.log("Current: ", playerPosition);
+  lastPosition.x = playerPosition.x;
+  lastPosition.y = playerPosition.y;
+}, 3000);
 
 // DASHBOARD UPDATE
 setInterval(() => {
@@ -207,10 +259,10 @@ let src = null;
 let initial = true;
 
 function newPlan() {
-  console.log("MyPos: ", playerPosition);
+  // console.log("MyPos: ", playerPosition);
   const [tmp_plan, best_fit] = brain.createPlan(playerParcels);
 
-  console.log("Best fit: ", best_fit);
+  // console.log("Best fit: ", best_fit);
   if (best_fit > plan_fit) {
     plan_fit = best_fit;
     plan = tmp_plan;
@@ -221,6 +273,12 @@ function newPlan() {
   }
 }
 
+function manhattanDistance(a, b) {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+let start = Date.now();
+
 async function loop() {
   while (true) {
     if (wait_load) {
@@ -228,7 +286,15 @@ async function loop() {
       continue;
     }
 
+    //console.log("allParcels: ", allParcels);
+    for (const p of allParcels) {
+      if (p.carriedBy == me.id) {
+        //console.log("Parcel carried by me");
+        playerParcels.set(p.id, p.reward);
+      }
+    }
     if (plan.length > 0) {
+      // console.log("never stopping");
       if (trg == null) {
         trg = playerPosition;
       }
@@ -238,11 +304,13 @@ async function loop() {
         isMoving = false;
         nextAction = plan.shift();
       }
+
       if (stat == false) {
         isMoving = false;
       }
 
       if (!isMoving) {
+        //console.log("Next action: ", nextAction);
         src = nextAction.source;
         trg = nextAction.target;
         let move = Position.getDirectionTo(src, trg);
@@ -260,28 +328,29 @@ async function loop() {
             console.log("Agent in the way. Recalculating plan");
             plan_fit = 0;
             newPlan();
-            // if (a.x == end.position.x && a.y == end.position.y) {
-            //   console.log("Agent is blocking the target. Recalculating plan");
-            //   end = map.getRandomWalkableTile();
-            //   plan_target = "RANDOM";
-            // }
-
             break;
           }
         }
+
         if (blocked) {
           continue;
         }
 
+        //console.log("elapsed: ", Date.now() - start);
+        while (Date.now() - start < 150) {
+          await new Promise((res) => setImmediate(res));
+        }
+        start = Date.now();
+
         switch (nextAction.type) {
           case ActionType.MOVE:
-            var stat = await client.move(move);
+            if (move != "none") {
+              var stat = await client.move(move);
+            }
 
             isMoving = true;
-
             break;
           case ActionType.PICKUP:
-            console.log("PICKING UP");
             await client.pickup();
 
             try {
@@ -296,7 +365,6 @@ async function loop() {
               );
             }
             console.log("PICKING UP ", nextAction.bestParcel);
-            console.log(parcels);
             //brain.updateParcelsQueue();
             break;
           case ActionType.PUTDOWN:

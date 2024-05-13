@@ -48,14 +48,18 @@ export class Action {
       actions.push(
         new Action(lastPosition, lastPosition, ActionType.PICKUP, bestParcel)
       );
-    } else {
+    } else if (type === ActionType.PUTDOWN) {
       actions.push(
         new Action(lastPosition, lastPosition, ActionType.PUTDOWN, null)
+      );
+    } else {
+      actions.push(
+        new Action(lastPosition, lastPosition, ActionType.MOVE, null)
       );
     }
 
     for (let action of actions) {
-      action.printAction();
+      //action.printAction();
     }
     return actions;
   }

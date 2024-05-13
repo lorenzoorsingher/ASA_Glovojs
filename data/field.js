@@ -8,6 +8,7 @@ export class Field {
     this.width = width;
     this.height = height;
     this.field = [];
+    this.parcelSpawners = [];
 
     for (let i = 0; i < height; i++) {
       this.field[i] = [];
@@ -25,7 +26,11 @@ export class Field {
         this.field[i][j] = new Tile(pos, found, delivery);
       }
     }
-
+    for (const t of tiles) {
+      if (t.parcelSpawner) {
+        this.parcelSpawners.push(new Position(t.x, t.y));
+      }
+    }
     //load neighbors
     for (let i = 0; i < this.height; i++) {
       for (let j = 0; j < this.width; j++) {
@@ -151,8 +156,8 @@ export class Field {
     let blocking = [];
     for (const a of this.agents.values()) {
       blocking.push(a.x + "-" + a.y);
+      //console.log("Blocking: ", blocking);
     }
-    //console.log("Blocking: ", blocking);
 
     distance[start.id] = 0;
     queue.push(this.getTile(start.position));
@@ -202,13 +207,19 @@ export class Field {
 
     for (let d of this.deliveryZones) {
       const distance = this.bfs(this.getTile(d), this.getTile(pos)).length - 1;
-      if (distance < smallestDistance) {
+      if (distance < smallestDistance && distance > 0) {
+        //console.log("Distance: ", distance, " ", this.getTile(d).position);
         smallestDistance = distance;
         closest = d;
       }
     }
-    VERBOSE &&
-      console.log("Closest delivery zone is at ", closest.x, closest.y);
+
+    if (closest == null) {
+      console.log("No delivery zones reachable");
+      return null;
+    }
+
+    console.log("Closest delivery zone is at ", closest.x, closest.y);
     return this.getTile(closest);
   }
 
@@ -257,6 +268,14 @@ export class Field {
       y = Math.floor(Math.random() * this.height);
       tile = this.getTile(new Position(x, y));
     } while (!tile.walkable || this.isTileUnreachable(tile));
+
+    return tile;
+  }
+
+  getRandomSpawnable() {
+    let idx = Math.floor(Math.random() * this.parcelSpawners.length);
+
+    let tile = this.getTile(this.parcelSpawners[idx]);
 
     return tile;
   }

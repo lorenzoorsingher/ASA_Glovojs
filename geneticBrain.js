@@ -4,14 +4,17 @@ import { VERBOSE } from "./agent.js";
 import e from "express";
 
 export class Genetic {
-  init(field, parcels, playerPosition, carrying) {
+  init(field, parcels, playerPosition, pop, gen) {
     this.field = field;
     this.parcels = parcels;
     this.x = playerPosition.x;
     this.y = playerPosition.y;
-    this.carrying = carrying;
-    this.avgs = {};
+    this.pop = pop;
+    this.gen = gen;
 
+    this.avgs = {};
+    this.avg_fit = 0;
+    this.iters = 0;
     // this.plan = this.createPlan(parcelsQueue)
   }
 
@@ -214,27 +217,22 @@ export class Genetic {
     for (const par of carreidParcels) {
       currRew += par[1];
     }
+
+    let COST_MUL = 0.5;
     //console.log("DNA: ", dna);
     let rew = currRew;
     // console.log("start at node : ", dna[0]);
 
     currCarr += 1;
-    rew += nodes[dna[0]].rew - nodes[dna[0]].in_c * currCarr;
-
-    //
-
-    //console.log("Player parcels----------------------------: ", currRew);
+    rew += nodes[dna[0]].rew - nodes[dna[0]].in_c * currCarr * COST_MUL;
 
     for (let i = 1; i < dna.length; i++) {
       currCarr += 1;
-      // console.log("from node : ", dna[i - 1], " to node : ", dna[i]);
-      //console.log("costs: ", costs[dna[i - 1]][dna[i]]);
-      // console.log("reward: ", nodes[dna[i]].rew);
-      //let penality = 0.8 * i * costs[dna[i - 1]][dna[i]];
-      //let penality =
-      rew += nodes[dna[i]].rew - costs[dna[i - 1]][dna[i]] * currCarr; // - penality;
+
+      rew +=
+        nodes[dna[i]].rew - costs[dna[i - 1]][dna[i]] * currCarr * COST_MUL; // - penality;
     }
-    rew += -nodes[dna[dna.length - 1]].out_c;
+    rew += -nodes[dna[dna.length - 1]].out_c * COST_MUL;
 
     if (rew < 0) {
       rew = 0;
@@ -254,7 +252,7 @@ export class Genetic {
     playerParcels = null
   ) {
     let genes = Array.from(Array(nodes.length).keys());
-    console.log("Genes: ", genes);
+    // console.log("Genes: ", genes);
     if (genes.length == 0) {
       return [[], 0];
     }
@@ -283,6 +281,12 @@ export class Genetic {
       tot_fit += this.fitness(dna, costs, nodes, playerParcels);
     }
     //console.log("Average fitness: ", tot_fit / pop_size);
+    this.iters += 1;
+    this.avg_fit += tot_fit / pop_size;
+    console.log(
+      "AVG FIT: ",
+      this.avg_fit / this.iters + " after " + this.iters
+    );
 
     for (let i = 0; i < gen_num; i++) {
       let new_pop = [];
@@ -353,6 +357,7 @@ export class Genetic {
   backupPlan(playerParcels) {
     let startTile = this.field.getTile({ x: this.x, y: this.y });
     let endTile = null;
+    let deliver = false;
     let rew = 1;
     if (Array.from(playerParcels).length > 0) {
       for (const par of Array.from(playerParcels)) {
@@ -365,13 +370,40 @@ export class Genetic {
         x: this.x,
         y: this.y,
       });
+
+      if (endTile == null) {
+        console.log("No delivery zones reachable, generating random plan");
+        endTile = this.field.getRandomSpawnable();
+      } else {
+        deliver = true;
+      }
     } else {
       console.log("No parcels, generating random plan");
-      endTile = this.field.getRandomWalkableTile();
+      endTile = this.field.getRandomSpawnable();
+    }
+
+    // #TODO something happening here
+    if (endTile.position.equals(startTile.position)) {
+      console.log("Already on the target tile, no need to move");
+
+      let plan = [
+        new Action(
+          startTile.position,
+          startTile.position,
+          ActionType.PUTDOWN,
+          null
+        ),
+      ];
+      return [plan, 1];
     }
 
     let path = this.field.bfs(endTile, startTile);
-    let actions = Action.pathToAction(path, ActionType.PUTDOWN, null);
+    let actions = [];
+    if (deliver) {
+      actions = Action.pathToAction(path, ActionType.PUTDOWN, null);
+    } else {
+      actions = Action.pathToAction(path, ActionType.MOVE, null);
+    }
 
     console.log("Generated BACKUP plan with rew ", rew);
     return [actions, rew];
@@ -382,8 +414,8 @@ export class Genetic {
     const [best_path, best_fit] = this.geneticTSP(
       costs,
       parc,
-      100,
-      100,
+      this.pop,
+      this.gen,
       0.01,
       0.5,
       playerParcels
@@ -394,8 +426,6 @@ export class Genetic {
       let par = parc[idx];
       parcels_path.push({ pos: new Position(par.x, par.y), parcel: par.id });
     }
-
-    console.log("pp", parcels_path);
 
     if (parcels_path.length == 0 || best_fit == 0) {
       return this.backupPlan(playerParcels);
@@ -425,8 +455,16 @@ export class Genetic {
     }
 
     let delivery = this.field.getClosestDeliveryZone(endTile.position);
-    path = this.field.bfs(delivery, endTile);
-    actions = Action.pathToAction(path, ActionType.PUTDOWN, null);
+    if (delivery == null) {
+      console.log("No delivery zones reachable, generating random plan");
+      delivery = this.field.getRandomSpawnable();
+      path = this.field.bfs(delivery, endTile);
+      actions = Action.pathToAction(path, ActionType.MOVE, null);
+    } else {
+      path = this.field.bfs(delivery, endTile);
+      actions = Action.pathToAction(path, ActionType.PUTDOWN, null);
+    }
+
     plan = plan.concat(actions);
 
     return [plan, best_fit];
