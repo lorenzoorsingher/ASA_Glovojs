@@ -2,8 +2,8 @@ import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 import { Field } from "./data/field.js";
 import { Position } from "./data/position.js";
 import { Reasoning_1 } from "./brain.js";
+import { Genetic } from "./geneticBrain.js";
 import { TSP } from "./tspBrain.js";
-
 import myServer from "./server.js";
 import { Action, ActionType } from "./data/action.js";
 import e from "express";
@@ -31,7 +31,7 @@ if (LOCAL) {
 
 const me = {};
 const map = new Field();
-const brain = new TSP();
+const brain = new Genetic();
 
 const parcels = new Map();
 const agents = new Map();
@@ -57,7 +57,7 @@ client.onMap((width, height, tiles) => {
   VERBOSE && console.log("Map received. Initializing...");
   // runMapTest()
   map.init(width, height, tiles, blocking_agents);
-  brain.init(map, parcels, playerPosition, carrying);
+  brain.init(map, parcels, playerPosition);
 });
 
 client.onYou(({ id, name, x, y, score }) => {
@@ -207,22 +207,15 @@ let src = null;
 let initial = true;
 
 function newPlan() {
-  const [tmp_plan, best_fit] = brain.createPlan();
+  const [tmp_plan, best_fit] = brain.createPlan(playerParcels);
+
+  console.log("Best fit: ", best_fit);
   if (best_fit > plan_fit) {
     plan_fit = best_fit;
     plan = tmp_plan;
     plan_target = "TILE";
   }
 }
-
-// function recomputePlan() {
-//   const [tmp_plan, best_fit] = brain.createPlan();
-//   if (best_fit > plan_fit) {
-//     plan_fit = best_fit;
-//     plan = tmp_plan;
-//     plan_target = "TILE";
-//   }
-// }
 
 async function loop() {
   while (true) {
@@ -311,13 +304,9 @@ async function loop() {
         }
       }
     } else {
-      console.log("No plan found. Generating random plan");
-      plan_target = "RANDOM";
-      let start = map.getTile(playerPosition);
-      let end = map.getRandomWalkableTile();
-      let path = map.bfs(end, start);
-
-      plan = Action.pathToAction(path);
+      console.log("Plan is empty. Recalculating plan");
+      plan_fit = 0;
+      newPlan();
     }
     await new Promise((res) => setImmediate(res));
   }
