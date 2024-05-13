@@ -152,6 +152,7 @@ export class Field {
     for (const a of this.agents.values()) {
       blocking.push(a.x + "-" + a.y);
     }
+    //console.log("Blocking: ", blocking);
 
     distance[start.id] = 0;
     queue.push(this.getTile(start.position));
@@ -167,9 +168,10 @@ export class Field {
             queue.push(n_tile);
           }
         } else {
-          VERBOSE &&
-            console.log("Tile " + this.getTile(n).position + " is blocked");
+          //console.log("Tile " + n.x + "-" + n.y + " is blocked");
         }
+
+        //console.log(n.x + "-" + n.y);
       }
     }
     VERBOSE && console.log(distance[end.id]);
@@ -187,6 +189,7 @@ export class Field {
         path.length - 1,
         " steps to reach the destination"
       );
+    //console.log("Path: ", path);
     return path;
   }
 

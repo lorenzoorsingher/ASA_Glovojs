@@ -207,6 +207,7 @@ let src = null;
 let initial = true;
 
 function newPlan() {
+  console.log("MyPos: ", playerPosition);
   const [tmp_plan, best_fit] = brain.createPlan(playerParcels);
 
   console.log("Best fit: ", best_fit);
@@ -214,6 +215,9 @@ function newPlan() {
     plan_fit = best_fit;
     plan = tmp_plan;
     plan_target = "TILE";
+    console.log("New plan accepted");
+  } else {
+    console.log("New plan rejected");
   }
 }
 
@@ -252,13 +256,15 @@ async function loop() {
         let blocked = false;
         for (const a of blocking_agents.values()) {
           if (a.x == trg.x && a.y == trg.y) {
+            trg = null;
             console.log("Agent in the way. Recalculating plan");
-            //recomputePlan();
-            if (a.x == end.position.x && a.y == end.position.y) {
-              console.log("Agent is blocking the target. Recalculating plan");
-              end = map.getRandomWalkableTile();
-              plan_target = "RANDOM";
-            }
+            plan_fit = 0;
+            newPlan();
+            // if (a.x == end.position.x && a.y == end.position.y) {
+            //   console.log("Agent is blocking the target. Recalculating plan");
+            //   end = map.getRandomWalkableTile();
+            //   plan_target = "RANDOM";
+            // }
 
             break;
           }
