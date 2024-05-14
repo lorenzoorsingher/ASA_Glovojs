@@ -158,7 +158,7 @@ export class Field {
       this.isTileUnreachable(start, blocking) ||
       this.isTileUnreachable(end, blocking)
     ) {
-      console.log("BFS: Start or End tile is unreachable");
+      //console.log("BFS: Start or End tile is unreachable");
       return [];
     }
 
@@ -288,28 +288,28 @@ export class Field {
   }
 
   isTileUnreachable(tile, blocking = []) {
-    if (blocking.includes(tile.id)) {
-      console.log(
-        "Tile in position: ",
-        tile.position,
-        " is unreachable. Error: tile is blocked"
-      );
+    if (blocking.includes(tile.id) && blocking.length > 0) {
+      // console.log(
+      //   "Tile in position: ",
+      //   tile.position,
+      //   " is unreachable. Error: tile is blocked"
+      // );
       return true;
     }
     if (tile == null) {
-      console.log(
-        "Tile in position: ",
-        tile.position,
-        " is unreachable. Error: tile is null"
-      );
+      // console.log(
+      //   "Tile in position: ",
+      //   tile.position,
+      //   " is unreachable. Error: tile is null"
+      // );
       return true;
     }
     if (!tile.walkable) {
-      console.log(
-        "Tile in position: ",
-        tile.position,
-        " is unreachable. Error: tile is not walkable"
-      );
+      // console.log(
+      //   "Tile in position: ",
+      //   tile.position,
+      //   " is unreachable. Error: tile is not walkable"
+      // );
       return true;
     }
 
@@ -318,11 +318,11 @@ export class Field {
         return false;
       }
     }
-    console.log(
-      "Tile in position: ",
-      tile.position,
-      " is unreachable. Error: all neighbors are not walkable"
-    );
+    // console.log(
+    //   "Tile in position: ",
+    //   tile.position,
+    //   " is unreachable. Error: all neighbors are not walkable"
+    // );
     return true;
   }
 }

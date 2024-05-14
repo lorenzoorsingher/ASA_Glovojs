@@ -26,7 +26,7 @@ class MyServer {
 
   start() {
     let rando_port = Math.floor(Math.random() * 10000) + 1;
-
+    rando_port = 3000;
     this.server.listen(rando_port, () => {
       console.log("Dashboard server running on http://localhost:" + rando_port);
     });

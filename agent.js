@@ -11,7 +11,7 @@ import e from "express";
 // myServer.start();
 // myServer.serveDashboard();
 export const VERBOSE = false;
-const LOCAL = true;
+const LOCAL = false;
 const TOKEN =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhYmM4ZTE4ZjY2IiwibmFtZSI6ImxvbGxvIiwiaWF0IjoxNzE1MDkyODQ5fQ.PqPFemZ93idl9DKzOCMXDe0FaB9mgB0WWeVnA9j_Sao";
 
@@ -28,13 +28,16 @@ if (gen == undefined) {
 console.log("Population: ", pop);
 console.log("Generations: ", gen);
 
-let randomname =
-  Math.random().toString(36).substring(5) + "_" + pop + "_" + gen;
+let randomname = "GLOVOJS";
+Math.random().toString(36).substring(5) + "_" + pop + "_" + gen;
 
 if (LOCAL) {
   client = new DeliverooApi("http://localhost:8080/?name=" + randomname, "");
 } else {
-  client = new DeliverooApi("http://cuwu.ddns.net:8082/?name=lollo", "");
+  client = new DeliverooApi(
+    "http://rtibdi.disi.unitn.it:8080/?name=GLOVOJS",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijc5OWU1ZTkwM2ZjIiwibmFtZSI6IkdMT1ZPSlMiLCJpYXQiOjE3MTU2ODA3MzB9.WLbj404fa8vknsLtN6piMqvI6DCL4dGRr2Wm7FZ8iHs"
+  );
 }
 
 const me = {};
@@ -142,10 +145,12 @@ client.onAgentsSensing(async (perceived_agents) => {
   agents.clear();
   blocking_agents.clear();
   for (const a of perceived_agents) {
-    if (distance(playerPosition, a) < 100) {
-      blocking_agents.set(a.id, a);
-    } else {
-      agents.set(a.id, a);
+    if (a.name != "god") {
+      if (distance(playerPosition, a) < 100) {
+        blocking_agents.set(a.id, a);
+      } else {
+        agents.set(a.id, a);
+      }
     }
   }
 });
@@ -196,7 +201,7 @@ setInterval(() => {
   console.log("Current: ", playerPosition);
   lastPosition.x = playerPosition.x;
   lastPosition.y = playerPosition.y;
-}, RESET_TIMEOUT * Math.floor(Math.random() * 100) + 50);
+}, RESET_TIMEOUT * Math.floor(Math.random() * 100) + 150);
 
 // DASHBOARD UPDATE
 setInterval(() => {
@@ -307,6 +312,13 @@ async function loop() {
         initial = false;
         isMoving = false;
         nextAction = plan.shift();
+
+        for (const d of map.getDeliveryZones()) {
+          if (trg.equals(d)) {
+            console.log("PUTTING DOWN");
+            await client.putdown();
+          }
+        }
       }
 
       if (stat == false) {

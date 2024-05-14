@@ -221,7 +221,7 @@ export class Genetic {
       currRew += par[1];
     }
 
-    let COST_MUL = 0.5;
+    let COST_MUL = 1;
     //console.log("DNA: ", dna);
     let rew = currRew;
     // console.log("start at node : ", dna[0]);
