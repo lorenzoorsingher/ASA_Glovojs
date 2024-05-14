@@ -16,10 +16,10 @@ class MyServer {
 
   serveDashboard() {
     this.app.get("/", (req, res) => {
-      const dashboardPath = new URL("./dashboard.html", import.meta.url)
-        .pathname;
-      console.log(dashboardPath);
-      const normalizedPath = path.normalize(dashboardPath);
+      const dashboardPath = new URL("./dashboard.html", import.meta.url).pathname;
+      const decodedPath = decodeURIComponent(dashboardPath);
+      const normalizedPath = path.normalize(decodedPath);
+      console.log(normalizedPath);
       res.sendFile(normalizedPath);
     });
   }
