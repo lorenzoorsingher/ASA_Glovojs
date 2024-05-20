@@ -259,7 +259,7 @@ export class Genetic {
     if (genes.length == 0) {
       return [[], 0];
     }
-    //this.printMat(costs);
+    // this.printMat(costs);
     // console.log("Nodes: ", nodes);
     // console.log("Genes: ", genes);
 
@@ -276,14 +276,14 @@ export class Genetic {
 
       population.push(masked);
     }
-    //console.log(population);
+    // console.log(population);
 
     let tot_fit = 0;
     for (const dna of population) {
-      //console.log("DNA: ", dna);
+      // console.log("DNA: ", dna);
       tot_fit += this.fitness(dna, costs, nodes, playerParcels);
     }
-    //console.log("Average fitness: ", tot_fit / pop_size);
+    // console.log("Average fitness: ", tot_fit / pop_size);
     this.iters += 1;
     this.avg_fit += tot_fit / pop_size;
     console.log(
