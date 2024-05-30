@@ -127,16 +127,12 @@ client.onParcelsSensing(async (perceived_parcels) => {
   }
 });
 
-function distance(a, b) {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-}
-
 client.onAgentsSensing(async (perceived_agents) => {
   agents.clear();
   blocking_agents.clear();
   for (const a of perceived_agents) {
     if (a.name != "god") {
-      if (distance(rider.position, a) < 100) {
+      if (manhattanDistance(rider.position, a) < 100) {
         blocking_agents.set(a.id, a);
       } else {
         agents.set(a.id, a);
@@ -174,7 +170,7 @@ setInterval(() => {
 
     isMoving = false;
     trg = null;
-    rider.scorepla = 0;
+    rider.plan_fit = 0;
     rider.parcels.clear();
     newPlan();
     //console.log("PLAN::: ", plan);
@@ -239,6 +235,10 @@ setInterval(() => {
   myServer.emitMessage("map", dash_data);
 }, 100);
 
+function manhattanDistance(a, b) {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
 function hasCompletedMovement(pos) {
   return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
 }
@@ -248,24 +248,18 @@ let isMoving = false;
 let trg = null;
 let src = null;
 
-let initial = true;
-
 function newPlan() {
   // console.log("MyPos: ", rider.position);
   const [tmp_plan, best_fit] = brain.createPlan(rider.parcels);
 
   // console.log("Best fit: ", best_fit);
-  if (best_fit > rider.scorepla) {
-    rider.scorepla = best_fit;
+  if (best_fit > rider.plan_fit) {
+    rider.plan_fit = best_fit;
     rider.plan = tmp_plan;
     console.log("New plan accepted");
   } else {
     console.log("New plan rejected");
   }
-}
-
-function manhattanDistance(a, b) {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
 let start = Date.now();
@@ -284,6 +278,7 @@ async function loop() {
         rider.parcels.set(p.id, p.reward);
       }
     }
+
     if (rider.plan.length > 0) {
       // console.log("never stopping");
       if (trg == null) {
@@ -291,16 +286,15 @@ async function loop() {
       }
 
       if (trg && trg.equals(rider.position)) {
-        initial = false;
         isMoving = false;
         nextAction = rider.plan.shift();
 
-        for (const d of map.getDeliveryZones()) {
-          if (trg.equals(d)) {
-            console.log("PUTTING DOWN");
-            await client.putdown();
-          }
-        }
+        // for (const d of map.getDeliveryZones()) {
+        //   if (trg.equals(d)) {
+        //     console.log("PUTTING DOWN");
+        //     await client.putdown();
+        //   }
+        // }
       }
 
       if (stat == false) {
@@ -319,20 +313,20 @@ async function loop() {
           continue;
         }
 
-        let blocked = false;
-        for (const a of blocking_agents.values()) {
-          if (a.x == trg.x && a.y == trg.y) {
-            trg = null;
-            console.log("Agent in the way. Recalculating plan");
-            rider.scorepla = 0;
-            newPlan();
-            break;
-          }
-        }
+        // let blocked = false;
+        // for (const a of blocking_agents.values()) {
+        //   if (a.x == trg.x && a.y == trg.y) {
+        //     trg = null;
+        //     console.log("Agent in the way. Recalculating plan");
+        //     rider.plan_fit = 0;
+        //     newPlan();
+        //     break;
+        //   }
+        // }
 
-        if (blocked) {
-          continue;
-        }
+        // if (blocked) {
+        //   continue;
+        // }
 
         //console.log("elapsed: ", Date.now() - start);
         while (Date.now() - start < rider.config.MOVEMENT_DURATION) {
@@ -363,21 +357,19 @@ async function loop() {
               );
             }
             console.log("PICKING UP ", nextAction.bestParcel);
-            //brain.updateParcelsQueue();
             break;
           case ActionType.PUTDOWN:
             console.log("PUTTING DOWN");
             await client.putdown();
             rider.parcels.clear();
-            rider.scorepla = 0;
+            rider.plan_fit = 0;
             newPlan();
-
             break;
         }
       }
     } else {
       console.log("Plan is empty. Recalculating plan");
-      rider.scorepla = 0;
+      rider.plan_fit = 0;
       newPlan();
     }
     await new Promise((res) => setImmediate(res));

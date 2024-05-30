@@ -5,7 +5,7 @@ export class Rider {
   constructor() {
     this.player_parcels = new Map();
     this.plan = [];
-    this.scorepla = 0;
+    this.plan_fit = 0;
     this.config = {};
     console.log("Rider created");
   }
