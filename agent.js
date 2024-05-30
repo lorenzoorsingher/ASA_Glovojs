@@ -13,7 +13,7 @@ let client = null;
 
 let [pop, gen] = process.argv.slice(2);
 if (pop == undefined) {
-  pop = 1000;
+  pop = 100;
 }
 if (gen == undefined) {
   gen = 100;
@@ -70,16 +70,11 @@ client.onYou(({ id, name, x, y, score }) => {
   if (!player_init) {
     rider.init(id, name, score, new Position(x, y));
     player_init = true;
+    wait_load = false;
+    trg = rider.position;
+    brain.updatePlayerPosition(trg, rider.config.MOVEMENT_DURATION);
   }
   rider.updatePosition(x, y);
-  if (hasCompletedMovement(rider.position)) {
-    brain &&
-      brain.updatePlayerPosition(
-        rider.position,
-        rider.config.MOVEMENT_DURATION
-      );
-    wait_load = false;
-  }
 });
 
 client.onParcelsSensing(async (perceived_parcels) => {
@@ -168,17 +163,13 @@ setInterval(() => {
   if (lastPosition.equals(rider.position)) {
     console.log("HARD RESET--------------------------------------------------");
 
-    isMoving = false;
-    trg = null;
+    trg = rider.position;
     rider.plan_fit = 0;
     rider.parcels.clear();
     newPlan();
-    //console.log("PLAN::: ", plan);
   } else {
-    console.log("NO RESET");
+    //console.log("NO RESET");
   }
-  console.log("Last: ", lastPosition);
-  console.log("Current: ", rider.position);
   lastPosition.x = rider.position.x;
   lastPosition.y = rider.position.y;
 }, RESET_TIMEOUT * Math.floor(Math.random() * 100) + 150);
@@ -244,22 +235,27 @@ function hasCompletedMovement(pos) {
 }
 
 let nextAction = null;
-let isMoving = false;
 let trg = null;
 let src = null;
 
+let planLock = false;
+
 function newPlan() {
+  brain.updatePlayerPosition(trg, rider.config.MOVEMENT_DURATION);
   // console.log("MyPos: ", rider.position);
+  planLock = true;
   const [tmp_plan, best_fit] = brain.createPlan(rider.parcels);
 
   // console.log("Best fit: ", best_fit);
   if (best_fit > rider.plan_fit) {
     rider.plan_fit = best_fit;
     rider.plan = tmp_plan;
+    trg = rider.position;
     console.log("New plan accepted");
   } else {
     console.log("New plan rejected");
   }
+  planLock = false;
 }
 
 let start = Date.now();
@@ -271,7 +267,6 @@ async function loop() {
       continue;
     }
 
-    //console.log("allParcels: ", allParcels);
     for (const p of allParcels) {
       if (p.carriedBy == rider.id) {
         //console.log("Parcel carried by me");
@@ -280,37 +275,34 @@ async function loop() {
     }
 
     if (rider.plan.length > 0) {
-      // console.log("never stopping");
-      if (trg == null) {
-        trg = rider.position;
-      }
-
-      if (trg && trg.equals(rider.position)) {
-        isMoving = false;
-        nextAction = rider.plan.shift();
-
-        // for (const d of map.getDeliveryZones()) {
-        //   if (trg.equals(d)) {
-        //     console.log("PUTTING DOWN");
-        //     await client.putdown();
-        //   }
-        // }
-      }
-
-      if (stat == false) {
-        isMoving = false;
-      }
-
-      if (!isMoving) {
-        //console.log("Next action: ", nextAction);
+      if (hasCompletedMovement(rider.position) && !planLock) {
+        if (stat == false) {
+          console.log("DIDNT COMPLETE MOVEMENT");
+          if (trg.equals(rider.position)) {
+            console.log("AGENT ABOUT TO DESYNC.");
+            console.log("plan might be invalid. Recalculating plan");
+            stat = true;
+            rider.plan_fit = 0;
+            newPlan();
+            continue;
+          }
+        }
+        if (!trg.equals(rider.position)) {
+          console.log("DIDNT REACH TARGET");
+        } else {
+          nextAction = rider.plan.shift();
+        }
         src = nextAction.source;
         trg = nextAction.target;
         let move = Position.getDirectionTo(src, trg);
 
+        console.log("Next action: ", nextAction);
+
         if (!src.equals(rider.position)) {
-          //plan = brain.createPlan();
-          trg = null;
-          continue;
+          console.log("DESYNC DESYNC DESYNC");
+          console.log("agent in  ", rider.position);
+          console.log(allParcels);
+          exit();
         }
 
         // let blocked = false;
@@ -339,8 +331,6 @@ async function loop() {
             if (move != "none") {
               var stat = await client.move(move);
             }
-
-            isMoving = true;
             break;
           case ActionType.PICKUP:
             await client.pickup();
