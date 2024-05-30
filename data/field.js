@@ -158,7 +158,7 @@ export class Field {
       this.isTileUnreachable(start, blocking) ||
       this.isTileUnreachable(end, blocking)
     ) {
-      //console.log("BFS: Start or End tile is unreachable");
+      console.log("BFS: Start or End tile is unreachable");
       return [];
     }
 
@@ -191,6 +191,16 @@ export class Field {
       path.push(par[currentNode].id);
       currentNode = par[currentNode].id;
     }
+
+    if (path.length <= 1) {
+      if (start.position.equals(end.position)) {
+        console.log("Start and end are the same");
+      } else {
+        console.log("GAWD DAMN it. Path is empty");
+        return [];
+      }
+    }
+
     VERBOSE &&
       console.log(
         "It takes ",
@@ -218,11 +228,11 @@ export class Field {
     }
 
     if (closest == null) {
-      console.log("No delivery zones reachable");
+      //console.log("No delivery zones reachable");
       return null;
     }
 
-    console.log("Closest delivery zone is at ", closest.x, closest.y);
+    //console.log("Closest delivery zone is at ", closest.x, closest.y);
     return this.getTile(closest);
   }
 
@@ -233,8 +243,9 @@ export class Field {
     let closest = [];
 
     for (let d of this.deliveryZones) {
-      const distance = this.bfs(this.getTile(d), this.getTile(pos)).length - 1;
-      closest.push({ x: d.x, y: d.y, distance: distance });
+      const path = this.bfs(this.getTile(d), this.getTile(pos));
+      const distance = path.length - 1;
+      closest.push({ x: d.x, y: d.y, distance: distance, path: path });
     }
 
     closest = this.sort_by_key(closest, "distance");
