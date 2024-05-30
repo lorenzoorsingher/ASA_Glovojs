@@ -40,17 +40,20 @@ export class Genetic {
     const MUL = 2;
 
     let prep_parcels = [];
+
     for (const [key, p] of this.parcels.entries()) {
-      let fromPlayer =
-        this.field.bfs(
-          this.field.getTile({ x: this.x, y: this.y }),
-          this.field.getTile({ x: p.x, y: p.y })
-        ).length - 1;
-      let toZone =
-        this.field.getClosestDeliveryZones({
-          x: p.x,
-          y: p.y,
-        })[0].distance - 1;
+      let path_fromPlayer = this.field.bfs(
+        this.field.getTile({ x: p.x, y: p.y }),
+        this.field.getTile({ x: this.x, y: this.y })
+      );
+      let fromPlayer = path_fromPlayer.length - 1;
+
+      let closest = this.field.getClosestDeliveryZones({
+        x: p.x,
+        y: p.y,
+      })[0];
+      let path_toZone = closest.path;
+      let toZone = closest.distance - 1;
 
       let inc = fromPlayer;
       let outc = toZone;
@@ -62,12 +65,15 @@ export class Genetic {
         in_c: inc,
         out_c: outc,
         id: key,
+        path_in: path_fromPlayer,
+        path_out: path_toZone,
       });
     }
     let costs = [];
-
+    let paths = [];
     for (let i = 0; i < prep_parcels.length; i++) {
       costs[i] = [];
+      paths[i] = [];
 
       for (let j = 0; j < prep_parcels.length; j++) {
         if (i == j) {
@@ -83,13 +89,21 @@ export class Genetic {
             y: prep_parcels[j].y,
           });
 
-          costs[i][j] = this.field.bfs(endTile, stTile).length;
+          let path = this.field.bfs(endTile, stTile);
+          if (path.length == 0) {
+            costs[i][j] = Infinity;
+            // console.log("No path from ", i, " to ", j, " nodes unreaachabl");
+          } else {
+            // console.log("Path from ", i, " to ", j, " : ", path);
+            paths[i][j] = path;
+            costs[i][j] = path.length;
+          }
         }
       }
     }
 
     //this.printMat(costs);
-    return [costs, prep_parcels];
+    return [costs, paths, prep_parcels];
   }
 
   maskList(list, p) {
@@ -410,7 +424,7 @@ export class Genetic {
     return [actions, rew];
   }
   createPlan(playerParcels) {
-    const [costs, parc] = this.builGraphInOut();
+    const [costs, paths, parc] = this.builGraphInOut();
 
     const [best_path, best_fit] = this.geneticTSP(
       costs,
@@ -421,50 +435,81 @@ export class Genetic {
       0.5,
       playerParcels
     );
+
     console.log("Generated plan with rew ", best_fit);
     let parcels_path = [];
     for (const idx of best_path) {
       let par = parc[idx];
-      parcels_path.push({ pos: new Position(par.x, par.y), parcel: par.id });
+      parcels_path.push({
+        pos: new Position(par.x, par.y),
+        parcel: par.id,
+        path_in: par.path_in,
+        path_out: par.path_out,
+      });
     }
+
+    // for (let i = 0; i < best_path.length; i++) {
+    //   let curridx = best_path[i];
+    //   if (i + 1 < best_path.length) {
+    //     let nextidx = best_path[i + 1];
+    //     console.log(curridx, " -> ", nextidx, " ", paths[curridx][nextidx]);
+    //   }
+    // }
+    console.log("chosen parcels: ", parcels_path);
+
+    // console.log(paths);
 
     if (parcels_path.length == 0 || best_fit == 0) {
       return this.backupPlan(playerParcels);
     }
 
+    //TODO:
     let plan = [];
-    let startTile = this.field.getTile(new Position(this.x, this.y));
-    let endTile = this.field.getTile(parcels_path[0].pos);
-    let path = this.field.bfs(endTile, startTile);
+    // let startTile = this.field.getTile(new Position(this.x, this.y));
+    // let endTile = this.field.getTile(parcels_path[0].pos);
+    // let path = this.field.bfs(endTile, startTile);
+    //console.log("path_in", parcels_path[0].path_in);
     let actions = Action.pathToAction(
-      path,
+      parcels_path[0].path_in,
       ActionType.PICKUP,
       parcels_path[0].parcel
     );
     plan = plan.concat(actions);
-    startTile = endTile;
-    for (let i = 1; i < parcels_path.length; i++) {
-      endTile = this.field.getTile(parcels_path[i].pos);
-      path = this.field.bfs(endTile, startTile);
-      actions = Action.pathToAction(
-        path,
-        ActionType.PICKUP,
-        parcels_path[i].parcel
-      );
-      plan = plan.concat(actions);
-      startTile = endTile;
+
+    // startTile = endTile;
+    // for (let i = 1; i < parcels_path.length; i++) {
+    //   endTile = this.field.getTile(parcels_path[i].pos);
+    //   path = this.field.bfs(endTile, startTile);
+    //   actions = Action.pathToAction(
+    //     path,
+    //     ActionType.PICKUP,
+    //     parcels_path[i].parcel
+    //   );
+    //   plan = plan.concat(actions);
+    //   startTile = endTile;
+    // }
+
+    for (let i = 0; i < best_path.length; i++) {
+      let curridx = best_path[i];
+      if (i + 1 < best_path.length) {
+        let nextidx = best_path[i + 1];
+        let semi_path = paths[curridx][nextidx];
+
+        actions = Action.pathToAction(
+          semi_path,
+          ActionType.PICKUP,
+          parcels_path[i + 1].parcel
+        );
+
+        plan = plan.concat(actions);
+      }
     }
 
-    let delivery = this.field.getClosestDeliveryZone(endTile.position);
-    if (delivery == null) {
-      // console.log("No delivery zones reachable, generating random plan");
-      // delivery = this.field.getRandomSpawnable();
-      // path = this.field.bfs(delivery, endTile);
-      // actions = Action.pathToAction(path, ActionType.MOVE, null);
-    } else {
-      path = this.field.bfs(delivery, endTile);
-      actions = Action.pathToAction(path, ActionType.PUTDOWN, null);
-    }
+    actions = Action.pathToAction(
+      parcels_path[parcels_path.length - 1].path_out,
+      ActionType.PUTDOWN,
+      null
+    );
 
     plan = plan.concat(actions);
 
