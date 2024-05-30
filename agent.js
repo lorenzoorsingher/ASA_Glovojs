@@ -51,8 +51,6 @@ let wait_load = true;
 // player position
 // parcels carried by the player
 let allParcels = [];
-//carring
-let carrying = 0;
 
 client.onConfig((config) => {
   rider.set_config(config);
@@ -62,10 +60,8 @@ client.onConfig((config) => {
 // note that this happens before the onYou event
 client.onMap((width, height, tiles) => {
   VERBOSE && console.log("Map received. Initializing...");
-  // runMapTest()
   map.init(width, height, tiles, blocking_agents);
   brain.init(map, parcels, new Position(0, 0), pop, gen);
-  //rider.init
 });
 
 let player_init = false;
@@ -168,12 +164,6 @@ setInterval(() => {
       rider.parcels.set(key, value);
     }
   }
-
-  //TODO delete
-  carrying = 0;
-  for (const [key, value] of rider.parcels.entries()) {
-    carrying += value;
-  }
 }, 1000);
 
 let lastPosition = new Position(0, 0);
@@ -243,7 +233,6 @@ setInterval(() => {
     agent: [rider.position.x, rider.position.y],
     plan: [plan_move, plan_pickup, plan_drop, "TILE"],
     parc: agent_parcels,
-    carrying: car,
     agents: adv_agents,
     blk_agents: blk_agents,
   };
