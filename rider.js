@@ -2,12 +2,20 @@ import { Position } from "./data/position.js";
 import { Action, ActionType } from "./data/action.js";
 
 export class Rider {
+  constructor() {
+    this.player_parcels = new Map();
+    this.plan = [];
+    this.scorepla = 0;
+    console.log("Rider created");
+  }
+
   init(id, name, score, position) {
     this.parcels = new Map();
     this.id = id;
     this.name = name;
     this.score = score;
     this.position = position;
+
     // this.plan = this.createPlan(parcelsQueue)
   }
 

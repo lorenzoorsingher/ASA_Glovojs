@@ -47,8 +47,7 @@ const blocking_agents = new Map();
 
 let RESET_TIMEOUT = 50;
 // contains the current plan
-let plan = [];
-let plan_fit = 0;
+
 // contains weather the plan is to a random tile or to a parcel
 let plan_target = "RANDOM";
 // hold loop until the map is loaded
@@ -56,7 +55,6 @@ let wait_load = true;
 
 // player position
 // parcels carried by the player
-let playerParcels = new Map();
 let allParcels = [];
 //carring
 let carrying = 0;
@@ -165,18 +163,18 @@ setInterval(() => {
     }
   }
 
-  for (let [key, value] of playerParcels.entries()) {
+  for (let [key, value] of rider.parcels.entries()) {
     value--;
     if (value <= 0) {
-      playerParcels.delete(key);
+      rider.parcels.delete(key);
     } else {
-      playerParcels.set(key, value);
+      rider.parcels.set(key, value);
     }
   }
 
   //TODO delete
   carrying = 0;
-  for (const [key, value] of playerParcels.entries()) {
+  for (const [key, value] of rider.parcels.entries()) {
     carrying += value;
   }
 }, 1000);
@@ -189,8 +187,8 @@ setInterval(() => {
 
     isMoving = false;
     trg = null;
-    plan_fit = 0;
-    playerParcels.clear();
+    rider.scorepla = 0;
+    rider.parcels.clear();
     newPlan();
     //console.log("PLAN::: ", plan);
   } else {
@@ -213,8 +211,8 @@ setInterval(() => {
 
   let adv_agents = [];
   let blk_agents = [];
-  if (plan.length > 0) {
-    for (const p of plan) {
+  if (rider.plan.length > 0) {
+    for (const p of rider.plan) {
       switch (p.type) {
         case ActionType.MOVE:
           plan_move.push(p.source.serialize());
@@ -239,7 +237,7 @@ setInterval(() => {
     blk_agents.push({ x: p.x, y: p.y });
   }
   let car = "";
-  for (const [key, p] of playerParcels.entries()) {
+  for (const [key, p] of rider.parcels.entries()) {
     car += key + " ";
   }
   let dash_data = {
@@ -268,12 +266,12 @@ let initial = true;
 
 function newPlan() {
   // console.log("MyPos: ", rider.position);
-  const [tmp_plan, best_fit] = brain.createPlan(playerParcels);
+  const [tmp_plan, best_fit] = brain.createPlan(rider.parcels);
 
   // console.log("Best fit: ", best_fit);
-  if (best_fit > plan_fit) {
-    plan_fit = best_fit;
-    plan = tmp_plan;
+  if (best_fit > rider.scorepla) {
+    rider.scorepla = best_fit;
+    rider.plan = tmp_plan;
     plan_target = "TILE";
     console.log("New plan accepted");
   } else {
@@ -298,10 +296,10 @@ async function loop() {
     for (const p of allParcels) {
       if (p.carriedBy == me.id) {
         //console.log("Parcel carried by me");
-        playerParcels.set(p.id, p.reward);
+        rider.parcels.set(p.id, p.reward);
       }
     }
-    if (plan.length > 0) {
+    if (rider.plan.length > 0) {
       // console.log("never stopping");
       if (trg == null) {
         trg = rider.position;
@@ -310,7 +308,7 @@ async function loop() {
       if (trg && trg.equals(rider.position)) {
         initial = false;
         isMoving = false;
-        nextAction = plan.shift();
+        nextAction = rider.plan.shift();
 
         for (const d of map.getDeliveryZones()) {
           if (trg.equals(d)) {
@@ -341,7 +339,7 @@ async function loop() {
           if (a.x == trg.x && a.y == trg.y) {
             trg = null;
             console.log("Agent in the way. Recalculating plan");
-            plan_fit = 0;
+            rider.scorepla = 0;
             newPlan();
             break;
           }
@@ -369,7 +367,7 @@ async function loop() {
             await client.pickup();
 
             try {
-              playerParcels.set(
+              rider.parcels.set(
                 nextAction.bestParcel,
                 parcels.get(nextAction.bestParcel).reward
               );
@@ -385,8 +383,8 @@ async function loop() {
           case ActionType.PUTDOWN:
             console.log("PUTTING DOWN");
             await client.putdown();
-            playerParcels.clear();
-            plan_fit = 0;
+            rider.parcels.clear();
+            rider.scorepla = 0;
             newPlan();
 
             break;
@@ -394,7 +392,7 @@ async function loop() {
       }
     } else {
       console.log("Plan is empty. Recalculating plan");
-      plan_fit = 0;
+      rider.scorepla = 0;
       newPlan();
     }
     await new Promise((res) => setImmediate(res));
