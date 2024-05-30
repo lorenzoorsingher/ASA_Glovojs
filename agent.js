@@ -48,8 +48,6 @@ const blocking_agents = new Map();
 let RESET_TIMEOUT = 50;
 // contains the current plan
 
-// contains weather the plan is to a random tile or to a parcel
-let plan_target = "RANDOM";
 // hold loop until the map is loaded
 let wait_load = true;
 
@@ -244,7 +242,7 @@ setInterval(() => {
     map_size: [map.width, map.height],
     tiles: update_map,
     agent: [rider.position.x, rider.position.y],
-    plan: [plan_move, plan_pickup, plan_drop, plan_target],
+    plan: [plan_move, plan_pickup, plan_drop, "TILE"],
     parc: agent_parcels,
     carrying: car,
     agents: adv_agents,
@@ -272,7 +270,6 @@ function newPlan() {
   if (best_fit > rider.scorepla) {
     rider.scorepla = best_fit;
     rider.plan = tmp_plan;
-    plan_target = "TILE";
     console.log("New plan accepted");
   } else {
     console.log("New plan rejected");
