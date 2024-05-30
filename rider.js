@@ -6,17 +6,23 @@ export class Rider {
     this.player_parcels = new Map();
     this.plan = [];
     this.scorepla = 0;
+    this.config = {};
     console.log("Rider created");
   }
 
-  init(id, name, score, position) {
+  init(id, name, score, position, config) {
     this.parcels = new Map();
     this.id = id;
     this.name = name;
     this.score = score;
     this.position = position;
-
+    this.config = {};
     // this.plan = this.createPlan(parcelsQueue)
+  }
+
+  set_config(config) {
+    this.config = config;
+    console.log("Config received: ", this.config);
   }
 
   updatePosition(x, y) {

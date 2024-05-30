@@ -8,8 +8,6 @@ import { Rider } from "./rider.js";
 
 export const VERBOSE = false;
 const LOCAL = true;
-const TOKEN =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhYmM4ZTE4ZjY2IiwibmFtZSI6ImxvbGxvIiwiaWF0IjoxNzE1MDkyODQ5fQ.PqPFemZ93idl9DKzOCMXDe0FaB9mgB0WWeVnA9j_Sao";
 
 let client = null;
 
@@ -36,7 +34,6 @@ if (LOCAL) {
   );
 }
 
-const me = {};
 const map = new Field();
 const brain = new Genetic();
 const rider = new Rider();
@@ -58,9 +55,8 @@ let allParcels = [];
 let carrying = 0;
 
 client.onConfig((config) => {
-  me.config = config;
+  rider.set_config(config);
   RESET_TIMEOUT = config.RESET_TIMEOUT;
-  console.log("Config received: ", config);
 });
 
 // note that this happens before the onYou event
@@ -82,7 +78,10 @@ client.onYou(({ id, name, x, y, score }) => {
   rider.updatePosition(x, y);
   if (hasCompletedMovement(rider.position)) {
     brain &&
-      brain.updatePlayerPosition(rider.position, me.config.MOVEMENT_DURATION);
+      brain.updatePlayerPosition(
+        rider.position,
+        rider.config.MOVEMENT_DURATION
+      );
     wait_load = false;
   }
 });
@@ -98,7 +97,7 @@ client.onParcelsSensing(async (perceived_parcels) => {
     let dist = manhattanDistance(rider.position, parc_pos);
 
     let found = false;
-    if (dist < me.config.PARCELS_OBSERVATION_DISTANCE) {
+    if (dist < rider.config.PARCELS_OBSERVATION_DISTANCE) {
       for (const p of perceived_parcels) {
         if (p.id == key) {
           found = true;
@@ -291,7 +290,7 @@ async function loop() {
 
     //console.log("allParcels: ", allParcels);
     for (const p of allParcels) {
-      if (p.carriedBy == me.id) {
+      if (p.carriedBy == rider.id) {
         //console.log("Parcel carried by me");
         rider.parcels.set(p.id, p.reward);
       }
@@ -347,7 +346,7 @@ async function loop() {
         }
 
         //console.log("elapsed: ", Date.now() - start);
-        while (Date.now() - start < me.config.MOVEMENT_DURATION) {
+        while (Date.now() - start < rider.config.MOVEMENT_DURATION) {
           await new Promise((res) => setImmediate(res));
         }
         start = Date.now();
