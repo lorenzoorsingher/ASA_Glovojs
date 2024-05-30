@@ -1,7 +1,5 @@
 import { Position } from "./data/position.js";
 import { Action, ActionType } from "./data/action.js";
-import { VERBOSE } from "./agent.js";
-import e from "express";
 
 export class Genetic {
   init(field, parcels, playerPosition, pop, gen) {

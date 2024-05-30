@@ -4,11 +4,10 @@ import { Position } from "./data/position.js";
 import { Genetic } from "./geneticBrain.js";
 import myServer from "./server.js";
 import { Action, ActionType } from "./data/action.js";
+import { Rider } from "./rider.js";
 
-// myServer.start();
-// myServer.serveDashboard();
 export const VERBOSE = false;
-const LOCAL = false;
+const LOCAL = true;
 const TOKEN =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhYmM4ZTE4ZjY2IiwibmFtZSI6ImxvbGxvIiwiaWF0IjoxNzE1MDkyODQ5fQ.PqPFemZ93idl9DKzOCMXDe0FaB9mgB0WWeVnA9j_Sao";
 
@@ -40,6 +39,7 @@ if (LOCAL) {
 const me = {};
 const map = new Field();
 const brain = new Genetic();
+const rider = new Rider();
 
 const parcels = new Map();
 const agents = new Map();
@@ -55,7 +55,6 @@ let plan_target = "RANDOM";
 let wait_load = true;
 
 // player position
-let playerPosition = new Position(0, 0);
 // parcels carried by the player
 let playerParcels = new Map();
 let allParcels = [];
@@ -73,18 +72,21 @@ client.onMap((width, height, tiles) => {
   VERBOSE && console.log("Map received. Initializing...");
   // runMapTest()
   map.init(width, height, tiles, blocking_agents);
-  brain.init(map, parcels, playerPosition, pop, gen);
+  brain.init(map, parcels, new Position(0, 0), pop, gen);
+  //rider.init
 });
 
+let player_init = false;
+
 client.onYou(({ id, name, x, y, score }) => {
-  me.id = id;
-  me.name = name;
-  me.x = x;
-  me.y = y;
-  playerPosition = new Position(x, y);
-  if (hasCompletedMovement(playerPosition)) {
+  if (!player_init) {
+    rider.init(id, name, score, new Position(x, y));
+    player_init = true;
+  }
+  rider.updatePosition(x, y);
+  if (hasCompletedMovement(rider.position)) {
     brain &&
-      brain.updatePlayerPosition(playerPosition, me.config.MOVEMENT_DURATION);
+      brain.updatePlayerPosition(rider.position, me.config.MOVEMENT_DURATION);
     wait_load = false;
   }
 });
@@ -97,7 +99,7 @@ client.onParcelsSensing(async (perceived_parcels) => {
 
   for (const [key, value] of parcels.entries()) {
     let parc_pos = new Position(value.x, value.y);
-    let dist = manhattanDistance(playerPosition, parc_pos);
+    let dist = manhattanDistance(rider.position, parc_pos);
 
     let found = false;
     if (dist < me.config.PARCELS_OBSERVATION_DISTANCE) {
@@ -117,7 +119,7 @@ client.onParcelsSensing(async (perceived_parcels) => {
   for (const p of perceived_parcels) {
     if (
       !parcels.has(p.id) &&
-      hasCompletedMovement(playerPosition) &&
+      hasCompletedMovement(rider.position) &&
       p.carriedBy == null
     ) {
       parcels.set(p.id, p);
@@ -143,7 +145,7 @@ client.onAgentsSensing(async (perceived_agents) => {
   blocking_agents.clear();
   for (const a of perceived_agents) {
     if (a.name != "god") {
-      if (distance(playerPosition, a) < 100) {
+      if (distance(rider.position, a) < 100) {
         blocking_agents.set(a.id, a);
       } else {
         agents.set(a.id, a);
@@ -182,7 +184,7 @@ setInterval(() => {
 let lastPosition = new Position(0, 0);
 // HARD RESET
 setInterval(() => {
-  if (lastPosition.equals(playerPosition)) {
+  if (lastPosition.equals(rider.position)) {
     console.log("HARD RESET--------------------------------------------------");
 
     isMoving = false;
@@ -195,9 +197,9 @@ setInterval(() => {
     console.log("NO RESET");
   }
   console.log("Last: ", lastPosition);
-  console.log("Current: ", playerPosition);
-  lastPosition.x = playerPosition.x;
-  lastPosition.y = playerPosition.y;
+  console.log("Current: ", rider.position);
+  lastPosition.x = rider.position.x;
+  lastPosition.y = rider.position.y;
 }, RESET_TIMEOUT * Math.floor(Math.random() * 100) + 150);
 
 // DASHBOARD UPDATE
@@ -243,7 +245,7 @@ setInterval(() => {
   let dash_data = {
     map_size: [map.width, map.height],
     tiles: update_map,
-    agent: [me.x, me.y],
+    agent: [rider.position.x, rider.position.y],
     plan: [plan_move, plan_pickup, plan_drop, plan_target],
     parc: agent_parcels,
     carrying: car,
@@ -265,7 +267,7 @@ let src = null;
 let initial = true;
 
 function newPlan() {
-  // console.log("MyPos: ", playerPosition);
+  // console.log("MyPos: ", rider.position);
   const [tmp_plan, best_fit] = brain.createPlan(playerParcels);
 
   // console.log("Best fit: ", best_fit);
@@ -302,10 +304,10 @@ async function loop() {
     if (plan.length > 0) {
       // console.log("never stopping");
       if (trg == null) {
-        trg = playerPosition;
+        trg = rider.position;
       }
 
-      if (trg && trg.equals(playerPosition)) {
+      if (trg && trg.equals(rider.position)) {
         initial = false;
         isMoving = false;
         nextAction = plan.shift();
@@ -328,7 +330,7 @@ async function loop() {
         trg = nextAction.target;
         let move = Position.getDirectionTo(src, trg);
 
-        if (!src.equals(playerPosition)) {
+        if (!src.equals(rider.position)) {
           //plan = brain.createPlan();
           trg = null;
           continue;
