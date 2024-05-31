@@ -127,7 +127,7 @@ client.onAgentsSensing(async (perceived_agents) => {
   blocking_agents.clear();
   for (const a of perceived_agents) {
     if (a.name != "god") {
-      if (manhattanDistance(rider.position, a) < 100) {
+      if (manhattanDistance(rider.position, a) < 5) {
         blocking_agents.set(a.id, a);
       } else {
         agents.set(a.id, a);
@@ -305,20 +305,20 @@ async function loop() {
           exit();
         }
 
-        // let blocked = false;
-        // for (const a of blocking_agents.values()) {
-        //   if (a.x == trg.x && a.y == trg.y) {
-        //     trg = null;
-        //     console.log("Agent in the way. Recalculating plan");
-        //     rider.plan_fit = 0;
-        //     newPlan();
-        //     break;
-        //   }
-        // }
+        let blocked = false;
+        for (const a of blocking_agents.values()) {
+          if (a.x == trg.x && a.y == trg.y) {
+            trg = rider.position;
+            console.log("Agent in the way. Recalculating plan");
+            rider.plan_fit = 0;
+            newPlan();
+            break;
+          }
+        }
 
-        // if (blocked) {
-        //   continue;
-        // }
+        if (blocked) {
+          continue;
+        }
 
         //console.log("elapsed: ", Date.now() - start);
         while (Date.now() - start < rider.config.MOVEMENT_DURATION) {

@@ -46,14 +46,28 @@ export class Genetic {
         this.field.getTile({ x: p.x, y: p.y }),
         this.field.getTile({ x: this.x, y: this.y })
       );
-      let fromPlayer = path_fromPlayer.length - 1;
+      let fromPlayer;
+      if (path_fromPlayer == -1) {
+        console.log("No path from player to parcel ", key);
+        fromPlayer = Infinity;
+      } else {
+        fromPlayer = path_fromPlayer.length - 1;
+      }
 
       let closest = this.field.getClosestDeliveryZones({
         x: p.x,
         y: p.y,
-      })[0];
-      let path_toZone = closest.path;
-      let toZone = closest.distance - 1;
+      });
+
+      let path_toZone;
+      let toZone;
+      if (closest.length == 0) {
+        console.log("No delivery zones reachable");
+        toZone = Infinity;
+      } else {
+        path_toZone = closest[0].path;
+        toZone = closest[0].distance - 1;
+      }
 
       let inc = fromPlayer;
       let outc = toZone;
