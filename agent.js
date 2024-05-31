@@ -163,9 +163,11 @@ setInterval(() => {
   if (lastPosition.equals(rider.position)) {
     console.log("HARD RESET--------------------------------------------------");
 
-    trg = rider.position;
+    if (hasCompletedMovement(rider.position)) {
+      trg = rider.position;
+    }
     rider.plan_fit = 0;
-    rider.parcels.clear();
+    //rider.parcels.clear();
     newPlan();
   } else {
     //console.log("NO RESET");
@@ -181,7 +183,8 @@ setInterval(() => {
   let plan_pickup = [];
   let plan_drop = [];
 
-  let agent_parcels = [];
+  let all_parcels = [];
+  let rider_parcels = [];
 
   let adv_agents = [];
   let blk_agents = [];
@@ -202,7 +205,7 @@ setInterval(() => {
   }
 
   for (const [key, p] of parcels.entries()) {
-    agent_parcels.push({ x: p.x, y: p.y, reward: p.reward });
+    all_parcels.push({ x: p.x, y: p.y, reward: p.reward });
   }
   for (const [key, p] of agents.entries()) {
     adv_agents.push({ x: p.x, y: p.y });
@@ -210,18 +213,19 @@ setInterval(() => {
   for (const [key, p] of blocking_agents.entries()) {
     blk_agents.push({ x: p.x, y: p.y });
   }
-  let car = "";
   for (const [key, p] of rider.parcels.entries()) {
-    car += key + " ";
+    rider_parcels.push({ key: key, reward: p.reward });
   }
   let dash_data = {
     map_size: [map.width, map.height],
     tiles: update_map,
     agent: [rider.position.x, rider.position.y],
     plan: [plan_move, plan_pickup, plan_drop, "TILE"],
-    parc: agent_parcels,
+    parc: all_parcels,
+    rider_parc: rider_parcels,
     agents: adv_agents,
     blk_agents: blk_agents,
+    carrying: rider.carrying,
   };
   myServer.emitMessage("map", dash_data);
 }, 100);
@@ -267,10 +271,11 @@ async function loop() {
       continue;
     }
 
+    rider.carrying = 0;
     for (const p of allParcels) {
       if (p.carriedBy == rider.id) {
-        //console.log("Parcel carried by me");
         rider.parcels.set(p.id, p.reward);
+        rider.carrying += p.reward;
       }
     }
 

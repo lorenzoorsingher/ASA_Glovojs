@@ -4,6 +4,7 @@ import { Action, ActionType } from "./data/action.js";
 export class Rider {
   constructor() {
     this.player_parcels = new Map();
+    this.carrying = 0;
     this.plan = [];
     this.plan_fit = 0;
     this.config = {};

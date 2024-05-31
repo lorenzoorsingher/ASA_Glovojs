@@ -18,6 +18,10 @@
   </div>
   <div id="info">
   </div>
+  <div id="carrying">
+  </div>
+  <div id="carrying_points">
+  </div>
 
 
   <script src="/socket.io/socket.io.js"></script>
@@ -41,10 +45,20 @@
       plan_drop = data["plan"][2]; 
       plan_target  = data["plan"][3];
       parcels = data["parc"];
+      rider_parcels = data["rider_parc"];
+      carrying = data["carrying"];
       agents = data["agents"];
       blk_agents = data["blk_agents"];
 
       document.getElementById('info').innerHTML = "<div><h2>"+plan_target+"</h2><div>";
+
+        
+      
+      document.getElementById('carrying').innerHTML = "<div>"+rider_parcels.map((el, idx) => {
+      return (el.key);
+     });"<div>";
+
+      document.getElementById('carrying_points').innerHTML =  "<div><h2>"+carrying+" points </h2><div>";
 
       const table = document.getElementById("mapTable");
       table.innerHTML = "";
