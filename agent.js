@@ -272,6 +272,7 @@ async function loop() {
     }
 
     rider.carrying = 0;
+    rider.parcels.clear();
     for (const p of allParcels) {
       if (p.carriedBy == rider.id) {
         rider.parcels.set(p.id, p.reward);
@@ -301,7 +302,7 @@ async function loop() {
         trg = nextAction.target;
         let move = Position.getDirectionTo(src, trg);
 
-        console.log("Next action: ", nextAction);
+        //console.log("Next action: ", nextAction);
 
         if (!src.equals(rider.position)) {
           console.log("DESYNC DESYNC DESYNC");

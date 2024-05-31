@@ -135,11 +135,11 @@ export class Genetic {
     return Math.floor(Math.random() * max);
   }
 
-  rouletteWheel(population, costs, nodes, playerParcels) {
+  rouletteWheel(population, costs, nodes, player_parcels) {
     let scores = [];
     let tot_fit = 0;
     for (const dna of population) {
-      let fit = this.fitness(dna, costs, nodes, playerParcels);
+      let fit = this.fitness(dna, costs, nodes, player_parcels);
       scores.push(fit);
       tot_fit += fit;
     }
@@ -239,9 +239,9 @@ export class Genetic {
     return childA;
   }
 
-  fitness(dna, costs, nodes, playerParcels) {
-    let carriedParcels = Array.from(playerParcels);
-    let currCarr = Array.from(playerParcels).length;
+  fitness(dna, costs, nodes, player_parcels) {
+    let carriedParcels = Array.from(player_parcels);
+    let currCarr = Array.from(player_parcels).length;
     let currRew = 0;
     for (const par of carriedParcels) {
       currRew += par[1];
@@ -278,7 +278,7 @@ export class Genetic {
     gen_num = 100,
     mutation_rate = 0.1,
     elite_rate = 0.5,
-    playerParcels = null
+    player_parcels = null
   ) {
     let genes = Array.from(Array(nodes.length).keys());
     // console.log("Genes: ", genes);
@@ -307,7 +307,7 @@ export class Genetic {
     let tot_fit = 0;
     for (const dna of population) {
       //console.log("DNA: ", dna);
-      tot_fit += this.fitness(dna, costs, nodes, playerParcels);
+      tot_fit += this.fitness(dna, costs, nodes, player_parcels);
     }
     //console.log("Average fitness: ", tot_fit / pop_size);
     this.iters += 1;
@@ -323,7 +323,7 @@ export class Genetic {
         population,
         costs,
         nodes,
-        playerParcels
+        player_parcels
       );
       let elites = this.getElites(population, scores, elite_rate);
       new_pop = new_pop.concat(elites);
@@ -364,7 +364,7 @@ export class Genetic {
       tot_fit = 0;
 
       for (const dna of population) {
-        let fit = this.fitness(dna, costs, nodes, playerParcels);
+        let fit = this.fitness(dna, costs, nodes, player_parcels);
         tot_fit += fit;
 
         if (fit > best_fit) {
@@ -383,13 +383,13 @@ export class Genetic {
     return [best_dna, best_fit];
   }
 
-  backupPlan(playerParcels) {
+  backupPlan(player_parcels) {
     let startTile = this.field.getTile({ x: this.x, y: this.y });
     let endTile = null;
     let deliver = false;
     let rew = 1;
-    if (Array.from(playerParcels).length > 0) {
-      for (const par of Array.from(playerParcels)) {
+    if (Array.from(player_parcels).length > 0) {
+      for (const par of Array.from(player_parcels)) {
         rew += par[1];
       }
       console.log(
@@ -437,7 +437,7 @@ export class Genetic {
     console.log("Generated BACKUP plan with rew ", rew);
     return [actions, rew];
   }
-  createPlan(playerParcels) {
+  createPlan(player_parcels) {
     const [costs, paths, parc] = this.builGraphInOut();
 
     const [best_path, best_fit] = this.geneticTSP(
@@ -447,7 +447,7 @@ export class Genetic {
       this.gen,
       0.01,
       0.5,
-      playerParcels
+      player_parcels
     );
 
     console.log("Generated plan with rew ", best_fit);
@@ -474,7 +474,7 @@ export class Genetic {
     // console.log(paths);
 
     if (parcels_path.length == 0 || best_fit == 0) {
-      return this.backupPlan(playerParcels);
+      return this.backupPlan(player_parcels);
     }
 
     //TODO:
