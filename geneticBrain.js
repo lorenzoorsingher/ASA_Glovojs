@@ -273,7 +273,8 @@ export class Genetic {
       currRew += par[1];
     }
 
-    let LONG_TRIP_PENALITY = 0.5;
+    //penality for each additional step. Makes sure the eagent eventually delivers the parcels
+    let LONG_TRIP_PENALITY = 2.5;
     let real_duration = this.movement_duration * 4;
     let STEP_COST = real_duration / 1000 / this.parcel_decay;
 
@@ -292,7 +293,8 @@ export class Genetic {
     for (let i = 1; i < dna.length; i++) {
       rew +=
         nodes[dna[i]].rew -
-        Math.max(costs[dna[i - 1]][dna[i]] * currCarr, 0) * STEP_COST; // - penality;
+        Math.max(costs[dna[i - 1]][dna[i]] * currCarr, 0) * STEP_COST -
+        LONG_TRIP_PENALITY * currCarr; // - penality;
       currCarr += 1;
     }
     rew +=
@@ -321,8 +323,8 @@ export class Genetic {
       return [[], 0];
     }
     //this.printMat(costs);
-    console.log("Nodes: ", nodes);
-    console.log("Genes: ", genes);
+    // console.log("Nodes: ", nodes);
+    // console.log("Genes: ", genes);
 
     let best_dna = [];
     let best_fit = 0;
@@ -338,7 +340,7 @@ export class Genetic {
       population.push(masked);
     }
     //population[0] = [];
-    console.log(population);
+    //console.log(population);
 
     let tot_fit = 0;
     for (const dna of population) {

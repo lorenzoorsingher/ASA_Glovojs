@@ -158,7 +158,7 @@ export class Field {
       this.isTileUnreachable(start, blocking) ||
       this.isTileUnreachable(end, blocking)
     ) {
-      console.log("BFS: Start or End tile is unreachable");
+      //console.log("BFS: Start or End tile is unreachable");
       return -1;
     }
 

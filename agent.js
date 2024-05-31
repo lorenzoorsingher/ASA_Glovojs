@@ -128,7 +128,7 @@ client.onAgentsSensing(async (perceived_agents) => {
   blocking_agents.clear();
   for (const a of perceived_agents) {
     if (a.name != "god") {
-      if (manhattanDistance(rider.position, a) < 5) {
+      if (manhattanDistance(rider.position, a) < 100) {
         blocking_agents.set(a.id, a);
       } else {
         agents.set(a.id, a);
