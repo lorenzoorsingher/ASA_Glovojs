@@ -159,7 +159,7 @@ export class Field {
       this.isTileUnreachable(end, blocking)
     ) {
       console.log("BFS: Start or End tile is unreachable");
-      return [];
+      return -1;
     }
 
     distance[start.id] = 0;
@@ -197,7 +197,7 @@ export class Field {
         console.log("Start and end are the same");
       } else {
         console.log("GAWD DAMN it. Path is empty");
-        return [];
+        return -1;
       }
     }
 
@@ -219,7 +219,11 @@ export class Field {
     let smallestDistance = Infinity;
 
     for (let d of this.deliveryZones) {
-      const distance = this.bfs(this.getTile(d), this.getTile(pos)).length - 1;
+      let path = this.bfs(this.getTile(d), this.getTile(pos));
+      if (path == -1) {
+        continue;
+      }
+      const distance = path.length - 1;
       if (distance < smallestDistance && distance > 0) {
         //console.log("Distance: ", distance, " ", this.getTile(d).position);
         smallestDistance = distance;
@@ -244,8 +248,10 @@ export class Field {
 
     for (let d of this.deliveryZones) {
       const path = this.bfs(this.getTile(d), this.getTile(pos));
-      const distance = path.length - 1;
-      closest.push({ x: d.x, y: d.y, distance: distance, path: path });
+      if (path != -1) {
+        const distance = path.length - 1;
+        closest.push({ x: d.x, y: d.y, distance: distance, path: path });
+      }
     }
 
     closest = this.sort_by_key(closest, "distance");
