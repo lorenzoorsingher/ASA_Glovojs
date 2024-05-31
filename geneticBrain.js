@@ -1,7 +1,10 @@
-import { Position } from "./data/position.js";
+import { Position, Direction } from "./data/position.js";
 import { Action, ActionType } from "./data/action.js";
 
 export class Genetic {
+  constructor() {
+    this.config = {};
+  }
   init(field, parcels, playerPosition, pop, gen) {
     this.field = field;
     this.parcels = parcels;
@@ -17,7 +20,21 @@ export class Genetic {
 
     // this.plan = this.createPlan(parcelsQueue)
   }
+  set_config(config) {
+    this.config = config;
+    console.log("Config received: ", this.config);
+    this.movement_duration = config.MOVEMENT_DURATION;
 
+    this.parcel_decay = parseFloat(this.config.PARCEL_DECADING_INTERVAL);
+    if (isNaN(this.parcel_decay)) {
+      if (this.config.PARCEL_DECADING_INTERVAL === "infinite") {
+        this.parcel_decay = Infinity;
+      } else {
+        this.parcel_decay = 0;
+      }
+    }
+    console.log("Parcel decay: ", this.parcel_decay);
+  }
   updateField(field) {
     this.field = field;
   }
@@ -40,8 +57,16 @@ export class Genetic {
     const MUL = 2;
 
     let prep_parcels = [];
+    let dummy_parcel = {
+      x: this.x,
+      y: this.y,
+      reward: 0,
+    };
 
-    for (const [key, p] of this.parcels.entries()) {
+    let copy_parcels = new Map(this.parcels);
+    copy_parcels.set("rider", dummy_parcel);
+
+    for (const [key, p] of copy_parcels.entries()) {
       let path_fromPlayer = this.field.bfs(
         this.field.getTile({ x: p.x, y: p.y }),
         this.field.getTile({ x: this.x, y: this.y })
@@ -240,6 +265,7 @@ export class Genetic {
   }
 
   fitness(dna, costs, nodes, player_parcels) {
+    //computing current carried score and number of carreied parcels
     let carriedParcels = Array.from(player_parcels);
     let currCarr = Array.from(player_parcels).length;
     let currRew = 0;
@@ -247,21 +273,30 @@ export class Genetic {
       currRew += par[1];
     }
 
-    let COST_MUL = 1;
+    let LONG_TRIP_PENALITY = 0.5;
+    let real_duration = this.movement_duration * 4;
+    let STEP_COST = real_duration / 1000 / this.parcel_decay;
+
+    //console.log("STEP COST: ", STEP_COST);
+    //exit();
     //console.log("DNA: ", dna);
     let rew = currRew;
     // console.log("start at node : ", dna[0]);
 
+    // reward of first parcel minus cost of reaching it
+    rew +=
+      nodes[dna[0]].rew -
+      Math.max(nodes[dna[0]].in_c * currCarr, 0) * STEP_COST;
     currCarr += 1;
-    rew += nodes[dna[0]].rew - nodes[dna[0]].in_c * currCarr * COST_MUL;
 
     for (let i = 1; i < dna.length; i++) {
-      currCarr += 1;
-
       rew +=
-        nodes[dna[i]].rew - costs[dna[i - 1]][dna[i]] * currCarr * COST_MUL; // - penality;
+        nodes[dna[i]].rew -
+        Math.max(costs[dna[i - 1]][dna[i]] * currCarr, 0) * STEP_COST; // - penality;
+      currCarr += 1;
     }
-    rew += -nodes[dna[dna.length - 1]].out_c * COST_MUL;
+    rew +=
+      -Math.max(nodes[dna[dna.length - 1]].out_c * currCarr, 0) * STEP_COST;
 
     if (rew < 0) {
       rew = 0;
@@ -286,8 +321,8 @@ export class Genetic {
       return [[], 0];
     }
     //this.printMat(costs);
-    // console.log("Nodes: ", nodes);
-    // console.log("Genes: ", genes);
+    console.log("Nodes: ", nodes);
+    console.log("Genes: ", genes);
 
     let best_dna = [];
     let best_fit = 0;
@@ -302,7 +337,8 @@ export class Genetic {
 
       population.push(masked);
     }
-    //console.log(population);
+    //population[0] = [];
+    console.log(population);
 
     let tot_fit = 0;
     for (const dna of population) {
@@ -380,6 +416,9 @@ export class Genetic {
     let endTile = null;
     let deliver = false;
     let rew = 1;
+
+    let path_to_closest = -1;
+    let path_to_spawnable = -1;
     if (Array.from(player_parcels).length > 0) {
       for (const par of Array.from(player_parcels)) {
         rew += par[1];
@@ -387,43 +426,59 @@ export class Genetic {
       console.log(
         "No parcels but agent is packing, going to closest delivery zone"
       );
-      endTile = this.field.getClosestDeliveryZone({
+
+      let closest = this.field.getClosestDeliveryZones({
         x: this.x,
         y: this.y,
       });
 
-      if (endTile == null) {
-        console.log("No delivery zones reachable, generating random plan");
-        endTile = this.field.getRandomSpawnable();
+      if (closest.length == 0) {
+        console.log("No delivery zones reachable");
       } else {
-        deliver = true;
+        path_to_closest = closest[0].path;
       }
     } else {
-      console.log("No parcels, generating random plan");
-      endTile = this.field.getRandomSpawnable();
+      console.log("No parcels on rider, generating random plan");
+      path_to_spawnable = this.field.getRandomSpawnable(
+        new Position(this.x, this.y)
+      );
     }
 
-    // #TODO something happening here
-    if (endTile.position.equals(startTile.position)) {
-      console.log("Already on the target tile, no need to move");
-
-      let plan = [
-        new Action(
-          startTile.position,
-          startTile.position,
-          ActionType.PUTDOWN,
-          null
-        ),
-      ];
-      return [plan, 1];
-    }
-
-    let path = this.field.bfs(endTile, startTile);
     let actions = [];
-    if (deliver) {
-      actions = Action.pathToAction(path, ActionType.PUTDOWN, null);
+    if (path_to_closest != -1) {
+      console.log("[BACKUP] A reachable delivery zone was found!");
+      actions = Action.pathToAction(path_to_closest, ActionType.PUTDOWN, null);
+    } else if (path_to_spawnable != -1) {
+      console.log("[BACKUP] A reachable spawnable tile was found!");
+      actions = Action.pathToAction(path_to_spawnable, ActionType.MOVE, null);
     } else {
-      actions = Action.pathToAction(path, ActionType.MOVE, null);
+      console.log(
+        "[BACKUP] No reachable delivery zone or spawnable tile was found!"
+      );
+      console.log("[BACKUP] Returning random reflexive move");
+
+      let movement = null;
+      let target_position = null;
+      for (const dir in Direction) {
+        target_position = new Position(this.x, this.y).moveTo(Direction[dir]);
+        console.log("trying to move ", Direction[dir], " to ", target_position);
+        if (
+          !this.field.isTileUnreachable(this.field.getTile(target_position))
+        ) {
+          movement = Direction[dir];
+          console.log("found walkable tile");
+          break;
+        } else {
+          console.log("Tile is unreachable");
+        }
+      }
+
+      actions = new Action(
+        new Position(this.x, this.y),
+        target_position,
+        ActionType.MOVE,
+        null
+      );
     }
 
     console.log("Generated BACKUP plan with rew ", rew);
@@ -442,7 +497,13 @@ export class Genetic {
       player_parcels
     );
 
-    console.log("Generated plan with rew ", best_fit);
+    console.log(
+      "Generated plan with rew ",
+      best_fit,
+      " from position ",
+      this.x,
+      this.y
+    );
     let parcels_path = [];
     for (const idx of best_path) {
       let par = parc[idx];

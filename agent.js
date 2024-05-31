@@ -54,6 +54,7 @@ let allParcels = [];
 
 client.onConfig((config) => {
   rider.set_config(config);
+  brain.set_config(config);
   RESET_TIMEOUT = config.RESET_TIMEOUT;
 });
 
@@ -238,6 +239,18 @@ function hasCompletedMovement(pos) {
   return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
 }
 
+function isPathBlocked() {
+  let blocked = false;
+  for (const a of blocking_agents.values()) {
+    if (a.x == trg.x && a.y == trg.y) {
+      blocked = true;
+      break;
+    }
+  }
+
+  return blocked;
+}
+
 let nextAction = null;
 let trg = null;
 let src = null;
@@ -288,9 +301,9 @@ async function loop() {
             console.log("AGENT ABOUT TO DESYNC.");
             console.log("plan might be invalid. Recalculating plan");
             stat = true;
-            rider.plan_fit = 0;
-            newPlan();
-            continue;
+            // rider.plan_fit = 0;
+            // newPlan();
+            // continue;
           }
         }
         if (!trg.equals(rider.position)) {
@@ -302,27 +315,34 @@ async function loop() {
         trg = nextAction.target;
         let move = Position.getDirectionTo(src, trg);
 
-        console.log("Next action: ", nextAction);
+        //console.log("Next action: ", nextAction);
 
         if (!src.equals(rider.position)) {
           console.log("DESYNC DESYNC DESYNC");
           console.log("agent in  ", rider.position);
           console.log(allParcels);
-          exit();
-        }
 
-        let blocked = false;
-        for (const a of blocking_agents.values()) {
-          if (a.x == trg.x && a.y == trg.y) {
-            trg = rider.position;
-            console.log("Agent in the way. Recalculating plan");
-            rider.plan_fit = 0;
-            newPlan();
-            break;
+          console.log(
+            "[RECOVER] Trying to recover path, checking for reachability"
+          );
+          if (manhattanDistance(rider.position, src) <= 1) {
+            console.log("SRC tile reachable. Going there");
+            rider.plan.unshift(nextAction);
+            nextAction = new Action(ActionType.MOVE, rider.position, src);
+            src = nextAction.source;
+            trg = nextAction.target;
+            move = Position.getDirectionTo(src, trg);
+          } else {
+            console.log("Agent too far from source. Game over.");
+            exit();
           }
         }
 
-        if (blocked) {
+        if (isPathBlocked()) {
+          trg = rider.position;
+          console.log("Agent in the way. Recalculating plan");
+          rider.plan_fit = 0;
+          newPlan();
           continue;
         }
 
