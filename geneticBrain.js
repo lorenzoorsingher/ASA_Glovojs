@@ -327,9 +327,7 @@ export class Genetic {
       );
       let elites = this.getElites(population, scores, elite_rate);
       new_pop = new_pop.concat(elites);
-      // console.log("Scores: ", scores);
-      // console.log("Chances: ", chances);
-      // console.log("Elite dna: ", elites);
+
       for (let j = 0; j < pop_size - elites.length; j += 2) {
         let parentA = this.pickOne(population, chances);
         let parentB = this.pickOne(population, chances);
@@ -337,16 +335,10 @@ export class Genetic {
         let childA = this.crossover(parentA, parentB);
         let childB = this.crossover(parentB, parentA);
 
-        // console.log("Parent A: ", parentA);
-        // console.log("Parent B: ", parentB);
-        // console.log("Child A: ", childA);
-        // console.log("Child B: ", childB);
-        // new_pop.push(child);
         new_pop.push(childA);
         new_pop.push(childB);
       }
       // console.log("Population: ", population);
-
       // console.log("New population: ", new_pop);
 
       for (let j = 0; j < new_pop.length; j++) {
@@ -462,15 +454,7 @@ export class Genetic {
       });
     }
 
-    // for (let i = 0; i < best_path.length; i++) {
-    //   let curridx = best_path[i];
-    //   if (i + 1 < best_path.length) {
-    //     let nextidx = best_path[i + 1];
-    //     console.log(curridx, " -> ", nextidx, " ", paths[curridx][nextidx]);
-    //   }
-    // }
-    console.log("chosen parcels: ", parcels_path);
-
+    //console.log("chosen parcels: ", parcels_path);
     // console.log(paths);
 
     if (parcels_path.length == 0 || best_fit == 0) {
@@ -479,29 +463,12 @@ export class Genetic {
 
     //TODO:
     let plan = [];
-    // let startTile = this.field.getTile(new Position(this.x, this.y));
-    // let endTile = this.field.getTile(parcels_path[0].pos);
-    // let path = this.field.bfs(endTile, startTile);
-    //console.log("path_in", parcels_path[0].path_in);
     let actions = Action.pathToAction(
       parcels_path[0].path_in,
       ActionType.PICKUP,
       parcels_path[0].parcel
     );
     plan = plan.concat(actions);
-
-    // startTile = endTile;
-    // for (let i = 1; i < parcels_path.length; i++) {
-    //   endTile = this.field.getTile(parcels_path[i].pos);
-    //   path = this.field.bfs(endTile, startTile);
-    //   actions = Action.pathToAction(
-    //     path,
-    //     ActionType.PICKUP,
-    //     parcels_path[i].parcel
-    //   );
-    //   plan = plan.concat(actions);
-    //   startTile = endTile;
-    // }
 
     for (let i = 0; i < best_path.length; i++) {
       let curridx = best_path[i];
@@ -588,24 +555,3 @@ export class Genetic {
     console.log(str);
   }
 }
-
-/*
-
-2 : delivery zone
-1 : walkable
-0 : not walkable
-
-map = [
-    [0, 0, 1, 0, 1, 0, 1, 0, 0, 0],
-    [2, 1, 1, 1, 1, 1, 1, 1, 1, 2],
-    [0, 0, 1, 0, 1, 0, 1, 0, 1, 0],
-    [0, 0, 1, 0, 1, 0, 1, 0, 1, 1],
-    [0, 0, 1, 0, 1, 0, 1, 0, 0, 2],
-    [2, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
-    [0, 0, 1, 0, 1, 1, 1, 0, 0, 1],
-    [0, 0, 1, 2, 1, 0, 1, 0, 0, 2]
-]
-
-*/

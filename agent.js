@@ -302,7 +302,7 @@ async function loop() {
         trg = nextAction.target;
         let move = Position.getDirectionTo(src, trg);
 
-        //console.log("Next action: ", nextAction);
+        console.log("Next action: ", nextAction);
 
         if (!src.equals(rider.position)) {
           console.log("DESYNC DESYNC DESYNC");
