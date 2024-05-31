@@ -194,9 +194,9 @@ export class Field {
 
     if (path.length <= 1) {
       if (start.position.equals(end.position)) {
-        console.log("Start and end are the same");
+        //console.log("Start and end are the same");
       } else {
-        console.log("GAWD DAMN it. Path is empty");
+        //console.log("GAWD DAMN it. Path is empty");
         return -1;
       }
     }
@@ -292,19 +292,47 @@ export class Field {
     return tile;
   }
 
-  getRandomSpawnable() {
-    let idx = Math.floor(Math.random() * this.parcelSpawners.length);
+  getRandomSpawnable(player_position) {
+    console.log("Looking for a SPAWNABLE tile from ", player_position);
+    const randomOrder = this.parcelSpawners.sort(() => Math.random() - 0.5);
+    for (const spawner of randomOrder) {
+      const tile = this.getTile(spawner);
+      let path = this.bfs(tile, this.getTile(player_position));
+      if (path != -1) {
+        return path;
+      }
+    }
 
-    let tile = this.getTile(this.parcelSpawners[idx]);
-
-    return tile;
+    return -1;
   }
+
+  // getRandomReachable(player_position) {
+  //   console.log("Looking for a REACHABLE tile from ", player_position);
+  //   const randomOrder = this.parcelSpawners.sort(() => Math.random() - 0.5);
+
+  //   player_tile = this.getTile(player_position);
+  //   neighbors =
+
+  //   for (const spawner of randomOrder) {
+  //     const tile = this.getTile(spawner);
+  //     let path = this.bfs(tile, this.getTile(player_position));
+  //     if (path != -1) {
+  //       return path;
+  //     }
+  //   }
+
+  //   return -1;
+  // }
 
   isDeliveryZone(pos) {
     return this.field[pos.y][pos.x].delivery;
   }
 
   isTileUnreachable(tile, blocking = []) {
+    for (const a of this.agents.values()) {
+      blocking.push(a.x + "-" + a.y);
+      //console.log("Blocking: ", blocking);
+    }
     if (blocking.includes(tile.id) && blocking.length > 0) {
       // console.log(
       //   "Tile in position: ",
