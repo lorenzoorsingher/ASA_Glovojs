@@ -81,6 +81,10 @@ export class Field {
   }
 
   getTile(pos) {
+    if (pos.x < 0 || pos.x >= this.width || pos.y < 0 || pos.y >= this.height) {
+      console.log("Tile out of bounds");
+      return -1;
+    }
     return this.field[pos.y][pos.x];
   }
 
