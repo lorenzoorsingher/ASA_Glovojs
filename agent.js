@@ -2,7 +2,7 @@ import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 import { Field } from "./data/field.js";
 import { Position } from "./data/position.js";
 import { Genetic } from "./geneticBrain.js";
-import myServer from "./server.js";
+import { MyServer } from "./server.js";
 import { Action, ActionType } from "./data/action.js";
 import { Rider } from "./rider.js";
 
@@ -11,12 +11,16 @@ const LOCAL = true;
 
 let client = null;
 
-let [pop, gen] = process.argv.slice(2);
+let [pop, gen, port] = process.argv.slice(2);
 if (pop == undefined) {
   pop = 100;
 }
 if (gen == undefined) {
   gen = 100;
+}
+
+if (port == undefined) {
+  port = 3000;
 }
 
 console.log("Population: ", pop);
@@ -33,6 +37,8 @@ if (LOCAL) {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijc5OWU1ZTkwM2ZjIiwibmFtZSI6IkdMT1ZPSlMiLCJpYXQiOjE3MTU2ODA3MzB9.WLbj404fa8vknsLtN6piMqvI6DCL4dGRr2Wm7FZ8iHs"
   );
 }
+
+const dashboard = new MyServer(port);
 
 const map = new Field();
 const brain = new Genetic();
@@ -228,7 +234,7 @@ setInterval(() => {
     blk_agents: blk_agents,
     carrying: rider.carrying,
   };
-  myServer.emitMessage("map", dash_data);
+  dashboard.emitMessage("map", dash_data);
 }, 100);
 
 function manhattanDistance(a, b) {
@@ -278,7 +284,9 @@ function newPlan() {
 let start = Date.now();
 
 async function loop() {
+  // main loop
   while (true) {
+    // wait for map and player to be loaded
     if (wait_load) {
       await new Promise((res) => setTimeout(res, 300));
       continue;
@@ -293,50 +301,47 @@ async function loop() {
       }
     }
 
+    // if a plan exists execute, otherwise create a new one
     if (rider.plan.length > 0) {
+      // if the agent has completed the movement and brain has completed the plan
       if (hasCompletedMovement(rider.position) && !planLock) {
-        if (stat == false) {
-          console.log("DIDNT COMPLETE MOVEMENT");
-          if (trg.equals(rider.position)) {
-            console.log("AGENT ABOUT TO DESYNC.");
-            console.log("plan might be invalid. Recalculating plan");
-            stat = true;
-            // rider.plan_fit = 0;
-            // newPlan();
-            // continue;
-          }
-        }
+        // if the agent has reached the target move to the next action
         if (!trg.equals(rider.position)) {
           console.log("DIDNT REACH TARGET");
         } else {
           nextAction = rider.plan.shift();
         }
+
+        // extract action information
         src = nextAction.source;
         trg = nextAction.target;
         let move = Position.getDirectionTo(src, trg);
 
-        //console.log("Next action: ", nextAction);
+        console.log("rider: ", rider.position);
+        console.log("Next action: ", nextAction);
+        console.log("stat: ", stat);
+        console.log("------------------------------------");
+        // if the agent is not in the source tile, desync, something went wrong
+        // if (!src.equals(rider.position)) {
+        //   console.log("DESYNC DESYNC DESYNC");
+        //   console.log("agent in  ", rider.position);
+        //   console.log(allParcels);
 
-        if (!src.equals(rider.position)) {
-          console.log("DESYNC DESYNC DESYNC");
-          console.log("agent in  ", rider.position);
-          console.log(allParcels);
-
-          console.log(
-            "[RECOVER] Trying to recover path, checking for reachability"
-          );
-          if (manhattanDistance(rider.position, src) <= 1) {
-            console.log("SRC tile reachable. Going there");
-            rider.plan.unshift(nextAction);
-            nextAction = new Action(ActionType.MOVE, rider.position, src);
-            src = nextAction.source;
-            trg = nextAction.target;
-            move = Position.getDirectionTo(src, trg);
-          } else {
-            console.log("Agent too far from source. Game over.");
-            exit();
-          }
-        }
+        //   console.log(
+        //     "[RECOVER] Trying to recover path, checking for reachability"
+        //   );
+        //   if (manhattanDistance(rider.position, src) <= 1) {
+        //     console.log("SRC tile reachable. Going there");
+        //     rider.plan.unshift(nextAction);
+        //     nextAction = new Action(ActionType.MOVE, rider.position, src);
+        //     src = nextAction.source;
+        //     trg = nextAction.target;
+        //     move = Position.getDirectionTo(src, trg);
+        //   } else {
+        //     console.log("Agent too far from source. Game over.");
+        //     exit();
+        //   }
+        // }
 
         if (isPathBlocked()) {
           trg = rider.position;
