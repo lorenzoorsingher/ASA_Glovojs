@@ -464,9 +464,9 @@ export class Genetic {
       for (const dir in Direction) {
         target_position = new Position(this.x, this.y).moveTo(Direction[dir]);
         console.log("trying to move ", Direction[dir], " to ", target_position);
-        if (
-          !this.field.isTileUnreachable(this.field.getTile(target_position))
-        ) {
+        let target_tile = this.field.getTile(target_position);
+
+        if (target_tile != -1 && !this.field.isTileUnreachable(target_tile)) {
           movement = Direction[dir];
           console.log("found walkable tile");
           break;
@@ -486,6 +486,7 @@ export class Genetic {
     console.log("Generated BACKUP plan with rew ", rew);
     return [actions, rew];
   }
+
   createPlan(player_parcels) {
     const [costs, paths, parc] = this.builGraphInOut();
 
