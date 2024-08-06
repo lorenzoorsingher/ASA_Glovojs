@@ -352,12 +352,13 @@ async function loop() {
           continue;
         }
 
-        //console.log("elapsed: ", Date.now() - start);
+        //avoid server spam
         while (Date.now() - start < rider.config.MOVEMENT_DURATION) {
           await new Promise((res) => setImmediate(res));
         }
         start = Date.now();
 
+        //execute action
         switch (nextAction.type) {
           case ActionType.MOVE:
             if (move != "none") {
