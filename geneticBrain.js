@@ -475,12 +475,14 @@ export class Genetic {
         }
       }
 
-      actions = new Action(
-        new Position(this.x, this.y),
-        target_position,
-        ActionType.MOVE,
-        null
-      );
+      actions = [
+        new Action(
+          new Position(this.x, this.y),
+          target_position,
+          ActionType.MOVE,
+          null
+        ),
+      ];
     }
 
     console.log("Generated BACKUP plan with rew ", rew);
@@ -558,6 +560,37 @@ export class Genetic {
 
     plan = plan.concat(actions);
 
+    let corr_plan = [];
+    for (let i = 0; i < plan.length; i += 1) {
+      if (plan[i].type == ActionType.PICKUP) {
+        for (let j = 0; j < i; j++) {
+          if (plan[j].type == ActionType.MOVE) {
+            if (plan[j].source.equals(plan[i].source)) {
+              console.log(
+                "###################################################################"
+              );
+              console.log("COLFICT IN PICKUP ORDER: ", plan[i]);
+              corr_plan = [];
+              corr_plan = corr_plan.concat(plan.slice(0, j));
+              corr_plan = corr_plan.concat(plan.slice(i, i + 1));
+              corr_plan = corr_plan.concat(plan.slice(j, i));
+              corr_plan = corr_plan.concat(plan.slice(i + 1, plan.length));
+              plan = corr_plan;
+
+              i = 0;
+              j = 0;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    if (corr_plan.length > 0) {
+      for (const act of plan) {
+        act.printAction();
+      }
+    }
     return [plan, best_fit];
   }
 
