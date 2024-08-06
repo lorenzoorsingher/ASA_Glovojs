@@ -1,6 +1,5 @@
 # ASA_Glovojs
 
-
 ## TODO
 
 - [x] Define interfaces
@@ -9,7 +8,7 @@
 - [x] Implement dashboard
 - [x] Implement planner
 - [x] Improve reasoning to pick up multiple parcels instead of delivering asap
-- [X] Stop going after parcels that have already been delivered
+- [x] Stop going after parcels that have already been delivered
 - [x] Anytime the agent steps on a parcel, pick it up
 - [x] Anytime the agent steps on a delivery zone, deliver
 - [x] (kinda) Prevent moving to unreachable tiles
@@ -25,3 +24,5 @@
 - [x] make sure agent forgets parcels left in memory when the tile comes back in view and the parcel is gone
 
 - [ ] Make sure agent doesnt crash when NO plan is found (og no parcels, no delivery zones, no reachable tiles)
+
+- [ ] fix order of parcels in plan generation
