@@ -169,7 +169,6 @@ let lastPosition = new Position(0, 0);
 setInterval(() => {
   if (lastPosition.equals(rider.position)) {
     console.log("HARD RESET--------------------------------------------------");
-
     if (hasCompletedMovement(rider.position)) {
       trg = rider.position;
     }
@@ -305,7 +304,7 @@ async function loop() {
     if (rider.plan.length > 0) {
       // if the agent has completed the movement and brain has completed the plan
       if (hasCompletedMovement(rider.position) && !planLock) {
-        // if the agent has reached the target move to the next action
+        // if the agent has reached the previous target, update the nextAction
         if (!trg.equals(rider.position)) {
           console.log("DIDNT REACH TARGET");
         } else {
@@ -322,26 +321,28 @@ async function loop() {
         console.log("stat: ", stat);
         console.log("------------------------------------");
         // if the agent is not in the source tile, desync, something went wrong
-        // if (!src.equals(rider.position)) {
-        //   console.log("DESYNC DESYNC DESYNC");
-        //   console.log("agent in  ", rider.position);
-        //   console.log(allParcels);
+        if (!src.equals(rider.position)) {
+          console.log("DESYNC DESYNC DESYNC");
+          console.log("agent in  ", rider.position);
+          console.log(allParcels);
 
-        //   console.log(
-        //     "[RECOVER] Trying to recover path, checking for reachability"
-        //   );
-        //   if (manhattanDistance(rider.position, src) <= 1) {
-        //     console.log("SRC tile reachable. Going there");
-        //     rider.plan.unshift(nextAction);
-        //     nextAction = new Action(ActionType.MOVE, rider.position, src);
-        //     src = nextAction.source;
-        //     trg = nextAction.target;
-        //     move = Position.getDirectionTo(src, trg);
-        //   } else {
-        //     console.log("Agent too far from source. Game over.");
-        //     exit();
-        //   }
-        // }
+          console.log(
+            "[RECOVER] Trying to recover path, checking for reachability"
+          );
+
+          // if the agent is one tile off, try to recover
+          if (manhattanDistance(rider.position, src) <= 1) {
+            console.log("SRC tile reachable. Going there");
+            rider.plan.unshift(nextAction);
+            nextAction = new Action(ActionType.MOVE, rider.position, src);
+            src = nextAction.source;
+            trg = nextAction.target;
+            move = Position.getDirectionTo(src, trg);
+          } else {
+            console.log("Agent too far from source. Game over.");
+            exit();
+          }
+        }
 
         if (isPathBlocked()) {
           trg = rider.position;
