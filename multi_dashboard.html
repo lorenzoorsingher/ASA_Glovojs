@@ -1,0 +1,147 @@
+<!-- index.html -->
+<link href="/path/to/dashboard.css" />
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>dashboard</title>
+  </head>
+  <body>
+    <h1>Dashboard</h1>
+
+    <div id="mapdiv">
+      <table
+        id="myTable"
+        class="table table-borderless table-striped table-earning"
+      >
+        <tbody id="mapTable"></tbody>
+      </table>
+    </div>
+    <div id="info"></div>
+    <div id="carrying"></div>
+    <div id="carrying_points"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+
+      socket.on("update", (data) => {
+        document.getElementById("updates").innerText = JSON.stringify(data);
+      });
+
+      socket.on("map", (data) => {
+        w = data["map_size"][0];
+        h = data["map_size"][1];
+        tiles = data["tiles"];
+        parcels = data["parc"];
+        riders = data["riders"];
+
+        //   document.getElementById('info').innerHTML = "<div><h2>"+plan_target+"</h2><div>";
+
+        //   document.getElementById('carrying').innerHTML = "<div>"+rider_parcels.map((el, idx) => {
+        //   return (el.key);
+        //  });"<div>";
+
+        //  document.getElementById('carrying_points').innerHTML =  "<div><h2>"+carrying+" points </h2><div>";
+
+        const table = document.getElementById("mapTable");
+        table.innerHTML = "";
+
+        //console.log(agents)
+
+        for (let i = 0; i < h; i++) {
+          let y = h - i - 1;
+          let row = table.insertRow();
+
+          for (let j = 0; j < w; j++) {
+            let x = j;
+
+            let tile = row.insertCell();
+
+            tile_html = "<div style='display: table;width:100%;height:100%;'>";
+            tile.style.width = "20px";
+            tile.style.height = "20px";
+            let color = "black";
+            switch (tiles[y][j]["type"]) {
+              case "W":
+                color = "green";
+                break;
+              case "D":
+                color = "red";
+                break;
+            }
+
+            cell_id = j + "-" + y;
+            //console.log(str);
+
+            let pathcolors = ["blue", "orange", "purple"];
+
+            for (let rid = 0; rid < riders.length; rid++) {
+              plan_move = riders[rid].plan[0];
+              plan_pickup = riders[rid].plan[1];
+              plan_drop = riders[rid].plan[2];
+
+              if (plan_move.includes(cell_id)) {
+                pathcolor = pathcolors[rid];
+                tile_html +=
+                  "<div style='width:80%;height:80%;background-color:" +
+                  pathcolor +
+                  ";'></div>";
+              }
+
+              for (p of parcels) {
+                if (p.x == j && p.y == y) {
+                  color = "yellow";
+                  tile.innerHTML = "<div><b>" + p.reward + "</b></div>";
+                }
+              }
+
+              if (plan_pickup.includes(cell_id)) {
+                color = "GreenYellow";
+              } else if (plan_drop.includes(cell_id)) {
+                color = "orange";
+              }
+            }
+            tile_html += "</div>";
+
+            console.log(tile_html);
+            tile.innerHTML = tile_html;
+            tile.style.backgroundColor = color;
+          }
+          let tile = row.insertCell();
+          tile.innerHTML = "<div>" + y + "</div>";
+        }
+        let row = table.insertRow();
+        for (let j = 0; j < w; j++) {
+          let tile = row.insertCell();
+          tile.innerHTML = "<div>" + j + "</div>";
+        }
+
+        ridercolor = ["lightblue", "lightgray", "pink"];
+        for (let rid = 0; rid < riders.length; rid++) {
+          rider = riders[rid];
+
+          table.rows[Math.round(h - rider.y) - 1].cells[
+            Math.round(rider.x)
+          ].innerHTML = "<div ></div>";
+          table.rows[Math.round(h - rider.y) - 1].cells[
+            Math.round(rider.x)
+          ].style.backgroundColor = ridercolor[rid];
+        }
+        //console.log(Math.round(h-agent[1]), " ", Math.round(agent[0]));
+
+        // for (a of agents) {
+        //   table.rows[Math.round(h - a.y) - 1].cells[
+        //     Math.round(a.x)
+        //   ].style.backgroundColor = "pink";
+        // }
+        // for (a of blk_agents) {
+        //   table.rows[Math.round(h - a.y) - 1].cells[
+        //     Math.round(a.x)
+        //   ].style.backgroundColor = "HotPink";
+        // }
+      });
+    </script>
+  </body>
+</html>
