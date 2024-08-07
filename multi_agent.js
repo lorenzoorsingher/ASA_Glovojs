@@ -3,7 +3,7 @@ console.log("Starting...");
 import { Field } from "./data/field.js";
 import { Position } from "./data/position.js";
 // import { Genetic } from "./multi_geneticBrain.js";
-// import { MyServer } from "./server.js";
+import { MyServer } from "./server.js";
 import { Action, ActionType } from "./data/action.js";
 import { Rider } from "./muti_rider.js";
 
@@ -13,6 +13,7 @@ const LOCAL = true;
 //let clients = [null, null];
 let pop = 100;
 let gen = 100;
+let port = 3000;
 // let [pop, gen, port] = process.argv.slice(2);
 // if (pop == undefined) {
 //   pop = 100;
@@ -52,12 +53,12 @@ console.log("Generations: ", gen);
 //   );
 // }
 
-//const dashboard = new MyServer(port);
+const dashboard = new MyServer(port);
 
 let map_init = false;
 const map = new Field();
 
-const NRIDERS = 2;
+const NRIDERS = 3;
 let riders = [];
 
 for (let i = 0; i < NRIDERS; i++) {
@@ -69,6 +70,7 @@ for (let i = 0; i < NRIDERS; i++) {
 // const brain = new Genetic();
 // const rider = new Rider();
 
+let all_parcels = [];
 const parcels = new Map();
 const agents = new Map();
 const blocking_agents = new Map();
@@ -78,11 +80,6 @@ let RESET_TIMEOUT = 50;
 
 // hold loop until the map is loaded
 //let wait_load = true;
-
-// player position
-// parcels carried by the player
-let allParcels = [];
-//let player_init = false;
 
 riders.forEach((rider, index) => {
   //client = rider.client;
@@ -120,18 +117,22 @@ riders.forEach((rider, index) => {
 
   rider.client.onParcelsSensing(async (perceived_parcels) => {
     map.set_parcels(perceived_parcels);
-    allParcels = perceived_parcels.slice();
+    all_parcels = perceived_parcels.slice();
     let parc_before = Array.from(parcels.keys());
     //console.log("Parcels before: ", parc_before);
+    // console.log("Parcels perceived: ", perceived_parcels);
+    // console.log("Parcels in memory: ", parcels);
+    // console.log("Parcels carried: ", rider.parcels);
 
     for (const [key, value] of parcels.entries()) {
       let parc_pos = new Position(value.x, value.y);
       let dist = manhattanDistance(rider.position, parc_pos);
 
+      //delete parcel if it's in memory but not perceived
       let found = false;
       if (dist < rider.config.PARCELS_OBSERVATION_DISTANCE) {
         for (const p of perceived_parcels) {
-          if (p.id == key) {
+          if (p.id == key && p.carriedBy == null) {
             found = true;
             break;
           }
@@ -143,6 +144,7 @@ riders.forEach((rider, index) => {
       }
     }
 
+    // if parcel not in memory, add it
     for (const p of perceived_parcels) {
       if (
         !parcels.has(p.id) &&
@@ -178,28 +180,30 @@ riders.forEach((rider, index) => {
   // });
 });
 
-// // PARCELS CLOCK
-// setInterval(() => {
-//   for (const [key, value] of parcels.entries()) {
-//     value.reward--;
-//     if (value.reward <= 0) {
-//       parcels.delete(key);
-//     } else {
-//       parcels.set(key, value);
-//     }
-//   }
+// PARCELS CLOCK
+setInterval(() => {
+  for (const [key, value] of parcels.entries()) {
+    value.reward--;
+    if (value.reward <= 0) {
+      parcels.delete(key);
+    } else {
+      parcels.set(key, value);
+    }
+  }
 
-//   for (let [key, value] of rider.parcels.entries()) {
-//     value--;
-//     if (value <= 0) {
-//       rider.parcels.delete(key);
-//     } else {
-//       rider.parcels.set(key, value);
-//     }
-//   }
-// }, 1000);
+  riders.forEach((rider) => {
+    for (let [key, value] of rider.parcels.entries()) {
+      value--;
+      if (value <= 0) {
+        rider.parcels.delete(key);
+      } else {
+        rider.parcels.set(key, value);
+      }
+    }
+  });
+}, 1000);
 
-// let lastPosition = new Position(0, 0);
+let lastPosition = new Position(0, 0);
 // // HARD RESET
 // setInterval(() => {
 //   if (lastPosition.equals(rider.position)) {
@@ -217,59 +221,62 @@ riders.forEach((rider, index) => {
 //   lastPosition.y = rider.position.y;
 // }, RESET_TIMEOUT * Math.floor(Math.random() * 100) + 150);
 
-// // DASHBOARD UPDATE
-// setInterval(() => {
-//   let update_map = map.getMap();
-//   let plan_move = [];
-//   let plan_pickup = [];
-//   let plan_drop = [];
+// DASHBOARD UPDATE
+setInterval(() => {
+  let update_map = map.getMap();
 
-//   let all_parcels = [];
-//   let rider_parcels = [];
+  let riders_data = [];
 
-//   let adv_agents = [];
-//   let blk_agents = [];
-//   if (rider.plan.length > 0) {
-//     for (const p of rider.plan) {
-//       switch (p.type) {
-//         case ActionType.MOVE:
-//           plan_move.push(p.source.serialize());
-//           break;
-//         case ActionType.PICKUP:
-//           plan_pickup.push(p.source.serialize());
-//           break;
-//         case ActionType.PUTDOWN:
-//           plan_drop.push(p.source.serialize());
-//           break;
-//       }
-//     }
-//   }
+  riders.forEach((rider) => {
+    if (rider.player_init) {
+      let plan_move = [];
+      let plan_pickup = [];
+      let plan_drop = [];
+      let rider_parcels = [];
 
-//   for (const [key, p] of parcels.entries()) {
-//     all_parcels.push({ x: p.x, y: p.y, reward: p.reward });
-//   }
-//   for (const [key, p] of agents.entries()) {
-//     adv_agents.push({ x: p.x, y: p.y });
-//   }
-//   for (const [key, p] of blocking_agents.entries()) {
-//     blk_agents.push({ x: p.x, y: p.y });
-//   }
-//   for (const [key, p] of rider.parcels.entries()) {
-//     rider_parcels.push({ key: key, reward: p.reward });
-//   }
-//   let dash_data = {
-//     map_size: [map.width, map.height],
-//     tiles: update_map,
-//     agent: [rider.position.x, rider.position.y],
-//     plan: [plan_move, plan_pickup, plan_drop, "TILE"],
-//     parc: all_parcels,
-//     rider_parc: rider_parcels,
-//     agents: adv_agents,
-//     blk_agents: blk_agents,
-//     carrying: rider.carrying,
-//   };
-//   dashboard.emitMessage("map", dash_data);
-// }, 100);
+      if (rider.plan.length > 0) {
+        for (const p of rider.plan) {
+          switch (p.type) {
+            case ActionType.MOVE:
+              plan_move.push(p.source.serialize());
+              break;
+            case ActionType.PICKUP:
+              plan_pickup.push(p.source.serialize());
+              break;
+            case ActionType.PUTDOWN:
+              plan_drop.push(p.source.serialize());
+              break;
+          }
+        }
+      }
+
+      if (rider.parcels.size > 0) {
+        for (const [key, p] of rider.parcels.entries()) {
+          rider_parcels.push({ key: key, reward: p.reward });
+        }
+      }
+
+      riders_data.push({
+        x: rider.position.x,
+        y: rider.position.y,
+        plan: [plan_move, plan_pickup, plan_drop],
+        parcels: rider_parcels,
+      });
+    }
+  });
+
+  for (const [key, p] of parcels.entries()) {
+    all_parcels.push({ x: p.x, y: p.y, reward: p.reward });
+  }
+
+  let dash_data = {
+    map_size: [map.width, map.height],
+    tiles: update_map,
+    riders: riders_data,
+    parc: all_parcels,
+  };
+  dashboard.emitMessage("map", dash_data);
+}, 100);
 
 function manhattanDistance(a, b) {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
@@ -304,7 +311,7 @@ async function loop(rider) {
 
     rider.carrying = 0;
     rider.parcels.clear();
-    for (const p of allParcels) {
+    for (const p of all_parcels) {
       if (p.carriedBy == rider.id) {
         rider.parcels.set(p.id, p.reward);
         rider.carrying += p.reward;
@@ -320,43 +327,47 @@ async function loop(rider) {
           console.log("DIDNT REACH TARGET");
         } else {
           rider.nextAction = rider.plan.shift();
+          rider.src = rider.nextAction.source;
+          rider.trg = rider.nextAction.target;
         }
 
         // extract action information
-
-        let nextAction = rider.nextAction;
-
-        let src = nextAction.source;
-        let trg = nextAction.target;
-        let move = Position.getDirectionTo(src, trg);
+        let move = Position.getDirectionTo(rider.src, rider.trg);
 
         // console.log("rider: ", rider.position);
         // console.log("Next action: ", nextAction);
         // console.log("stat: ", stat);
         // console.log("------------------------------------");
-        //// if the agent is not in the source tile, desync, something went wrong
-        // if (!rider.src.equals(rider.position)) {
-        //   console.log("DESYNC DESYNC DESYNC");
-        //   console.log("agent in  ", rider.position);
-        //   console.log(allParcels);
+        // if the agent is not in the source tile, desync, something went wrong
+        if (!rider.src.equals(rider.position)) {
+          console.log("DESYNC DESYNC DESYNC");
+          console.log("agent in  ", rider.position);
+          //console.log(all_parcels);
 
-        //   console.log(
-        //     "[RECOVER] Trying to recover path, checking for reachability"
-        //   );
+          console.log(
+            "[RECOVER] Trying to recover path, checking for reachability"
+          );
 
-        //   // if the agent is one tile off, try to recover
-        //   if (manhattanDistance(rider.position, rider.src) <= 1) {
-        //     console.log("SRC tile reachable. Going there");
-        //     rider.plan.unshift(nextAction);
-        //     nextAction = new Action(ActionType.MOVE, rider.position, src);
-        //     src = nextAction.source;
-        //     trg = nextAction.target;
-        //     move = Position.getDirectionTo(src, trg);
-        //   } else {
-        //     console.log("Agent too far from source. Game over.");
-        //     exit();
-        //   }
-        // }
+          // if the agent is one tile off, try to recover
+          if (manhattanDistance(rider.position, rider.src) <= 1) {
+            console.log("SRC tile reachable. Going there");
+            rider.plan.unshift(rider.nextAction);
+            rider.nextAction = new Action(
+              rider.position,
+              rider.src,
+              ActionType.MOVE
+            );
+            rider.src = rider.nextAction.source;
+            rider.trg = rider.nextAction.target;
+            move = Position.getDirectionTo(rider.src, rider.trg);
+
+            console.log("moving from ", rider.src, " to ", rider.trg);
+            console.log(rider.nextAction);
+          } else {
+            console.log("Agent too far from source. Game over.");
+            exit();
+          }
+        }
 
         // if (isPathBlocked()) {
         //   trg = rider.position;
@@ -373,7 +384,7 @@ async function loop(rider) {
         start = Date.now();
 
         //execute action
-        switch (nextAction.type) {
+        switch (rider.nextAction.type) {
           case ActionType.MOVE:
             if (move != "none") {
               var stat = await rider.client.move(move);
@@ -384,16 +395,16 @@ async function loop(rider) {
 
             try {
               rider.parcels.set(
-                nextAction.bestParcel,
-                parcels.get(nextAction.bestParcel).reward
+                rider.nextAction.bestParcel,
+                parcels.get(rider.nextAction.bestParcel).reward
               );
-              parcels.delete(nextAction.bestParcel);
+              parcels.delete(rider.nextAction.bestParcel);
             } catch (error) {
               console.error(
                 "Parcel either expired or was deleted while executing plan."
               );
             }
-            console.log("PICKING UP ", nextAction.bestParcel);
+            console.log("PICKING UP ", rider.nextAction.bestParcel);
             break;
           case ActionType.PUTDOWN:
             console.log("PUTTING DOWN");
@@ -413,5 +424,8 @@ async function loop(rider) {
   }
 }
 
-loop(riders[0]);
-loop(riders[1]);
+for (let i = 0; i < riders.length; i++) {
+  loop(riders[i]);
+}
+// loop(riders[0]);
+// // loop(riders[1]);

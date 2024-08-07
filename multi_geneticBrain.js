@@ -587,7 +587,7 @@ export class Genetic {
     }
 
     for (const act of plan) {
-      act.printAction();
+      //act.printAction();
     }
 
     return [plan, best_fit];

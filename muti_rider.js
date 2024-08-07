@@ -18,6 +18,8 @@ export class Rider {
     this.nextAction = null;
     this.planLock = false;
 
+    this.parcels = new Map();
+
     this.brain = new Genetic();
     this.client = new DeliverooApi(
       "http://localhost:8080/?name=" + this.uname,
@@ -28,7 +30,6 @@ export class Rider {
   }
 
   init(id, name, score, position, config) {
-    this.parcels = new Map();
     this.id = id;
     this.name = name;
     this.score = score;
