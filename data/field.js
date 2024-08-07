@@ -1,7 +1,7 @@
 import { Tile } from "./tile.js";
 import { Position, Direction } from "./position.js";
-import { VERBOSE } from "../agent.js";
-
+// import { VERBOSE } from "../agent.js";
+const VERBOSE = false;
 export class Field {
   init(width, height, tiles, agents) {
     this.agents = agents;
