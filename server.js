@@ -17,7 +17,7 @@ export class MyServer {
 
   serveDashboard() {
     this.app.get("/", (req, res) => {
-      const dashboardPath = new URL("./dashboard.html", import.meta.url)
+      const dashboardPath = new URL("./multi_dashboard.html", import.meta.url)
         .pathname;
       const decodedPath = decodeURIComponent(dashboardPath);
       const normalizedPath = path.normalize(decodedPath);
