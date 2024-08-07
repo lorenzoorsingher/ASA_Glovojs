@@ -118,50 +118,50 @@ riders.forEach((rider, index) => {
     rider.updatePosition(x, y);
   });
 
-  // rider.client.onParcelsSensing(async (perceived_parcels) => {
-  //   map.set_parcels(perceived_parcels);
-  //   allParcels = perceived_parcels.slice();
-  //   let parc_before = Array.from(parcels.keys());
-  //   //console.log("Parcels before: ", parc_before);
+  rider.client.onParcelsSensing(async (perceived_parcels) => {
+    map.set_parcels(perceived_parcels);
+    allParcels = perceived_parcels.slice();
+    let parc_before = Array.from(parcels.keys());
+    //console.log("Parcels before: ", parc_before);
 
-  //   for (const [key, value] of parcels.entries()) {
-  //     let parc_pos = new Position(value.x, value.y);
-  //     let dist = manhattanDistance(rider.position, parc_pos);
+    for (const [key, value] of parcels.entries()) {
+      let parc_pos = new Position(value.x, value.y);
+      let dist = manhattanDistance(rider.position, parc_pos);
 
-  //     let found = false;
-  //     if (dist < rider.config.PARCELS_OBSERVATION_DISTANCE) {
-  //       for (const p of perceived_parcels) {
-  //         if (p.id == key) {
-  //           found = true;
-  //           break;
-  //         }
-  //       }
+      let found = false;
+      if (dist < rider.config.PARCELS_OBSERVATION_DISTANCE) {
+        for (const p of perceived_parcels) {
+          if (p.id == key) {
+            found = true;
+            break;
+          }
+        }
 
-  //       if (!found) {
-  //         parcels.delete(key);
-  //       }
-  //     }
-  //   }
+        if (!found) {
+          parcels.delete(key);
+        }
+      }
+    }
 
-  //   for (const p of perceived_parcels) {
-  //     if (
-  //       !parcels.has(p.id) &&
-  //       hasCompletedMovement(rider.position) &&
-  //       p.carriedBy == null
-  //     ) {
-  //       parcels.set(p.id, p);
-  //     }
-  //   }
+    for (const p of perceived_parcels) {
+      if (
+        !parcels.has(p.id) &&
+        hasCompletedMovement(rider.position) &&
+        p.carriedBy == null
+      ) {
+        parcels.set(p.id, p);
+      }
+    }
 
-  //   let parc_after = Array.from(parcels.keys());
+    let parc_after = Array.from(parcels.keys());
 
-  //   let changed = JSON.stringify(parc_before) != JSON.stringify(parc_after);
-  //   if (changed) {
-  //     console.log("Parcels changed. Recalculating plan");
+    let changed = JSON.stringify(parc_before) != JSON.stringify(parc_after);
+    if (changed) {
+      console.log("Parcels changed. Recalculating plan");
 
-  //     newPlan();
-  //   }
-  // });
+      rider.newPlan();
+    }
+  });
 
   // rider.client.onAgentsSensing(async (perceived_agents) => {
   //   agents.clear();
@@ -330,10 +330,10 @@ async function loop(rider) {
         let trg = nextAction.target;
         let move = Position.getDirectionTo(src, trg);
 
-        console.log("rider: ", rider.position);
-        console.log("Next action: ", nextAction);
-        console.log("stat: ", stat);
-        console.log("------------------------------------");
+        // console.log("rider: ", rider.position);
+        // console.log("Next action: ", nextAction);
+        // console.log("stat: ", stat);
+        // console.log("------------------------------------");
         //// if the agent is not in the source tile, desync, something went wrong
         // if (!rider.src.equals(rider.position)) {
         //   console.log("DESYNC DESYNC DESYNC");
@@ -400,7 +400,7 @@ async function loop(rider) {
             await rider.client.putdown();
             rider.parcels.clear();
             rider.plan_fit = 0;
-            newPlan();
+            rider.newPlan();
             break;
         }
       }

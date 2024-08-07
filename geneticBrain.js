@@ -566,10 +566,10 @@ export class Genetic {
         for (let j = 0; j < i; j++) {
           if (plan[j].type == ActionType.MOVE) {
             if (plan[j].source.equals(plan[i].source)) {
-              console.log(
-                "###################################################################"
-              );
-              console.log("COLFICT IN PICKUP ORDER: ", plan[i]);
+              // console.log(
+              //   "###################################################################"
+              // );
+              // console.log("CONFLICT IN PICKUP ORDER: ", plan[i]);
               corr_plan = [];
               corr_plan = corr_plan.concat(plan.slice(0, j));
               corr_plan = corr_plan.concat(plan.slice(i, i + 1));
@@ -586,11 +586,11 @@ export class Genetic {
       }
     }
 
-    if (corr_plan.length > 0) {
-      for (const act of plan) {
-        act.printAction();
-      }
-    }
+    // if (corr_plan.length > 0) {
+    //   for (const act of plan) {
+    //     act.printAction();
+    //   }
+    // }
     return [plan, best_fit];
   }
 

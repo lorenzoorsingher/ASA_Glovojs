@@ -5,7 +5,6 @@ import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 
 export class Rider {
   constructor(uname) {
-    this.player_parcels = new Map();
     this.carrying = 0;
     this.plan = [];
     this.plan_fit = 0;

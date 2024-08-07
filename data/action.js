@@ -58,9 +58,9 @@ export class Action {
       );
     }
 
-    for (let action of actions) {
-      action.printAction();
-    }
+    // for (let action of actions) {
+    //   action.printAction();
+    // }
     return actions;
   }
 
