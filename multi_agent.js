@@ -33,11 +33,14 @@ const dashboard = new MyServer(port);
 let map_init = false;
 const map = new Field();
 
-const NRIDERS = 3;
+const NRIDERS = 4;
 let riders = [];
+
+let names = ["BLUE", "PINK", "GREY"];
 
 for (let i = 0; i < NRIDERS; i++) {
   let uname = Math.random().toString(36).substring(5) + "_" + pop + "_" + gen;
+  uname = names[i];
   // brains.push(new Genetic());
   riders.push(new Rider(uname));
 }
@@ -61,7 +64,7 @@ riders.forEach((rider, index) => {
 
     //init map only once
     if (!map_init) {
-      map.init(width, height, tiles, blocking_agents);
+      map.init(width, height, tiles, agents);
       map_init = true;
     }
     rider.brain.init(map, parcels, new Position(0, 0), pop, gen);
@@ -128,17 +131,20 @@ riders.forEach((rider, index) => {
   });
 
   rider.client.onAgentsSensing(async (perceived_agents) => {
-    agents.clear();
-    //blocking_agents.clear();
+    //agents.clear();
+    rider.blocking_agents.clear();
     for (const a of perceived_agents) {
       if (a.name != "god") {
         if (manhattanDistance(rider.position, a) < 100) {
           rider.blocking_agents.set(a.id, a);
-        } else {
-          agents.set(a.id, a);
         }
+        // } else {
+        //   agents.set(a.id, a);
+        // }
       }
     }
+
+    // console.log("Agents updated: ", rider.blocking_agents);
   });
 });
 
@@ -248,18 +254,6 @@ function hasCompletedMovement(pos) {
   return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
 }
 
-function isPathBlocked(rider) {
-  let blocked = false;
-  for (const a of rider.blocking_agents.values()) {
-    if (a.x == trg.x && a.y == trg.y) {
-      blocked = true;
-      break;
-    }
-  }
-
-  return blocked;
-}
-
 let start = Date.now();
 
 async function loop(rider) {
@@ -331,8 +325,8 @@ async function loop(rider) {
           }
         }
 
-        if (isPathBlocked(rider)) {
-          trg = rider.position;
+        if (rider.isPathBlocked()) {
+          rider.trg = rider.position;
           console.log("Agent in the way. Recalculating plan");
           rider.plan_fit = 0;
           rider.newPlan();

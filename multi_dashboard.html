@@ -37,6 +37,8 @@
         parcels = data["parc"];
         riders = data["riders"];
 
+        let pathcolors = ["blue", "violet", "grey", "darkgreen"];
+        let ridercolor = ["lightblue", "pink", "lightgrey", "MediumSeaGreen"];
         //   document.getElementById('info').innerHTML = "<div><h2>"+plan_target+"</h2><div>";
 
         //   document.getElementById('carrying').innerHTML = "<div>"+rider_parcels.map((el, idx) => {
@@ -74,8 +76,6 @@
 
             cell_id = j + "-" + y;
             //console.log(str);
-
-            let pathcolors = ["blue", "orange", "purple"];
 
             for (let rid = 0; rid < riders.length; rid++) {
               plan_move = riders[rid].plan[0];
@@ -118,7 +118,6 @@
           tile.innerHTML = "<div>" + j + "</div>";
         }
 
-        ridercolor = ["lightblue", "lightgray", "pink"];
         for (let rid = 0; rid < riders.length; rid++) {
           rider = riders[rid];
 

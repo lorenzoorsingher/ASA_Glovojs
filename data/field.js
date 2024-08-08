@@ -147,13 +147,13 @@ export class Field {
     return neighbors;
   }
 
-  bfs(start, end) {
+  bfs(start, end, blocking_agents) {
     const par = {};
     const queue = [];
     const distance = {};
 
     let blocking = [];
-    for (const a of this.agents.values()) {
+    for (const a of blocking_agents.values()) {
       blocking.push(a.x + "-" + a.y);
       //console.log("Blocking: ", blocking);
     }
@@ -215,43 +215,47 @@ export class Field {
     return path;
   }
 
-  getClosestDeliveryZone(pos) {
-    const x = pos.x;
-    const y = pos.y;
+  // getClosestDeliveryZone(pos) {
+  //   const x = pos.x;
+  //   const y = pos.y;
 
-    let closest = null;
-    let smallestDistance = Infinity;
+  //   let closest = null;
+  //   let smallestDistance = Infinity;
 
-    for (let d of this.deliveryZones) {
-      let path = this.bfs(this.getTile(d), this.getTile(pos));
-      if (path == -1) {
-        continue;
-      }
-      const distance = path.length - 1;
-      if (distance < smallestDistance && distance > 0) {
-        //console.log("Distance: ", distance, " ", this.getTile(d).position);
-        smallestDistance = distance;
-        closest = d;
-      }
-    }
+  //   for (let d of this.deliveryZones) {
+  //     let path = this.bfs(this.getTile(d), this.getTile(pos));
+  //     if (path == -1) {
+  //       continue;
+  //     }
+  //     const distance = path.length - 1;
+  //     if (distance < smallestDistance && distance > 0) {
+  //       //console.log("Distance: ", distance, " ", this.getTile(d).position);
+  //       smallestDistance = distance;
+  //       closest = d;
+  //     }
+  //   }
 
-    if (closest == null) {
-      //console.log("No delivery zones reachable");
-      return null;
-    }
+  //   if (closest == null) {
+  //     //console.log("No delivery zones reachable");
+  //     return null;
+  //   }
 
-    //console.log("Closest delivery zone is at ", closest.x, closest.y);
-    return this.getTile(closest);
-  }
+  //   //console.log("Closest delivery zone is at ", closest.x, closest.y);
+  //   return this.getTile(closest);
+  // }
 
-  getClosestDeliveryZones(pos) {
+  getClosestDeliveryZones(pos, blocking_agents) {
     const x = pos.x;
     const y = pos.y;
 
     let closest = [];
 
     for (let d of this.deliveryZones) {
-      const path = this.bfs(this.getTile(d), this.getTile(pos));
+      const path = this.bfs(
+        this.getTile(d),
+        this.getTile(pos),
+        blocking_agents
+      );
       if (path != -1) {
         const distance = path.length - 1;
         closest.push({ x: d.x, y: d.y, distance: distance, path: path });
@@ -283,25 +287,25 @@ export class Field {
     return positions;
   }
 
-  getRandomWalkableTile() {
-    let x, y;
-    let tile;
+  // getRandomWalkableTile() {
+  //   let x, y;
+  //   let tile;
 
-    do {
-      x = Math.floor(Math.random() * this.width);
-      y = Math.floor(Math.random() * this.height);
-      tile = this.getTile(new Position(x, y));
-    } while (!tile.walkable || this.isTileUnreachable(tile));
+  //   do {
+  //     x = Math.floor(Math.random() * this.width);
+  //     y = Math.floor(Math.random() * this.height);
+  //     tile = this.getTile(new Position(x, y));
+  //   } while (!tile.walkable || this.isTileUnreachable(tile));
 
-    return tile;
-  }
+  //   return tile;
+  // }
 
-  getRandomSpawnable(player_position) {
+  getRandomSpawnable(player_position, blocking_agents) {
     console.log("Looking for a SPAWNABLE tile from ", player_position);
     const randomOrder = this.parcelSpawners.sort(() => Math.random() - 0.5);
     for (const spawner of randomOrder) {
       const tile = this.getTile(spawner);
-      let path = this.bfs(tile, this.getTile(player_position));
+      let path = this.bfs(tile, this.getTile(player_position), blocking_agents);
       if (path != -1) {
         return path;
       }

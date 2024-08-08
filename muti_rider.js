@@ -19,8 +19,9 @@ export class Rider {
     this.planLock = false;
 
     this.player_parcels = new Map();
+    this.blocking_agents = new Map();
 
-    this.brain = new Genetic();
+    this.brain = new Genetic(this.blocking_agents);
     this.client = new DeliverooApi(
       "http://localhost:8080/?name=" + this.uname,
       ""
@@ -60,10 +61,21 @@ export class Rider {
       this.plan_fit = best_fit;
       this.plan = tmp_plan;
       this.trg = this.position;
-      console.log("New plan accepted");
+      console.log("New plan accepted by ", this.uname);
     } else {
-      console.log("New plan rejected");
+      console.log("New plan rejected by ", this.uname);
     }
     this.planLock = false;
+  }
+
+  isPathBlocked() {
+    let blocked = false;
+    for (const a of this.blocking_agents.values()) {
+      if (a.x == this.trg.x && a.y == this.trg.y) {
+        blocked = true;
+        break;
+      }
+    }
+    return blocked;
   }
 }

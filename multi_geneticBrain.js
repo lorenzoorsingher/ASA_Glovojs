@@ -2,7 +2,8 @@ import { Position, Direction } from "./data/position.js";
 import { Action, ActionType } from "./data/action.js";
 
 export class Genetic {
-  constructor() {
+  constructor(blocking_agents) {
+    this.blocking_agents = blocking_agents;
     this.config = {};
   }
   init(field, parcels, playerPosition, pop, gen) {
@@ -69,7 +70,8 @@ export class Genetic {
     for (const [key, p] of copy_parcels.entries()) {
       let path_fromPlayer = this.field.bfs(
         this.field.getTile({ x: p.x, y: p.y }),
-        this.field.getTile({ x: this.x, y: this.y })
+        this.field.getTile({ x: this.x, y: this.y }),
+        this.blocking_agents
       );
       let fromPlayer;
       if (path_fromPlayer == -1) {
@@ -79,10 +81,13 @@ export class Genetic {
         fromPlayer = path_fromPlayer.length - 1;
       }
 
-      let closest = this.field.getClosestDeliveryZones({
-        x: p.x,
-        y: p.y,
-      });
+      let closest = this.field.getClosestDeliveryZones(
+        {
+          x: p.x,
+          y: p.y,
+        },
+        this.blocking_agents
+      );
 
       let path_toZone;
       let toZone;
@@ -128,7 +133,7 @@ export class Genetic {
             y: prep_parcels[j].y,
           });
 
-          let path = this.field.bfs(endTile, stTile);
+          let path = this.field.bfs(endTile, stTile, this.blocking_agents);
           if (path.length == 0) {
             costs[i][j] = Infinity;
             // console.log("No path from ", i, " to ", j, " nodes unreaachabl");
@@ -429,10 +434,13 @@ export class Genetic {
         "No parcels but agent is packing, going to closest delivery zone"
       );
 
-      let closest = this.field.getClosestDeliveryZones({
-        x: this.x,
-        y: this.y,
-      });
+      let closest = this.field.getClosestDeliveryZones(
+        {
+          x: this.x,
+          y: this.y,
+        },
+        this.blocking_agents
+      );
 
       if (closest.length == 0) {
         console.log("No delivery zones reachable");
@@ -442,7 +450,8 @@ export class Genetic {
     } else {
       console.log("No parcels on rider, generating random plan");
       path_to_spawnable = this.field.getRandomSpawnable(
-        new Position(this.x, this.y)
+        new Position(this.x, this.y),
+        this.blocking_agents
       );
     }
 
@@ -459,6 +468,12 @@ export class Genetic {
       );
       console.log("[BACKUP] Returning random reflexive move");
 
+      let blocking = [];
+      for (const a of this.blocking_agents.values()) {
+        blocking.push(a.x + "-" + a.y);
+        //console.log("Blocking: ", blocking);
+      }
+
       let movement = null;
       let target_position = null;
       for (const dir in Direction) {
@@ -466,7 +481,10 @@ export class Genetic {
         console.log("trying to move ", Direction[dir], " to ", target_position);
         let target_tile = this.field.getTile(target_position);
 
-        if (target_tile != -1 && !this.field.isTileUnreachable(target_tile)) {
+        if (
+          target_tile != -1 &&
+          !this.field.isTileUnreachable(target_tile, blocking)
+        ) {
           movement = Direction[dir];
           console.log("found walkable tile");
           break;
@@ -587,7 +605,7 @@ export class Genetic {
     }
 
     for (const act of plan) {
-      //act.printAction();
+      act.printAction();
     }
 
     return [plan, best_fit];
