@@ -13,11 +13,6 @@ export class Rider {
     this.uname = uname;
     this.player_init = false;
 
-    this.src = null;
-    this.trg = null;
-    this.nextAction = null;
-    this.planLock = false;
-
     this.player_parcels = new Map();
     this.blocking_agents = new Map();
 
@@ -35,6 +30,9 @@ export class Rider {
     this.name = name;
     this.score = score;
     this.position = position;
+    this.src = new Position(position.x, position.y);
+    this.trg = new Position(position.x, position.y);
+    this.nextAction = null;
     this.brain = brain;
     // this.plan = this.createPlan(parcelsQueue)
   }
@@ -49,22 +47,22 @@ export class Rider {
     this.position.y = y;
   }
 
-  newPlan() {
-    // console.log("MyPos: ", rider.position);
-    this.planLock = true;
-    const [tmp_plan, best_fit] = this.brain.createPlan(this.player_parcels);
+  // newPlan() {
+  //   // console.log("MyPos: ", rider.position);
+  //   this.planLock = true;
+  //   const [tmp_plan, best_fit] = this.brain.createPlan(this.player_parcels);
 
-    // console.log("Best fit: ", best_fit);
-    if (best_fit > this.plan_fit) {
-      this.plan_fit = best_fit;
-      this.plan = tmp_plan;
-      this.trg = this.position;
-      console.log("New plan accepted by ", this.uname);
-    } else {
-      console.log("New plan rejected by ", this.uname);
-    }
-    this.planLock = false;
-  }
+  //   // console.log("Best fit: ", best_fit);
+  //   if (best_fit > this.plan_fit) {
+  //     this.plan_fit = best_fit;
+  //     this.plan = tmp_plan;
+  //     this.trg = this.position;
+  //     console.log("New plan accepted by ", this.uname);
+  //   } else {
+  //     console.log("New plan rejected by ", this.uname);
+  //   }
+  //   this.planLock = false;
+  // }
 
   isPathBlocked() {
     let blocked = false;
