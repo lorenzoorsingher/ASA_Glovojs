@@ -65,15 +65,19 @@ export class Action {
   }
 
   printAction() {
-    console.log(
-      "\t",
-      this.type,
-      " from ",
-      this.source,
-      " to ",
-      this.target,
-      " -> ",
-      this.bestParcel
-    );
+    if (this.bestParcel != null) {
+      console.log(
+        "\t",
+        this.type,
+        " from ",
+        this.source,
+        " to ",
+        this.target,
+        " -> ",
+        this.bestParcel
+      );
+    } else {
+      console.log("\t", this.type, " from ", this.source, " to ", this.target);
+    }
   }
 }
