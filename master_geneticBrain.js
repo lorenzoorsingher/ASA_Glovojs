@@ -168,7 +168,7 @@ export class Genetic {
 
     for (const family of population) {
       let fit = this.fitness(family, riders_paths);
-      console.log("Fit: ", fit);
+      // console.log("Fit: ", fit);
       scores.push(fit);
       tot_fit += fit;
     }
@@ -269,18 +269,18 @@ export class Genetic {
   // }
 
   multi_crossover(parentA, parentB) {
-    console.log("INSIDE CROSSOVER");
-    console.log("Parent A: ", parentA);
-    console.log("Parent B: ", parentB);
+    // console.log("INSIDE CROSSOVER");
+    // console.log("Parent A: \t", parentA);
+    // console.log("Parent B: \t", parentB);
 
     let childs = [];
     for (let r = 0; r < this.nriders; r++) {
       let dnaA = parentA[r];
       let dnaB = parentB[r];
 
-      console.log("\n\n");
-      console.log("dnaA: ", dnaA);
-      console.log("dnaB: ", dnaB);
+      // console.log("\n\n");
+      // console.log("dnaA: ", dnaA);
+      // console.log("dnaB: ", dnaB);
 
       let seg_len = Math.floor(dnaA.length / 2);
 
@@ -304,7 +304,7 @@ export class Genetic {
       }
       let child = [].concat(head).concat(a_segment).concat(tail);
       childs.push(child);
-      console.log("Child: ", child);
+      //console.log("Child: ", child);
     }
     // console.log("seg_len: ", seg_len);
     // console.log("Start: ", start);
@@ -312,8 +312,37 @@ export class Genetic {
     // console.log("Segment: ", a_segment);
     // console.log("Head: ", head);
     // console.log("Tail: ", tail);
+    let subl_len = [];
+    for (let i = 0; i < childs.length; i++) {
+      subl_len.push({ len: childs[i].length, idx: i });
+    }
+    subl_len = this.sort_by_key(subl_len, "len");
+    // console.log("Subl len: ", subl_len);
 
-    return childsd;
+    // console.log("childs: \t", childs);
+
+    let clean_childs = [];
+    let dupl = new Set();
+    for (const sub of subl_len) {
+      let clean_child = [];
+      let idx = sub.idx;
+      for (const el of childs[idx]) {
+        if (dupl.has(el)) {
+        } else {
+          clean_child.push(el);
+          dupl.add(el);
+        }
+      }
+      clean_childs.push(clean_child);
+    }
+
+    let ordered_childs = [];
+    for (let i = 0; i < clean_childs.length; i++) {
+      ordered_childs[subl_len[i].idx] = clean_childs[i];
+    }
+    // console.log("cchilds: \t", clean_childs);
+    // console.log("ochilds: \t", ordered_childs);
+    return ordered_childs;
   }
 
   fitness(family, rider_paths) {
@@ -435,20 +464,20 @@ export class Genetic {
     //console.log("Average fitness: ", tot_fit / pop_size);
     this.iters += 1;
     this.avg_fit += tot_fit / pop_size;
-    console.log(
-      "AVG FIT: ",
-      this.avg_fit / this.iters + " after " + this.iters
-    );
+    // console.log(
+    //   "AVG FIT: ",
+    //   this.avg_fit / this.iters + " after " + this.iters
+    // );
 
-    console.log("INIT POP: ", population);
+    // console.log("INIT POP: ", population);
 
     for (let i = 0; i < gen_num; i++) {
       let new_pop = [];
 
       const [scores, chances] = this.rouletteWheel(population, riders_paths);
 
-      console.log("Scores: ", scores);
-      console.log("Chances: ", chances);
+      // console.log("Scores: ", scores);
+      // console.log("Chances: ", chances);
 
       let elites = this.getElites(population, scores, elite_rate);
       new_pop = new_pop.concat(elites);
@@ -457,8 +486,8 @@ export class Genetic {
         let parentA = this.pickOne(population, chances);
         let parentB = this.pickOne(population, chances);
 
-        console.log("Parent A: ", parentA);
-        console.log("Parent B: ", parentB);
+        // console.log("Parent A: ", parentA);
+        // console.log("Parent B: ", parentB);
 
         if (parentA.length != 3) {
           asa = 3;
@@ -475,11 +504,22 @@ export class Genetic {
 
       for (let j = 0; j < new_pop.length; j++) {
         if (Math.random() < mutation_rate) {
-          let idxA = Math.floor(Math.random() * new_pop[j].length);
-          let idxB = Math.floor(Math.random() * new_pop[j].length);
-          let tmp = new_pop[j][idxA];
-          new_pop[j][idxA] = new_pop[j][idxB];
-          new_pop[j][idxB] = tmp;
+          let idxFamA = Math.floor(Math.random() * new_pop[j].length);
+          let idxFamB = Math.floor(Math.random() * new_pop[j].length);
+
+          let idxA = Math.floor(Math.random() * new_pop[j][idxFamA].length);
+          let idxB = Math.floor(Math.random() * new_pop[j][idxFamB].length);
+
+          if (
+            new_pop[j][idxFamA][idxA] == undefined ||
+            new_pop[j][idxFamB][idxB] == undefined
+          ) {
+            continue;
+          }
+
+          let tmp = new_pop[j][idxFamA][idxA];
+          new_pop[j][idxFamA][idxA] = new_pop[j][idxFamB][idxB];
+          new_pop[j][idxFamB][idxB] = tmp;
         }
       }
 
@@ -494,14 +534,14 @@ export class Genetic {
         if (fit > best_fit) {
           best_fit = fit;
           best_dna = family;
-          //console.log("New best fit: ", best_fit);
+          console.log("New best fit: ", best_fit);
         }
       }
 
-      if (i % 10 == 0) {
-        //console.log("Gen " + i + " avg fitness: ", tot_fit / pop_size);
-        //console.log(population.length, " ", pop_size);
-      }
+      // if (i % 10 == 0) {
+      //   console.log("Gen " + i + " avg fitness: ", tot_fit / pop_size);
+      //   console.log(population.length, " ", pop_size);
+      // }
     }
 
     return [best_dna, best_fit];
@@ -616,94 +656,106 @@ export class Genetic {
       riders_paths,
       this.pop,
       this.gen,
-      0.01,
+      0.5,
       0.5
     );
 
-    console.log("Generated plan with rew ", best_fit);
-    console.log("Plan: ", best_path);
+    // console.log("Generated plan with rew ", best_fit);
+    // console.log("Plan: ", best_path);
+
     let parcels_path = [];
-    for (const idx of best_path) {
-      let par = parc[idx];
-      parcels_path.push({
-        pos: new Position(par.x, par.y),
-        parcel: par.id,
-        path_in: par.path_in,
-        path_out: par.path_out,
-      });
+    for (let r = 0; r < riders_paths.length; r++) {
+      parcels_path.push([]);
+      for (const idx of best_path[r]) {
+        let par = riders_paths[r].nodes[idx];
+        parcels_path[r].push({
+          pos: new Position(par.x, par.y),
+          parcel: par.id,
+          path_in: par.path_in,
+          path_out: par.path_out,
+        });
+      }
     }
 
-    //console.log("chosen parcels: ", parcels_path);
-    // console.log(paths);
-
+    // console.log("chosen parcels: ", parcels_path);
+    //console.log(paths);
     if (parcels_path.length == 0 || best_fit == 0) {
       return this.backupPlan(player_parcels);
     }
 
     //TODO:
-    let plan = [];
-    let actions = Action.pathToAction(
-      parcels_path[0].path_in,
-      ActionType.PICKUP,
-      parcels_path[0].parcel
-    );
-    plan = plan.concat(actions);
 
-    for (let i = 0; i < best_path.length; i++) {
-      let curridx = best_path[i];
-      if (i + 1 < best_path.length) {
-        let nextidx = best_path[i + 1];
-        let semi_path = paths[curridx][nextidx];
+    let all_plans = [];
+    for (let r = 0; r < riders_paths.length; r++) {
+      let chosen_path = parcels_path[r];
+      let plan = [];
+      let actions = Action.pathToAction(
+        chosen_path[0].path_in,
+        ActionType.PICKUP,
+        chosen_path[0].parcel
+      );
+      plan = plan.concat(actions);
 
-        actions = Action.pathToAction(
-          semi_path,
-          ActionType.PICKUP,
-          parcels_path[i + 1].parcel
-        );
+      for (let i = 0; i < best_path[r].length; i++) {
+        let curridx = best_path[r][i];
+        if (i + 1 < best_path[r].length) {
+          let nextidx = best_path[r][i + 1];
+          let semi_path = riders_paths[r].paths[curridx][nextidx];
 
-        plan = plan.concat(actions);
+          actions = Action.pathToAction(
+            semi_path,
+            ActionType.PICKUP,
+            chosen_path[i + 1].parcel
+          );
+
+          plan = plan.concat(actions);
+        }
       }
-    }
 
-    actions = Action.pathToAction(
-      parcels_path[parcels_path.length - 1].path_out,
-      ActionType.PUTDOWN,
-      null
-    );
+      actions = Action.pathToAction(
+        chosen_path[chosen_path.length - 1].path_out,
+        ActionType.PUTDOWN,
+        null
+      );
 
-    plan = plan.concat(actions);
+      plan = plan.concat(actions);
 
-    let corr_plan = [];
-    for (let i = 0; i < plan.length; i += 1) {
-      if (plan[i].type == ActionType.PICKUP) {
-        for (let j = 0; j < i; j++) {
-          if (plan[j].type == ActionType.MOVE) {
-            if (plan[j].source.equals(plan[i].source)) {
-              // console.log(
-              //   "###################################################################"
-              // );
-              // console.log("CONFLICT IN PICKUP ORDER: ", plan[i]);
-              corr_plan = [];
-              corr_plan = corr_plan.concat(plan.slice(0, j));
-              corr_plan = corr_plan.concat(plan.slice(i, i + 1));
-              corr_plan = corr_plan.concat(plan.slice(j, i));
-              corr_plan = corr_plan.concat(plan.slice(i + 1, plan.length));
-              plan = corr_plan;
+      let corr_plan = [];
+      for (let i = 0; i < plan.length; i += 1) {
+        if (plan[i].type == ActionType.PICKUP) {
+          for (let j = 0; j < i; j++) {
+            if (plan[j].type == ActionType.MOVE) {
+              if (plan[j].source.equals(plan[i].source)) {
+                // console.log(
+                //   "###################################################################"
+                // );
+                // console.log("CONFLICT IN PICKUP ORDER: ", plan[i]);
+                corr_plan = [];
+                corr_plan = corr_plan.concat(plan.slice(0, j));
+                corr_plan = corr_plan.concat(plan.slice(i, i + 1));
+                corr_plan = corr_plan.concat(plan.slice(j, i));
+                corr_plan = corr_plan.concat(plan.slice(i + 1, plan.length));
+                plan = corr_plan;
 
-              i = 0;
-              j = 0;
-              break;
+                i = 0;
+                j = 0;
+                break;
+              }
             }
           }
         }
       }
+
+      all_plans.push(plan);
     }
 
-    for (const act of plan) {
-      act.printAction();
+    for (let r = 0; r < this.riders.length; r++) {
+      console.log("Plan for Rider ", this.riders[r].name);
+      for (const act of all_plans[r]) {
+        act.printAction();
+      }
     }
-
-    return [plan, best_fit];
+    return [all_plans, best_fit];
   }
 
   testGen() {
