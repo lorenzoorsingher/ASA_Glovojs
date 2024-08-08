@@ -2,18 +2,21 @@ import { Position, Direction } from "./data/position.js";
 import { Action, ActionType } from "./data/action.js";
 
 export class Genetic {
-  constructor(blocking_agents) {
-    this.blocking_agents = blocking_agents;
+  constructor(riders, field, parcels, pop, gen) {
+    this.riders = riders;
+    this.nriders = riders.length;
+
+    console.log("Genetic brain created");
+    //console.log("Riders: ", this.riders);
+    console.log("Nriders: ", this.nriders);
     this.config = {};
-  }
-  init(field, parcels, playerPosition, pop, gen) {
+
     this.field = field;
     this.parcels = parcels;
-    this.x = playerPosition.x;
-    this.y = playerPosition.y;
+    // this.x = playerPosition.x;
+    // this.y = playerPosition.y;
     this.pop = pop;
     this.gen = gen;
-    this.timeout = 50;
 
     this.avgs = {};
     this.avg_fit = 0;
@@ -40,12 +43,6 @@ export class Genetic {
     this.field = field;
   }
 
-  updatePlayerPosition(pos, timeout) {
-    this.x = pos.x;
-    this.y = pos.y;
-    this.timeout = timeout;
-  }
-
   sort_by_key(array, key) {
     return array.sort(function (a, b) {
       var x = a[key];
@@ -54,13 +51,13 @@ export class Genetic {
     });
   }
 
-  builGraphInOut() {
+  builGraphInOut(rider) {
     const MUL = 2;
 
     let prep_parcels = [];
     let dummy_parcel = {
-      x: this.x,
-      y: this.y,
+      x: rider.position.x,
+      y: rider.position.y,
       reward: 0,
     };
 
@@ -70,8 +67,8 @@ export class Genetic {
     for (const [key, p] of copy_parcels.entries()) {
       let path_fromPlayer = this.field.bfs(
         this.field.getTile({ x: p.x, y: p.y }),
-        this.field.getTile({ x: this.x, y: this.y }),
-        this.blocking_agents
+        this.field.getTile({ x: rider.position.x, y: rider.position.y }),
+        rider.blocking_agents
       );
       let fromPlayer;
       if (path_fromPlayer == -1) {
@@ -86,7 +83,7 @@ export class Genetic {
           x: p.x,
           y: p.y,
         },
-        this.blocking_agents
+        rider.blocking_agents
       );
 
       let path_toZone;
@@ -133,7 +130,7 @@ export class Genetic {
             y: prep_parcels[j].y,
           });
 
-          let path = this.field.bfs(endTile, stTile, this.blocking_agents);
+          let path = this.field.bfs(endTile, stTile, rider.blocking_agents);
           if (path.length == 0) {
             costs[i][j] = Infinity;
             // console.log("No path from ", i, " to ", j, " nodes unreaachabl");
@@ -165,11 +162,13 @@ export class Genetic {
     return Math.floor(Math.random() * max);
   }
 
-  rouletteWheel(population, costs, nodes, player_parcels) {
+  rouletteWheel(population, riders_paths) {
     let scores = [];
     let tot_fit = 0;
-    for (const dna of population) {
-      let fit = this.fitness(dna, costs, nodes, player_parcels);
+
+    for (const family of population) {
+      let fit = this.fitness(family, riders_paths);
+      console.log("Fit: ", fit);
       scores.push(fit);
       tot_fit += fit;
     }
@@ -230,31 +229,83 @@ export class Genetic {
     return population[idx];
   }
 
-  crossover(parentA, parentB) {
-    // console.log("Parent A: ", parentA);
-    // console.log("Parent B: ", parentB);
+  // crossover(parentA, parentB) {
+  //   console.log("INSIDE CROSSOVER");
+  //   console.log("Parent A: ", parentA);
+  //   console.log("Parent B: ", parentB);
 
-    let seg_len = Math.floor(parentA.length / 2);
+  //   let seg_len = Math.floor(parentA.length / 2);
 
-    let start = Math.floor((parentA.length - seg_len) / 2);
-    let end = start + seg_len;
+  //   let start = Math.floor((parentA.length - seg_len) / 2);
+  //   let end = start + seg_len;
 
-    let a_segment = parentA.slice(start, end);
-    let head = [];
-    let tail = [];
+  //   let a_segment = parentA.slice(start, end);
+  //   let head = [];
+  //   let tail = [];
 
-    for (const el of parentB) {
-      if (!a_segment.includes(el)) {
-        if (head.length <= parentA.length - seg_len) {
-          head.push(el);
-        } else if (head.length + tail.length < parentA.length - seg_len) {
-          tail.push(el);
-        } else {
-          break;
+  //   for (const el of parentB) {
+  //     if (!a_segment.includes(el)) {
+  //       if (head.length <= parentA.length - seg_len) {
+  //         head.push(el);
+  //       } else if (head.length + tail.length < parentA.length - seg_len) {
+  //         tail.push(el);
+  //       } else {
+  //         break;
+  //       }
+  //     }
+  //   }
+
+  //   // console.log("seg_len: ", seg_len);
+  //   // console.log("Start: ", start);
+  //   // console.log("End: ", end);
+  //   // console.log("Segment: ", a_segment);
+  //   // console.log("Head: ", head);
+  //   // console.log("Tail: ", tail);
+
+  //   let childA = [].concat(head).concat(a_segment).concat(tail);
+
+  //   console.log("Child A: ", childA);
+  //   return childA;
+  // }
+
+  multi_crossover(parentA, parentB) {
+    console.log("INSIDE CROSSOVER");
+    console.log("Parent A: ", parentA);
+    console.log("Parent B: ", parentB);
+
+    let childs = [];
+    for (let r = 0; r < this.nriders; r++) {
+      let dnaA = parentA[r];
+      let dnaB = parentB[r];
+
+      console.log("\n\n");
+      console.log("dnaA: ", dnaA);
+      console.log("dnaB: ", dnaB);
+
+      let seg_len = Math.floor(dnaA.length / 2);
+
+      let start = Math.floor((dnaA.length - seg_len) / 2);
+      let end = start + seg_len;
+
+      let a_segment = dnaA.slice(start, end);
+      let head = [];
+      let tail = [];
+
+      for (const el of dnaB) {
+        if (!a_segment.includes(el)) {
+          if (head.length <= dnaA.length - seg_len) {
+            head.push(el);
+          } else if (head.length + tail.length < dnaA.length - seg_len) {
+            tail.push(el);
+          } else {
+            break;
+          }
         }
       }
+      let child = [].concat(head).concat(a_segment).concat(tail);
+      childs.push(child);
+      console.log("Child: ", child);
     }
-
     // console.log("seg_len: ", seg_len);
     // console.log("Start: ", start);
     // console.log("End: ", end);
@@ -262,74 +313,88 @@ export class Genetic {
     // console.log("Head: ", head);
     // console.log("Tail: ", tail);
 
-    let childA = [].concat(head).concat(a_segment).concat(tail);
-
-    // console.log("Child A: ", childA);
-
-    return childA;
+    return childsd;
   }
 
-  fitness(dna, costs, nodes, player_parcels) {
-    //computing current carried score and number of carreied parcels
-    let carriedParcels = Array.from(player_parcels);
-    let currCarr = Array.from(player_parcels).length;
-    let currRew = 0;
-    for (const par of carriedParcels) {
-      currRew += par[1];
-    }
+  fitness(family, rider_paths) {
+    let cumulative_rew = 0;
 
-    //penality for each additional step. Makes sure the eagent eventually delivers the parcels
-    let LONG_TRIP_PENALITY = 2.5;
-    let real_duration = this.movement_duration * 4;
-    let STEP_COST = real_duration / 1000 / this.parcel_decay;
+    for (let r = 0; r < rider_paths.length; r++) {
+      let player_parcels = Array.from(this.riders[r].player_parcels);
+      let costs = rider_paths[r].costs;
+      let nodes = rider_paths[r].nodes;
+      let dna = family[r];
 
-    //console.log("STEP COST: ", STEP_COST);
-    //exit();
-    //console.log("DNA: ", dna);
-    let rew = currRew;
-    // console.log("start at node : ", dna[0]);
+      if (dna.length == 0) {
+        continue;
+      }
 
-    // reward of first parcel minus cost of reaching it
-    rew +=
-      nodes[dna[0]].rew -
-      Math.max(nodes[dna[0]].in_c * currCarr, 0) * STEP_COST;
-    currCarr += 1;
+      //computing current carried score and number of carreied parcels
+      let carriedParcels = Array.from(player_parcels);
+      let currCarr = Array.from(player_parcels).length;
+      let currRew = 0;
+      for (const par of carriedParcels) {
+        currRew += par[1];
+      }
 
-    for (let i = 1; i < dna.length; i++) {
+      //penality for each additional step. Makes sure the eagent eventually delivers the parcels
+      let LONG_TRIP_PENALITY = 2.5;
+      let real_duration = this.movement_duration * 4;
+      let STEP_COST = real_duration / 1000 / this.parcel_decay;
+
+      //console.log("STEP COST: ", STEP_COST);
+      //exit();
+      //console.log("DNA: ", dna);
+      let rew = currRew;
+      // console.log("start at node : ", dna[0]);
+
+      // reward of first parcel minus cost of reaching it
       rew +=
-        nodes[dna[i]].rew -
-        Math.max(costs[dna[i - 1]][dna[i]] * currCarr, 0) * STEP_COST -
-        LONG_TRIP_PENALITY * currCarr; // - penality;
+        nodes[dna[0]].rew -
+        Math.max(nodes[dna[0]].in_c * currCarr, 0) * STEP_COST;
       currCarr += 1;
-    }
-    rew +=
-      -Math.max(nodes[dna[dna.length - 1]].out_c * currCarr, 0) * STEP_COST;
 
-    if (rew < 0) {
-      rew = 0;
-    }
+      for (let i = 1; i < dna.length; i++) {
+        rew +=
+          nodes[dna[i]].rew -
+          Math.max(costs[dna[i - 1]][dna[i]] * currCarr, 0) * STEP_COST -
+          LONG_TRIP_PENALITY * currCarr; // - penality;
+        currCarr += 1;
+      }
+      rew +=
+        -Math.max(nodes[dna[dna.length - 1]].out_c * currCarr, 0) * STEP_COST;
 
-    //console.log("Fitness: ", rew);
-    return rew;
+      if (rew < 0) {
+        rew = 0;
+      }
+
+      cumulative_rew += rew;
+    }
+    return cumulative_rew;
   }
 
   geneticTSP(
-    costs,
-    nodes,
+    riders_paths,
     pop_size = 1000,
     gen_num = 100,
     mutation_rate = 0.1,
-    elite_rate = 0.5,
-    player_parcels = null
+    elite_rate = 0.5
   ) {
-    let genes = Array.from(Array(nodes.length).keys());
-    // console.log("Genes: ", genes);
-    if (genes.length == 0) {
-      return [[], 0];
+    let genes = [];
+
+    for (const r of riders_paths) {
+      //console.log("Riders paths: ", r);
+
+      genes = Array.from(Array(r.nodes.length).keys());
+      // console.log("Genes: ", genes);
+      if (genes.length == 0) {
+        return [[], 0];
+      }
+      this.printMat(r.costs);
+      console.log("N Nodes: ", r.nodes.length);
+      console.log("Nodes: ", r.nodes);
+      console.log("Genes: ", genes);
     }
-    this.printMat(costs);
-    console.log("Nodes: ", nodes);
-    console.log("Genes: ", genes);
 
     let best_dna = [];
     let best_fit = 0;
@@ -342,15 +407,30 @@ export class Genetic {
       order = order.sort(() => Math.random() - 0.5);
       let masked = this.maskList(order, skip_rate);
 
-      population.push(masked);
+      let slices = [];
+      for (let j = 0; j < this.nriders - 1; j++) {
+        slices.push(Math.round(Math.random() * (masked.length - 1)));
+      }
+      slices = slices.sort((a, b) => a - b);
+
+      let family = [];
+
+      family.push(masked.slice(0, slices[0]));
+      for (let j = 1; j < slices.length; j++) {
+        family.push(masked.slice(slices[j - 1], slices[j]));
+      }
+      if (slices.length > 0) {
+        family.push(masked.slice(slices[slices.length - 1], masked.length));
+      }
+
+      population.push(family);
     }
     //population[0] = [];
-    //console.log(population);
 
     let tot_fit = 0;
-    for (const dna of population) {
+    for (const family of population) {
       //console.log("DNA: ", dna);
-      tot_fit += this.fitness(dna, costs, nodes, player_parcels);
+      tot_fit += this.fitness(family, riders_paths);
     }
     //console.log("Average fitness: ", tot_fit / pop_size);
     this.iters += 1;
@@ -360,14 +440,16 @@ export class Genetic {
       this.avg_fit / this.iters + " after " + this.iters
     );
 
+    console.log("INIT POP: ", population);
+
     for (let i = 0; i < gen_num; i++) {
       let new_pop = [];
-      const [scores, chances] = this.rouletteWheel(
-        population,
-        costs,
-        nodes,
-        player_parcels
-      );
+
+      const [scores, chances] = this.rouletteWheel(population, riders_paths);
+
+      console.log("Scores: ", scores);
+      console.log("Chances: ", chances);
+
       let elites = this.getElites(population, scores, elite_rate);
       new_pop = new_pop.concat(elites);
 
@@ -375,8 +457,15 @@ export class Genetic {
         let parentA = this.pickOne(population, chances);
         let parentB = this.pickOne(population, chances);
 
-        let childA = this.crossover(parentA, parentB);
-        let childB = this.crossover(parentB, parentA);
+        console.log("Parent A: ", parentA);
+        console.log("Parent B: ", parentB);
+
+        if (parentA.length != 3) {
+          asa = 3;
+        }
+
+        let childA = this.multi_crossover(parentA, parentB);
+        let childB = this.multi_crossover(parentB, parentA);
 
         new_pop.push(childA);
         new_pop.push(childB);
@@ -398,13 +487,13 @@ export class Genetic {
 
       tot_fit = 0;
 
-      for (const dna of population) {
-        let fit = this.fitness(dna, costs, nodes, player_parcels);
+      for (const family of population) {
+        let fit = this.fitness(family, riders_paths);
         tot_fit += fit;
 
         if (fit > best_fit) {
           best_fit = fit;
-          best_dna = dna;
+          best_dna = family;
           //console.log("New best fit: ", best_fit);
         }
       }
@@ -508,25 +597,31 @@ export class Genetic {
   }
 
   createPlan(player_parcels) {
-    const [costs, paths, parc] = this.builGraphInOut();
+    let riders_paths = [];
+    for (const r of this.riders) {
+      const [costs, paths, parc] = this.builGraphInOut(r);
+      riders_paths.push({
+        costs: costs,
+        paths: paths,
+        nodes: parc,
+      });
+    }
+
+    // for (const p of riders_paths) {
+    //   console.log("Rider ", this.riders.indexOf(p).name);
+    //   console.log("Riders paths: ", p);
+    // }
 
     const [best_path, best_fit] = this.geneticTSP(
-      costs,
-      parc,
+      riders_paths,
       this.pop,
       this.gen,
       0.01,
-      0.5,
-      player_parcels
+      0.5
     );
 
-    console.log(
-      "Generated plan with rew ",
-      best_fit,
-      " from position ",
-      this.x,
-      this.y
-    );
+    console.log("Generated plan with rew ", best_fit);
+    console.log("Plan: ", best_path);
     let parcels_path = [];
     for (const idx of best_path) {
       let par = parc[idx];
