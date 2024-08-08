@@ -30,3 +30,5 @@
 
 - [ ] fix crossover for multiple agents
 - [ ] make sure player_parcels are handled correctly in the planner
+- [ ] make sure parcels are correctly memorized
+- [ ] fix bfs crashing when position is not round
