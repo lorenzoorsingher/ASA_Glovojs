@@ -10,7 +10,6 @@ import { Rider } from "./muti_rider.js";
 export const VERBOSE = false;
 const LOCAL = true;
 
-//let clients = [null, null];
 let pop = 100;
 let gen = 100;
 let port = 3000;
@@ -29,30 +28,6 @@ let port = 3000;
 console.log("Population: ", pop);
 console.log("Generations: ", gen);
 
-// if (LOCAL) {
-//   for (let i = 0; i < clients.length; i++) {
-//     let randomname =
-//       "GLOVOJS" +
-//       Math.random().toString(36).substring(5) +
-//       "_" +
-//       pop +
-//       "_" +
-//       gen;
-
-//     clients[i] = new DeliverooApi(
-//       "http://localhost:8080/?name=" + randomname,
-//       ""
-//     );
-//   }
-// }
-//client = new DeliverooApi("http://localhost:8080/?name=" + randomname, "");
-// } else {
-//   client = new DeliverooApi(
-//     "http://rtibdi.disi.unitn.it:8080/?name=GLOVOJS",
-//     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijc5OWU1ZTkwM2ZjIiwibmFtZSI6IkdMT1ZPSlMiLCJpYXQiOjE3MTU2ODA3MzB9.WLbj404fa8vknsLtN6piMqvI6DCL4dGRr2Wm7FZ8iHs"
-//   );
-// }
-
 const dashboard = new MyServer(port);
 
 let map_init = false;
@@ -67,23 +42,14 @@ for (let i = 0; i < NRIDERS; i++) {
   riders.push(new Rider(uname));
 }
 
-// const brain = new Genetic();
-// const rider = new Rider();
-
 let all_parcels = [];
 const parcels = new Map();
 const agents = new Map();
-const blocking_agents = new Map();
+//const blocking_agents = new Map();
 
 let RESET_TIMEOUT = 50;
-// contains the current plan
-
-// hold loop until the map is loaded
-//let wait_load = true;
 
 riders.forEach((rider, index) => {
-  //client = rider.client;
-  //console.log(rider);
   rider.client.onConfig((config) => {
     rider.set_config(config);
     RESET_TIMEOUT = config.RESET_TIMEOUT;
@@ -119,10 +85,6 @@ riders.forEach((rider, index) => {
     map.set_parcels(perceived_parcels);
     all_parcels = perceived_parcels.slice();
     let parc_before = Array.from(parcels.keys());
-    //console.log("Parcels before: ", parc_before);
-    // console.log("Parcels perceived: ", perceived_parcels);
-    // console.log("Parcels in memory: ", parcels);
-    // console.log("Parcels carried: ", rider.parcels);
 
     for (const [key, value] of parcels.entries()) {
       let parc_pos = new Position(value.x, value.y);
@@ -165,19 +127,19 @@ riders.forEach((rider, index) => {
     }
   });
 
-  // rider.client.onAgentsSensing(async (perceived_agents) => {
-  //   agents.clear();
-  //   blocking_agents.clear();
-  //   for (const a of perceived_agents) {
-  //     if (a.name != "god") {
-  //       if (manhattanDistance(rider.position, a) < 100) {
-  //         blocking_agents.set(a.id, a);
-  //       } else {
-  //         agents.set(a.id, a);
-  //       }
-  //     }
-  //   }
-  // });
+  rider.client.onAgentsSensing(async (perceived_agents) => {
+    agents.clear();
+    //blocking_agents.clear();
+    for (const a of perceived_agents) {
+      if (a.name != "god") {
+        if (manhattanDistance(rider.position, a) < 100) {
+          rider.blocking_agents.set(a.id, a);
+        } else {
+          agents.set(a.id, a);
+        }
+      }
+    }
+  });
 });
 
 // PARCELS CLOCK
@@ -286,17 +248,17 @@ function hasCompletedMovement(pos) {
   return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
 }
 
-// function isPathBlocked() {
-//   let blocked = false;
-//   for (const a of blocking_agents.values()) {
-//     if (a.x == trg.x && a.y == trg.y) {
-//       blocked = true;
-//       break;
-//     }
-//   }
+function isPathBlocked(rider) {
+  let blocked = false;
+  for (const a of rider.blocking_agents.values()) {
+    if (a.x == trg.x && a.y == trg.y) {
+      blocked = true;
+      break;
+    }
+  }
 
-//   return blocked;
-// }
+  return blocked;
+}
 
 let start = Date.now();
 
@@ -369,13 +331,13 @@ async function loop(rider) {
           }
         }
 
-        // if (isPathBlocked()) {
-        //   trg = rider.position;
-        //   console.log("Agent in the way. Recalculating plan");
-        //   rider.plan_fit = 0;
-        //   newPlan();
-        //   continue;
-        // }
+        if (isPathBlocked(rider)) {
+          trg = rider.position;
+          console.log("Agent in the way. Recalculating plan");
+          rider.plan_fit = 0;
+          rider.newPlan();
+          continue;
+        }
 
         //avoid server spam
         while (Date.now() - start < rider.config.MOVEMENT_DURATION) {
@@ -427,5 +389,3 @@ async function loop(rider) {
 for (let i = 0; i < riders.length; i++) {
   loop(riders[i]);
 }
-// loop(riders[0]);
-// // loop(riders[1]);
