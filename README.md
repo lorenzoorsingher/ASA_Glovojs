@@ -26,4 +26,6 @@
 - [ ] Make sure agent doesnt crash when NO plan is found (og no parcels, no delivery zones, no reachable tiles)
 
 - [x] fix order of parcels in plan generation
-- [ ] reimplement agent blocking logic
+- [x] reimplement agent blocking logic
+
+- [ ] fix crossover for multiple agents
