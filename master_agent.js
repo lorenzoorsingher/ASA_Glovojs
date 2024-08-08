@@ -79,7 +79,11 @@ riders.forEach((rider, index) => {
       rider.init(id, name, score, new Position(x, y), brain);
       rider.player_init = true;
       //wait_load = false;
-      rider.trg = rider.position;
+      rider.trg.set(rider.position);
+      if (rider.position.x % 1 != 0.0 || rider.position.y % 1 != 0.0) {
+        console.log("DESYNC");
+        azz = 8;
+      }
     }
     rider.updatePosition(x, y);
   });
@@ -126,7 +130,7 @@ riders.forEach((rider, index) => {
     if (changed) {
       console.log("Parcels changed. Recalculating plan");
 
-      rider.newPlan();
+      brain.newPlan();
     }
   });
 
@@ -148,28 +152,28 @@ riders.forEach((rider, index) => {
   });
 });
 
-// // PARCELS CLOCK
-// setInterval(() => {
-//   for (const [key, value] of parcels.entries()) {
-//     value.reward--;
-//     if (value.reward <= 0) {
-//       parcels.delete(key);
-//     } else {
-//       parcels.set(key, value);
-//     }
-//   }
+// PARCELS CLOCK
+setInterval(() => {
+  for (const [key, value] of parcels.entries()) {
+    value.reward--;
+    if (value.reward <= 0) {
+      parcels.delete(key);
+    } else {
+      parcels.set(key, value);
+    }
+  }
 
-//   riders.forEach((rider) => {
-//     for (let [key, value] of rider.player_parcels.entries()) {
-//       value--;
-//       if (value <= 0) {
-//         rider.player_parcels.delete(key);
-//       } else {
-//         rider.player_parcels.set(key, value);
-//       }
-//     }
-//   });
-// }, 1000);
+  riders.forEach((rider) => {
+    for (let [key, value] of rider.player_parcels.entries()) {
+      value--;
+      if (value <= 0) {
+        rider.player_parcels.delete(key);
+      } else {
+        rider.player_parcels.set(key, value);
+      }
+    }
+  });
+}, 1000);
 
 let lastPosition = new Position(0, 0);
 // // HARD RESET
@@ -189,62 +193,65 @@ let lastPosition = new Position(0, 0);
 //   lastPosition.y = rider.position.y;
 // }, RESET_TIMEOUT * Math.floor(Math.random() * 100) + 150);
 
-// // DASHBOARD UPDATE
-// setInterval(() => {
-//   let update_map = map.getMap();
+// DASHBOARD UPDATE
+setInterval(() => {
+  let update_map = map.getMap();
 
-//   let riders_data = [];
+  let riders_data = [];
 
-//   riders.forEach((rider) => {
-//     if (rider.player_init) {
-//       let plan_move = [];
-//       let plan_pickup = [];
-//       let plan_drop = [];
-//       let rider_parcels = [];
+  riders.forEach((rider) => {
+    if (rider.player_init) {
+      let plan_move = [];
+      let plan_pickup = [];
+      let plan_drop = [];
+      let rider_parcels = [];
 
-//       if (rider.plan.length > 0) {
-//         for (const p of rider.plan) {
-//           switch (p.type) {
-//             case ActionType.MOVE:
-//               plan_move.push(p.source.serialize());
-//               break;
-//             case ActionType.PICKUP:
-//               plan_pickup.push(p.source.serialize());
-//               break;
-//             case ActionType.PUTDOWN:
-//               plan_drop.push(p.source.serialize());
-//               break;
-//           }
-//         }
-//       }
+      if (rider.plan.length > 0) {
+        for (const p of rider.plan) {
+          switch (p.type) {
+            case ActionType.MOVE:
+              plan_move.push(p.source.serialize());
+              break;
+            case ActionType.PICKUP:
+              plan_pickup.push(p.source.serialize());
+              break;
+            case ActionType.PUTDOWN:
+              plan_drop.push(p.source.serialize());
+              break;
+          }
+        }
+      }
 
-//       if (rider.player_parcels.size > 0) {
-//         for (const [key, p] of rider.player_parcels.entries()) {
-//           rider_parcels.push({ key: key, reward: p.reward });
-//         }
-//       }
+      if (rider.player_parcels.size > 0) {
+        for (const [key, p] of rider.player_parcels.entries()) {
+          rider_parcels.push({ key: key, reward: p.reward });
+        }
+      }
 
-//       riders_data.push({
-//         x: rider.position.x,
-//         y: rider.position.y,
-//         plan: [plan_move, plan_pickup, plan_drop],
-//         parcels: rider_parcels,
-//       });
-//     }
-//   });
+      riders_data.push({
+        x: rider.position.x,
+        y: rider.position.y,
+        plan: [plan_move, plan_pickup, plan_drop],
+        parcels: rider_parcels,
+      });
+    }
+  });
+  let dash_parcels = [];
+  // console.log("parcc ", parcels);
+  for (const [key, p] of parcels.entries()) {
+    dash_parcels.push({ x: p.x, y: p.y, reward: p.reward });
+  }
 
-//   for (const [key, p] of parcels.entries()) {
-//     all_parcels.push({ x: p.x, y: p.y, reward: p.reward });
-//   }
+  let dash_data = {
+    map_size: [map.width, map.height],
+    tiles: update_map,
+    riders: riders_data,
+    parc: dash_parcels,
+  };
 
-//   let dash_data = {
-//     map_size: [map.width, map.height],
-//     tiles: update_map,
-//     riders: riders_data,
-//     parc: all_parcels,
-//   };
-//   dashboard.emitMessage("map", dash_data);
-// }, 100);
+  //console.log(dash_data);
+  dashboard.emitMessage("map", dash_data);
+}, 200);
 
 function manhattanDistance(a, b) {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
@@ -326,10 +333,14 @@ async function loop(rider) {
         }
 
         if (rider.isPathBlocked()) {
-          rider.trg = rider.position;
+          rider.trg.set(rider.position);
+          if (rider.position.x % 1 != 0.0 || rider.position.y % 1 != 0.0) {
+            console.log("DESYNC");
+            azz = 8;
+          }
           console.log("Agent in the way. Recalculating plan");
-          rider.plan_fit = 0;
-          rider.newPlan();
+          brain.plan_fit = 0;
+          brain.newPlan();
           continue;
         }
 
@@ -366,15 +377,14 @@ async function loop(rider) {
             console.log("PUTTING DOWN");
             await rider.client.putdown();
             rider.player_parcels.clear();
-            rider.plan_fit = 0;
-            rider.newPlan();
+            brain.justDelivered(rider);
             break;
         }
       }
     } else {
       console.log("Plan is empty. Recalculating plan");
-      rider.plan_fit = 0;
-      rider.newPlan();
+      brain.plan_fit = 0;
+      brain.newPlan();
     }
     await new Promise((res) => setImmediate(res));
   }

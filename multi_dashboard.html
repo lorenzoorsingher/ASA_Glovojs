@@ -50,7 +50,7 @@
         const table = document.getElementById("mapTable");
         table.innerHTML = "";
 
-        //console.log(agents)
+        console.log(data["parc"]);
 
         for (let i = 0; i < h; i++) {
           let y = h - i - 1;
@@ -76,7 +76,7 @@
 
             cell_id = j + "-" + y;
             //console.log(str);
-
+            let pardone = false;
             for (let rid = 0; rid < riders.length; rid++) {
               plan_move = riders[rid].plan[0];
               plan_pickup = riders[rid].plan[1];
@@ -90,11 +90,17 @@
                   ";'></div>";
               }
 
-              for (p of parcels) {
-                if (p.x == j && p.y == y) {
-                  color = "yellow";
-                  tile.innerHTML = "<div><b>" + p.reward + "</b></div>";
+              if (!pardone) {
+                for (p of parcels) {
+                  if (p.x == j && p.y == y) {
+                    color = "yellow";
+                    tile_html +=
+                      "<div style='position: absolute;'><b>" +
+                      p.reward +
+                      "</b></div>";
+                  }
                 }
+                pardone = true;
               }
 
               if (plan_pickup.includes(cell_id)) {
@@ -105,7 +111,6 @@
             }
             tile_html += "</div>";
 
-            console.log(tile_html);
             tile.innerHTML = tile_html;
             tile.style.backgroundColor = color;
           }
