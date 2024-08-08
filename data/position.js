@@ -51,6 +51,11 @@ export class Position {
     return `${this.x}-${this.y}`;
   }
 
+  set(pos) {
+    this.x = pos.x;
+    this.y = pos.y;
+  }
+
   static deserialize(str) {
     const [x, y] = str.split("-");
     return new Position(Number(x), Number(y));

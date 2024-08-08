@@ -85,7 +85,13 @@ export class Field {
       console.log("Tile out of bounds");
       return -1;
     }
-    return this.field[pos.y][pos.x];
+    let tile = this.field[pos.y][pos.x];
+    //console.log("TL:", this.field[pos.y][pos.x].position);
+    if (tile == undefined) {
+      console.log("Tile is null: ", pos);
+      aaaa = 3;
+    }
+    return tile;
   }
 
   printMap() {
@@ -157,7 +163,9 @@ export class Field {
       blocking.push(a.x + "-" + a.y);
       //console.log("Blocking: ", blocking);
     }
-
+    // console.log("Blocking: ", blocking);
+    // console.log("Start: ", start);
+    // console.log("End: ", end);
     if (
       this.isTileUnreachable(start, blocking) ||
       this.isTileUnreachable(end, blocking)
@@ -263,7 +271,8 @@ export class Field {
     }
 
     closest = this.sort_by_key(closest, "distance");
-
+    console.log("Blocking: ", blocking_agents);
+    console.log("Closest delivery zones: ", closest);
     return closest;
   }
 
