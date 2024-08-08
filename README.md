@@ -29,3 +29,4 @@
 - [x] reimplement agent blocking logic
 
 - [ ] fix crossover for multiple agents
+- [ ] make sure player_parcels are handled correctly in the planner
