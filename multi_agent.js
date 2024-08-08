@@ -192,12 +192,12 @@ setInterval(() => {
   }
 
   riders.forEach((rider) => {
-    for (let [key, value] of rider.parcels.entries()) {
+    for (let [key, value] of rider.player_parcels.entries()) {
       value--;
       if (value <= 0) {
-        rider.parcels.delete(key);
+        rider.player_parcels.delete(key);
       } else {
-        rider.parcels.set(key, value);
+        rider.player_parcels.set(key, value);
       }
     }
   });
@@ -250,8 +250,8 @@ setInterval(() => {
         }
       }
 
-      if (rider.parcels.size > 0) {
-        for (const [key, p] of rider.parcels.entries()) {
+      if (rider.player_parcels.size > 0) {
+        for (const [key, p] of rider.player_parcels.entries()) {
           rider_parcels.push({ key: key, reward: p.reward });
         }
       }
@@ -310,10 +310,10 @@ async function loop(rider) {
     }
 
     rider.carrying = 0;
-    rider.parcels.clear();
+    rider.player_parcels.clear();
     for (const p of all_parcels) {
       if (p.carriedBy == rider.id) {
-        rider.parcels.set(p.id, p.reward);
+        rider.player_parcels.set(p.id, p.reward);
         rider.carrying += p.reward;
       }
     }
@@ -394,7 +394,7 @@ async function loop(rider) {
             await rider.client.pickup();
 
             try {
-              rider.parcels.set(
+              rider.player_parcels.set(
                 rider.nextAction.bestParcel,
                 parcels.get(rider.nextAction.bestParcel).reward
               );
@@ -409,7 +409,7 @@ async function loop(rider) {
           case ActionType.PUTDOWN:
             console.log("PUTTING DOWN");
             await rider.client.putdown();
-            rider.parcels.clear();
+            rider.player_parcels.clear();
             rider.plan_fit = 0;
             rider.newPlan();
             break;

@@ -18,7 +18,7 @@ export class Rider {
     this.nextAction = null;
     this.planLock = false;
 
-    this.parcels = new Map();
+    this.player_parcels = new Map();
 
     this.brain = new Genetic();
     this.client = new DeliverooApi(
@@ -53,7 +53,7 @@ export class Rider {
     this.brain.updatePlayerPosition(this.trg, this.config.MOVEMENT_DURATION);
     // console.log("MyPos: ", rider.position);
     this.planLock = true;
-    const [tmp_plan, best_fit] = this.brain.createPlan(this.parcels);
+    const [tmp_plan, best_fit] = this.brain.createPlan(this.player_parcels);
 
     // console.log("Best fit: ", best_fit);
     if (best_fit > this.plan_fit) {
