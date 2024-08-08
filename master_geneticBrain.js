@@ -6,13 +6,14 @@ export class Genetic {
     this.riders = riders;
     this.nriders = riders.length;
 
-    console.log("Genetic brain created");
-    //console.log("Riders: ", this.riders);
-    console.log("Nriders: ", this.nriders);
+    console.log("Genetic brain created with ", this.nriders, " riders");
+
     this.config = {};
 
     this.field = field;
     this.parcels = parcels;
+    this.plan_fit = 0;
+    this.planLock = false;
     // this.x = playerPosition.x;
     // this.y = playerPosition.y;
     this.pop = pop;
@@ -56,8 +57,8 @@ export class Genetic {
 
     let prep_parcels = [];
     let dummy_parcel = {
-      x: rider.position.x,
-      y: rider.position.y,
+      x: rider.trg.x,
+      y: rider.trg.y,
       reward: 0,
     };
 
@@ -65,9 +66,11 @@ export class Genetic {
     copy_parcels.set("rider", dummy_parcel);
 
     for (const [key, p] of copy_parcels.entries()) {
+      console.log("rp: ", rider.trg);
       let path_fromPlayer = this.field.bfs(
         this.field.getTile({ x: p.x, y: p.y }),
-        this.field.getTile({ x: rider.position.x, y: rider.position.y }),
+
+        this.field.getTile({ x: rider.trg.x, y: rider.trg.y }),
         rider.blocking_agents
       );
       let fromPlayer;
@@ -229,45 +232,6 @@ export class Genetic {
     return population[idx];
   }
 
-  // crossover(parentA, parentB) {
-  //   console.log("INSIDE CROSSOVER");
-  //   console.log("Parent A: ", parentA);
-  //   console.log("Parent B: ", parentB);
-
-  //   let seg_len = Math.floor(parentA.length / 2);
-
-  //   let start = Math.floor((parentA.length - seg_len) / 2);
-  //   let end = start + seg_len;
-
-  //   let a_segment = parentA.slice(start, end);
-  //   let head = [];
-  //   let tail = [];
-
-  //   for (const el of parentB) {
-  //     if (!a_segment.includes(el)) {
-  //       if (head.length <= parentA.length - seg_len) {
-  //         head.push(el);
-  //       } else if (head.length + tail.length < parentA.length - seg_len) {
-  //         tail.push(el);
-  //       } else {
-  //         break;
-  //       }
-  //     }
-  //   }
-
-  //   // console.log("seg_len: ", seg_len);
-  //   // console.log("Start: ", start);
-  //   // console.log("End: ", end);
-  //   // console.log("Segment: ", a_segment);
-  //   // console.log("Head: ", head);
-  //   // console.log("Tail: ", tail);
-
-  //   let childA = [].concat(head).concat(a_segment).concat(tail);
-
-  //   console.log("Child A: ", childA);
-  //   return childA;
-  // }
-
   multi_crossover(parentA, parentB) {
     // console.log("INSIDE CROSSOVER");
     // console.log("Parent A: \t", parentA);
@@ -419,10 +383,10 @@ export class Genetic {
       if (genes.length == 0) {
         return [[], 0];
       }
-      this.printMat(r.costs);
-      console.log("N Nodes: ", r.nodes.length);
-      console.log("Nodes: ", r.nodes);
-      console.log("Genes: ", genes);
+      // this.printMat(r.costs);
+      // console.log("N Nodes: ", r.nodes.length);
+      // console.log("Nodes: ", r.nodes);
+      // console.log("Genes: ", genes);
     }
 
     let best_dna = [];
@@ -489,7 +453,7 @@ export class Genetic {
         // console.log("Parent A: ", parentA);
         // console.log("Parent B: ", parentB);
 
-        if (parentA.length != 3) {
+        if (parentA.length != this.nriders) {
           asa = 3;
         }
 
@@ -534,7 +498,7 @@ export class Genetic {
         if (fit > best_fit) {
           best_fit = fit;
           best_dna = family;
-          console.log("New best fit: ", best_fit);
+          // console.log("New best fit: ", best_fit);
         }
       }
 
@@ -547,16 +511,19 @@ export class Genetic {
     return [best_dna, best_fit];
   }
 
-  backupPlan(player_parcels) {
-    let startTile = this.field.getTile({ x: this.x, y: this.y });
+  backupPlan(rider) {
+    let startTile = this.field.getTile({
+      x: rider.trg.x,
+      y: rider.trg.y,
+    });
     let endTile = null;
     let deliver = false;
     let rew = 1;
 
     let path_to_closest = -1;
     let path_to_spawnable = -1;
-    if (Array.from(player_parcels).length > 0) {
-      for (const par of Array.from(player_parcels)) {
+    if (Array.from(rider.player_parcels).length > 0) {
+      for (const par of Array.from(rider.player_parcels)) {
         rew += par[1];
       }
       console.log(
@@ -565,10 +532,10 @@ export class Genetic {
 
       let closest = this.field.getClosestDeliveryZones(
         {
-          x: this.x,
-          y: this.y,
+          x: rider.trg.x,
+          y: rider.trg.y,
         },
-        this.blocking_agents
+        rider.blocking_agents
       );
 
       if (closest.length == 0) {
@@ -579,8 +546,8 @@ export class Genetic {
     } else {
       console.log("No parcels on rider, generating random plan");
       path_to_spawnable = this.field.getRandomSpawnable(
-        new Position(this.x, this.y),
-        this.blocking_agents
+        new Position(rider.trg.x, rider.trg.y),
+        rider.blocking_agents
       );
     }
 
@@ -598,7 +565,7 @@ export class Genetic {
       console.log("[BACKUP] Returning random reflexive move");
 
       let blocking = [];
-      for (const a of this.blocking_agents.values()) {
+      for (const a of rider.blocking_agents.values()) {
         blocking.push(a.x + "-" + a.y);
         //console.log("Blocking: ", blocking);
       }
@@ -606,7 +573,9 @@ export class Genetic {
       let movement = null;
       let target_position = null;
       for (const dir in Direction) {
-        target_position = new Position(this.x, this.y).moveTo(Direction[dir]);
+        target_position = new Position(rider.trg.x, rider.trg.y).moveTo(
+          Direction[dir]
+        );
         console.log("trying to move ", Direction[dir], " to ", target_position);
         let target_tile = this.field.getTile(target_position);
 
@@ -624,7 +593,7 @@ export class Genetic {
 
       actions = [
         new Action(
-          new Position(this.x, this.y),
+          new Position(rider.trg.x, rider.trg.y),
           target_position,
           ActionType.MOVE,
           null
@@ -636,7 +605,7 @@ export class Genetic {
     return [actions, rew];
   }
 
-  createPlan(player_parcels) {
+  createPlan() {
     let riders_paths = [];
     for (const r of this.riders) {
       const [costs, paths, parc] = this.builGraphInOut(r);
@@ -661,7 +630,7 @@ export class Genetic {
     );
 
     // console.log("Generated plan with rew ", best_fit);
-    // console.log("Plan: ", best_path);
+    console.log("Plan: ", best_path);
 
     let parcels_path = [];
     for (let r = 0; r < riders_paths.length; r++) {
@@ -679,16 +648,23 @@ export class Genetic {
 
     // console.log("chosen parcels: ", parcels_path);
     //console.log(paths);
-    if (parcels_path.length == 0 || best_fit == 0) {
-      return this.backupPlan(player_parcels);
-    }
 
     //TODO:
-
+    console;
     let all_plans = [];
     for (let r = 0; r < riders_paths.length; r++) {
       let chosen_path = parcels_path[r];
       let plan = [];
+
+      if (chosen_path.length == 0 || best_fit == 0) {
+        plan = this.backupPlan(this.riders[r]);
+
+        console.log("Plan for Rider ", plan);
+        //aaa = 33;
+        all_plans.push(plan[0]);
+        continue;
+      }
+
       let actions = Action.pathToAction(
         chosen_path[0].path_in,
         ActionType.PICKUP,
@@ -750,8 +726,11 @@ export class Genetic {
     }
 
     for (let r = 0; r < this.riders.length; r++) {
-      console.log("Plan for Rider ", this.riders[r].name);
+      // console.log("Plan for Rider ", this.riders[r].name);
+      //console.log("Plan: ", all_plans[r]);
+      // console.log("len: ", all_plans[r].length, " ", all_plans.length);
       for (const act of all_plans[r]) {
+        // console.log("Action: ", act);
         act.printAction();
       }
     }
@@ -814,5 +793,37 @@ export class Genetic {
       str += "\n";
     }
     console.log(str);
+  }
+
+  newPlan() {
+    // console.log("MyPos: ", rider.position);
+    this.planLock = true;
+    const [tmp_plan, best_fit] = this.createPlan();
+
+    // console.log("Best fit: ", best_fit);
+    if (best_fit > this.plan_fit) {
+      this.plan_fit = best_fit;
+
+      for (let i = 0; i < this.riders.length; i++) {
+        this.riders[i].plan = tmp_plan[i];
+        if (
+          this.riders[i].position.x % 1 == 0.0 &&
+          this.riders[i].position.y % 1 == 0.0
+        ) {
+          console.log("Rider ", this.riders[i].position, " is on a tile");
+          this.riders[i].trg.set(this.riders[i].position);
+        }
+      }
+
+      console.log("New plan accepted ");
+    } else {
+      console.log("New plan rejected ");
+    }
+    this.planLock = false;
+  }
+
+  justDelivered(rider) {
+    let plan = this.backupPlan(rider);
+    rider.plan = plan[0];
   }
 }
