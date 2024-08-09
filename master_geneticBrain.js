@@ -378,7 +378,7 @@ export class Genetic {
       //console.log("Riders paths: ", r);
 
       genes = Array.from(Array(r.nodes.length).keys());
-      console.log("Genes: ", genes);
+      // console.log("Genes: ", genes);
 
       if (genes.length == 0) {
         let empty_plan = Array.from({ length: this.riders.length }, () => []);
@@ -505,12 +505,18 @@ export class Genetic {
   }
 
   backupPlan(rider) {
-    let startTile = this.field.getTile({
-      x: rider.trg.x,
-      y: rider.trg.y,
-    });
-    let endTile = null;
-    let deliver = false;
+    console.log("Generating backup plan for rider ", rider.name);
+    console.log("Rider position: ", rider.position);
+    console.log("Rider target: ", rider.trg);
+    console.log("Rider source: ", rider.src);
+    console.log("Rider action: ", rider.nextAction);
+
+    // let startTile = this.field.getTile({
+    //   x: rider.src.x,
+    //   y: rider.src.y,
+    // });
+    // let endTile = null;
+    // let deliver = false;
     let rew = 1;
 
     let path_to_closest = -1;
@@ -543,22 +549,28 @@ export class Genetic {
     }
 
     let actions = [];
+    // let starting_action = new Action(
+    //   rider.src,
+    //   rider.trg,
+    //   ActionType.MOVE,
+    //   null
+    // );
+    // actions.push(starting_action);
+
     if (path_to_closest != -1) {
       console.log("[BACKUP] A reachable delivery zone was found!");
       actions = Action.pathToAction(path_to_closest, ActionType.PUTDOWN, null);
     } else if (path_to_spawnable != -1) {
       console.log("[BACKUP] A reachable spawnable tile was found!");
       actions = Action.pathToAction(path_to_spawnable, ActionType.MOVE, null);
+      rew = 0;
     } else {
-      console.log(
-        "[BACKUP] No reachable delivery zone or spawnable tile was found!"
-      );
+      console.log("[BACKUP] No reachable valid plans found!");
       console.log("[BACKUP] Returning random reflexive move");
-
+      rew = 0;
       let blocking = [];
       for (const a of rider.blocking_agents.values()) {
         blocking.push(a.x + "-" + a.y);
-        //console.log("Blocking: ", blocking);
       }
 
       let movement = null;
@@ -582,7 +594,16 @@ export class Genetic {
         }
       }
 
+      let starting_action = new Action(
+        rider.src,
+        rider.trg,
+        ActionType.MOVE,
+        null
+      );
+      console.log("Starting action inserted");
+      // plan.push(starting_action);
       actions = [
+        starting_action,
         new Action(
           new Position(rider.trg.x, rider.trg.y),
           target_position,
@@ -591,6 +612,11 @@ export class Genetic {
         ),
       ];
     }
+    //assa = 3;
+
+    // for (const act of actions) {
+    //   act.printAction();
+    // }
 
     console.log("Generated BACKUP plan with rew ", rew);
     return [actions, rew];
@@ -639,8 +665,9 @@ export class Genetic {
       if (best_path[r].length == 0 || best_fit == 0) {
         plan = this.backupPlan(this.riders[r]);
 
-        console.log("Backup plan for Rider ", plan);
+        //console.log("Backup plan for Rider ", plan);
         //aaa = 33;
+        console.log("Backup plan generated");
         all_plans.push(plan[0]);
         continue;
       }
@@ -664,7 +691,7 @@ export class Genetic {
         ActionType.MOVE,
         null
       );
-
+      console.log("Starting action inserted: ", starting_action);
       plan.push(starting_action);
 
       let actions = Action.pathToAction(
@@ -699,9 +726,9 @@ export class Genetic {
       plan = plan.concat(actions);
 
       let corr_plan = [];
-      for (let i = 0; i < plan.length; i += 1) {
+      for (let i = 1; i < plan.length; i += 1) {
         if (plan[i].type == ActionType.PICKUP) {
-          for (let j = 0; j < i; j++) {
+          for (let j = 1; j < i; j++) {
             if (plan[j].type == ActionType.MOVE) {
               if (plan[j].source.equals(plan[i].source)) {
                 // console.log(
@@ -728,7 +755,7 @@ export class Genetic {
     }
 
     for (let r = 0; r < this.riders.length; r++) {
-      // console.log("Plan for Rider ", this.riders[r].name);
+      console.log("Plan for Rider ", this.riders[r].name);
       // console.log("Plan: ", all_plans[r]);
       // console.log("len: ", all_plans[r].length, " ", all_plans.length);
       for (const act of all_plans[r]) {
@@ -804,23 +831,23 @@ export class Genetic {
 
     console.log("proposed fit ", best_fit, " current fit ", this.plan_fit);
     let MINIMUM_GAIN = 1.2;
-    if (best_fit > this.plan_fit * MINIMUM_GAIN) {
+    if (best_fit > this.plan_fit * MINIMUM_GAIN || this.plan_fit == 0) {
       this.plan_fit = best_fit;
 
       for (let i = 0; i < this.riders.length; i++) {
         this.riders[i].plan = tmp_plan[i];
-        if (
-          this.riders[i].position.x % 1 == 0.0 &&
-          this.riders[i].position.y % 1 == 0.0
-        ) {
-          // console.log("Rider ", this.riders[i].position, " is on a tile");
-          this.riders[i].trg.set(this.riders[i].position);
-        }
+        // if (
+        //   this.riders[i].position.x % 1 == 0.0 &&
+        //   this.riders[i].position.y % 1 == 0.0
+        // ) {
+        //   // console.log("Rider ", this.riders[i].position, " is on a tile");
+        //   this.riders[i].trg.set(this.riders[i].position);
+        // }
       }
 
-      console.log("New plan accepted ");
+      console.log("New plan accepted ✅");
     } else {
-      console.log("New plan rejected ");
+      console.log("New plan rejected ❌");
     }
 
     this.planLock = false;

@@ -292,9 +292,11 @@ async function loop(rider) {
 
         if (rider.position.equals(rider.plan[0].source)) {
           rider.nextAction = rider.plan.shift();
+          console.log("action consumed 1");
         } else if (rider.position.equals(rider.plan[1].source)) {
           rider.nextAction = rider.plan.shift();
           rider.nextAction = rider.plan.shift();
+          console.log("action consumed 2");
         } else {
           console.log("SOMETHING WENT VERY WRONG HERE");
           console.log(
@@ -305,9 +307,10 @@ async function loop(rider) {
             " or ",
             rider.plan[1].source
           );
+          console.log(rider.plan[0].type, " and ", rider.plan[1].type);
         }
-        rider.src = rider.nextAction.source;
-        rider.trg = rider.nextAction.target;
+        rider.src.set(rider.nextAction.source);
+        rider.trg.set(rider.nextAction.target);
 
         // if (!rider.trg.equals(rider.position)) {
         //   console.log("DIDNT REACH TARGET");
@@ -321,7 +324,7 @@ async function loop(rider) {
         let move = Position.getDirectionTo(rider.src, rider.trg);
 
         // console.log("rider: ", rider.position);
-        // console.log("Next action: ", nextAction);
+        console.log("Next action: ", rider.nextAction);
         // console.log("stat: ", stat);
         // console.log("------------------------------------");
         // if the agent is not in the source tile, desync, something went wrong
