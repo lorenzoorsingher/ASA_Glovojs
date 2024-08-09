@@ -11,7 +11,7 @@ import { Genetic } from "./master_geneticBrain.js";
 export const VERBOSE = false;
 const LOCAL = true;
 
-let pop = 1000;
+let pop = 100;
 let gen = 30;
 let port = 3000;
 // let [pop, gen, port] = process.argv.slice(2);
@@ -37,7 +37,7 @@ let all_parcels = [];
 // contains all non-carried parcels
 const parcels = new Map();
 
-const NRIDERS = 1;
+const NRIDERS = 2;
 let PARCEL_DECAY = 1000;
 let riders = [];
 
@@ -101,32 +101,38 @@ riders.forEach((rider, index) => {
 
     for (const [key, value] of parcels.entries()) {
       let parc_pos = new Position(value.x, value.y);
-      let dist = manhattanDistance(rider.position, parc_pos);
-
-      //delete parcel if it's in memory but not perceived
       let found = false;
-      if (dist < rider.config.PARCELS_OBSERVATION_DISTANCE) {
-        for (const p of perceived_parcels) {
-          if (p.id == key && p.carriedBy == null) {
-            found = true;
-            break;
+      for (const r of riders) {
+        let dist = manhattanDistance(r.position, parc_pos);
+
+        if (dist < r.config.PARCELS_OBSERVATION_DISTANCE) {
+          for (const p of perceived_parcels) {
+            if (p.id == key && p.carriedBy == null) {
+              found = true;
+              break;
+            }
           }
         }
-
-        if (!found) {
-          parcels.delete(key);
-        }
+      }
+      if (!found) {
+        parcels.delete(key);
       }
     }
 
-    // if parcel not in memory, add it
+    // update and add free parcels
     for (const p of perceived_parcels) {
-      if (
-        !parcels.has(p.id) &&
-        //hasCompletedMovement(rider.position) &&
-        p.carriedBy == null
-      ) {
+      if (p.carriedBy == null) {
         parcels.set(p.id, p);
+      }
+    }
+
+    // update rider parcels and carried value
+    rider.carrying = 0;
+    rider.player_parcels.clear();
+    for (const p of all_parcels) {
+      if (p.carriedBy == rider.id) {
+        rider.player_parcels.set(p.id, p.reward);
+        rider.carrying += p.reward;
       }
     }
 
@@ -228,11 +234,17 @@ setInterval(() => {
         }
       }
 
+      let blk_agents = [];
+      for (const blk of rider.blocking_agents.values()) {
+        blk_agents.push(blk.x + "-" + blk.y);
+      }
+
       riders_data.push({
         x: rider.position.x,
         y: rider.position.y,
         plan: [plan_move, plan_pickup, plan_drop],
         parcels: rider_parcels,
+        blk_agents: blk_agents,
       });
     }
   });
@@ -272,14 +284,14 @@ async function loop(rider) {
       continue;
     }
 
-    rider.carrying = 0;
-    rider.player_parcels.clear();
-    for (const p of all_parcels) {
-      if (p.carriedBy == rider.id) {
-        rider.player_parcels.set(p.id, p.reward);
-        rider.carrying += p.reward;
-      }
-    }
+    // rider.carrying = 0;
+    // rider.player_parcels.clear();
+    // for (const p of all_parcels) {
+    //   if (p.carriedBy == rider.id) {
+    //     rider.player_parcels.set(p.id, p.reward);
+    //     rider.carrying += p.reward;
+    //   }
+    // }
 
     // if a plan exists execute, otherwise create a new one
     if (rider.plan.length > 0) {

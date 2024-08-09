@@ -80,13 +80,14 @@
                 break;
             }
 
-            cell_id = j + "-" + y;
+            cell_id = x + "-" + y;
             //console.log(str);
             let pardone = false;
             for (let rid = 0; rid < riders.length; rid++) {
               plan_move = riders[rid].plan[0];
               plan_pickup = riders[rid].plan[1];
               plan_drop = riders[rid].plan[2];
+              blk_agents = riders[rid].blk_agents;
 
               if (plan_move.includes(cell_id)) {
                 pathcolor = pathcolors[rid];
@@ -98,7 +99,7 @@
 
               if (!pardone) {
                 for (p of parcels) {
-                  if (p.x == j && p.y == y) {
+                  if (p.x == x && p.y == y) {
                     color = "yellow";
                     tile_html +=
                       "<div style='position: absolute;'><b>" +
@@ -113,6 +114,14 @@
                 color = "GreenYellow";
               } else if (plan_drop.includes(cell_id)) {
                 color = "orange";
+              }
+            }
+
+            for (let rid = 0; rid < riders.length; rid++) {
+              blk_agents = riders[rid].blk_agents;
+
+              if (blk_agents.includes(cell_id)) {
+                color = "purple";
               }
             }
             tile_html += "</div>";
@@ -147,7 +156,7 @@
 
         for (let rid = 0; rid < riders.length; rid++) {
           rider_parc = riders[rid].parcels;
-          console.log("rp: ", rider_parc);
+          // console.log("rp: ", rider_parc);
           for (let i = 0; i < rider_parc.length; i++) {
             let row = carry_table.insertRow();
 
@@ -164,7 +173,7 @@
 
             parcel = rider_parc[i];
 
-            rider_cell.innerHTML = "<div><b>Rider" + rid + "</b></div>";
+            rider_cell.innerHTML = "<div><b>Rider " + rid + "</b></div>";
             key_cell.innerHTML = "<div><b>" + parcel.key + "</b></div>";
             rew_cell.innerHTML = "<div><b>" + parcel.reward + "</b></div>";
           }
