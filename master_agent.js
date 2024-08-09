@@ -34,28 +34,28 @@ const dashboard = new MyServer(port);
 let map_init = false;
 const map = new Field();
 let all_parcels = [];
+// contains all non-carried parcels
 const parcels = new Map();
-const agents = new Map();
 
-const NRIDERS = 1;
+const NRIDERS = 3;
 let PARCEL_DECAY = 1000;
 let riders = [];
 
 let names = ["BLUE", "PINK", "GREY"];
 
+// create riders
 for (let i = 0; i < NRIDERS; i++) {
   let uname = Math.random().toString(36).substring(5) + "_" + pop + "_" + gen;
   uname = names[i];
-  // brains.push(new Genetic());
   riders.push(new Rider(uname));
 }
 
+//create brain with associated riders
 let brain = new Genetic(riders, map, parcels, pop, gen);
-
-//const blocking_agents = new Map();
 
 let RESET_TIMEOUT = 50;
 
+// set up sensings for all riders
 riders.forEach((rider, index) => {
   rider.client.onConfig((config) => {
     rider.set_config(config);
@@ -75,7 +75,7 @@ riders.forEach((rider, index) => {
 
     //init map only once
     if (!map_init) {
-      map.init(width, height, tiles, agents);
+      map.init(width, height, tiles);
       map_init = true;
     }
     //rider.brain.init(map, parcels, new Position(0, 0), pop, gen);
@@ -85,7 +85,6 @@ riders.forEach((rider, index) => {
     if (!rider.player_init) {
       rider.init(id, name, score, new Position(x, y), brain);
       rider.player_init = true;
-      //wait_load = false;
       rider.trg.set(rider.position);
       if (rider.position.x % 1 != 0.0 || rider.position.y % 1 != 0.0) {
         console.log("DESYNC");
@@ -142,20 +141,14 @@ riders.forEach((rider, index) => {
   });
 
   rider.client.onAgentsSensing(async (perceived_agents) => {
-    //agents.clear();
     rider.blocking_agents.clear();
     for (const a of perceived_agents) {
       if (a.name != "god") {
         if (manhattanDistance(rider.position, a) < 100) {
           rider.blocking_agents.set(a.id, a);
         }
-        // } else {
-        //   agents.set(a.id, a);
-        // }
       }
     }
-
-    // console.log("Agents updated: ", rider.blocking_agents);
   });
 });
 
@@ -241,8 +234,6 @@ setInterval(() => {
         plan: [plan_move, plan_pickup, plan_drop],
         parcels: rider_parcels,
       });
-
-      console.log(rider.player_parcels.entries());
     }
   });
   let dash_parcels = [];

@@ -3,8 +3,7 @@ import { Position, Direction } from "./position.js";
 // import { VERBOSE } from "../agent.js";
 const VERBOSE = false;
 export class Field {
-  init(width, height, tiles, agents) {
-    this.agents = agents;
+  init(width, height, tiles) {
     this.width = width;
     this.height = height;
     this.field = [];
@@ -346,10 +345,6 @@ export class Field {
   }
 
   isTileUnreachable(tile, blocking = []) {
-    for (const a of this.agents.values()) {
-      blocking.push(a.x + "-" + a.y);
-      //console.log("Blocking: ", blocking);
-    }
     if (blocking.includes(tile.id) && blocking.length > 0) {
       // console.log(
       //   "Tile in position: ",
