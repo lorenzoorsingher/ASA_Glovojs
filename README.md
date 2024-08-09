@@ -36,3 +36,4 @@
 - [ ] penalize too many plan changes
 - [ ] check if carried parcels are correcly evaluated when replanning
 - [ ] rework parcels clock
+- [ ] figure out why agent crashes when 2-action long backup plan is created and after consuming action
