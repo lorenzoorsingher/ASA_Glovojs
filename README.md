@@ -32,3 +32,4 @@
 - [ ] make sure player_parcels are handled correctly in the planner
 - [ ] make sure parcels are correctly memorized
 - [ ] fix bfs crashing when position is not round
+- [ ] rethink logic when it's time to replan (due to delivery or plan end)

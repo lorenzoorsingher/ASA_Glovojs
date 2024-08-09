@@ -11,8 +11,8 @@ import { Genetic } from "./master_geneticBrain.js";
 export const VERBOSE = false;
 const LOCAL = true;
 
-let pop = 100;
-let gen = 100;
+let pop = 500;
+let gen = 30;
 let port = 3000;
 // let [pop, gen, port] = process.argv.slice(2);
 // if (pop == undefined) {

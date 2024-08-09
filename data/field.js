@@ -271,8 +271,8 @@ export class Field {
     }
 
     closest = this.sort_by_key(closest, "distance");
-    console.log("Blocking: ", blocking_agents);
-    console.log("Closest delivery zones: ", closest);
+    // console.log("Blocking: ", blocking_agents);
+    // console.log("Closest delivery zones: ", closest);
     return closest;
   }
 

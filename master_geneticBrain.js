@@ -66,7 +66,7 @@ export class Genetic {
     copy_parcels.set("rider", dummy_parcel);
 
     for (const [key, p] of copy_parcels.entries()) {
-      console.log("rp: ", rider.trg);
+      //console.log("rp: ", rider.trg);
       let path_fromPlayer = this.field.bfs(
         this.field.getTile({ x: p.x, y: p.y }),
 
@@ -502,10 +502,10 @@ export class Genetic {
         }
       }
 
-      // if (i % 10 == 0) {
-      //   console.log("Gen " + i + " avg fitness: ", tot_fit / pop_size);
-      //   console.log(population.length, " ", pop_size);
-      // }
+      if (i % 5 == 0) {
+        console.log("Gen " + i + " avg fitness: ", tot_fit / pop_size);
+        //console.log(population.length, " ", pop_size);
+      }
     }
 
     return [best_dna, best_fit];
@@ -625,7 +625,7 @@ export class Genetic {
       riders_paths,
       this.pop,
       this.gen,
-      0.5,
+      0.3,
       0.5
     );
 
@@ -810,7 +810,7 @@ export class Genetic {
           this.riders[i].position.x % 1 == 0.0 &&
           this.riders[i].position.y % 1 == 0.0
         ) {
-          console.log("Rider ", this.riders[i].position, " is on a tile");
+          // console.log("Rider ", this.riders[i].position, " is on a tile");
           this.riders[i].trg.set(this.riders[i].position);
         }
       }
