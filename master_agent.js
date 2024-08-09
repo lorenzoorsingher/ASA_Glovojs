@@ -37,7 +37,8 @@ let all_parcels = [];
 const parcels = new Map();
 const agents = new Map();
 
-const NRIDERS = 3;
+const NRIDERS = 1;
+let PARCEL_DECAY = 1000;
 let riders = [];
 
 let names = ["BLUE", "PINK", "GREY"];
@@ -60,6 +61,12 @@ riders.forEach((rider, index) => {
     rider.set_config(config);
     brain.set_config(config);
     RESET_TIMEOUT = config.RESET_TIMEOUT;
+
+    if (config.PARCEL_DECADING_INTERVAL == "infinite") {
+      PARCEL_DECAY = Infinity;
+    } else {
+      PARCEL_DECAY = config.PARCEL_DECADING_INTERVAL * 1000;
+    }
   });
 
   // note that this happens before the onYou event
@@ -117,7 +124,7 @@ riders.forEach((rider, index) => {
     for (const p of perceived_parcels) {
       if (
         !parcels.has(p.id) &&
-        hasCompletedMovement(rider.position) &&
+        //hasCompletedMovement(rider.position) &&
         p.carriedBy == null
       ) {
         parcels.set(p.id, p);
@@ -152,30 +159,30 @@ riders.forEach((rider, index) => {
   });
 });
 
-// PARCELS CLOCK
-setInterval(() => {
-  for (const [key, value] of parcels.entries()) {
-    value.reward--;
-    if (value.reward <= 0) {
-      parcels.delete(key);
-    } else {
-      parcels.set(key, value);
-    }
-  }
+// // PARCELS CLOCK
+// setInterval(() => {
+//   for (const [key, value] of parcels.entries()) {
+//     value.reward--;
+//     if (value.reward <= 0) {
+//       parcels.delete(key);
+//     } else {
+//       parcels.set(key, value);
+//     }
+//   }
 
-  riders.forEach((rider) => {
-    for (let [key, value] of rider.player_parcels.entries()) {
-      value--;
-      if (value <= 0) {
-        rider.player_parcels.delete(key);
-      } else {
-        rider.player_parcels.set(key, value);
-      }
-    }
-  });
-}, 1000);
+//   riders.forEach((rider) => {
+//     for (let [key, value] of rider.player_parcels.entries()) {
+//       value--;
+//       if (value <= 0) {
+//         rider.player_parcels.delete(key);
+//       } else {
+//         rider.player_parcels.set(key, value);
+//       }
+//     }
+//   });
+// }, PARCEL_DECAY);
 
-let lastPosition = new Position(0, 0);
+// let lastPosition = new Position(0, 0);
 // // HARD RESET
 // setInterval(() => {
 //   if (lastPosition.equals(rider.position)) {
@@ -224,7 +231,7 @@ setInterval(() => {
 
       if (rider.player_parcels.size > 0) {
         for (const [key, p] of rider.player_parcels.entries()) {
-          rider_parcels.push({ key: key, reward: p.reward });
+          rider_parcels.push({ key: key, reward: p });
         }
       }
 
@@ -234,6 +241,8 @@ setInterval(() => {
         plan: [plan_move, plan_pickup, plan_drop],
         parcels: rider_parcels,
       });
+
+      console.log(rider.player_parcels.entries());
     }
   });
   let dash_parcels = [];

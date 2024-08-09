@@ -726,7 +726,7 @@ export class Genetic {
     }
 
     for (let r = 0; r < this.riders.length; r++) {
-      // console.log("Plan for Rider ", this.riders[r].name);
+      console.log("Plan for Rider ", this.riders[r].name);
       //console.log("Plan: ", all_plans[r]);
       // console.log("len: ", all_plans[r].length, " ", all_plans.length);
       for (const act of all_plans[r]) {

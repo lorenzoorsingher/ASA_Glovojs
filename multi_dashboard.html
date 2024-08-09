@@ -22,6 +22,12 @@
     <div id="carrying"></div>
     <div id="carrying_points"></div>
 
+    <div id="carry_div">
+      <table style="border: 1px solid black" id="my_carry_table">
+        <tbody id="carry_table"></tbody>
+      </table>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
       const socket = io();
@@ -50,7 +56,7 @@
         const table = document.getElementById("mapTable");
         table.innerHTML = "";
 
-        console.log(data["parc"]);
+        // console.log(data["parc"]);
 
         for (let i = 0; i < h; i++) {
           let y = h - i - 1;
@@ -133,18 +139,36 @@
             Math.round(rider.x)
           ].style.backgroundColor = ridercolor[rid];
         }
-        //console.log(Math.round(h-agent[1]), " ", Math.round(agent[0]));
 
-        // for (a of agents) {
-        //   table.rows[Math.round(h - a.y) - 1].cells[
-        //     Math.round(a.x)
-        //   ].style.backgroundColor = "pink";
-        // }
-        // for (a of blk_agents) {
-        //   table.rows[Math.round(h - a.y) - 1].cells[
-        //     Math.round(a.x)
-        //   ].style.backgroundColor = "HotPink";
-        // }
+        // TABLE OF CARRIED PARCELS
+
+        const carry_table = document.getElementById("carry_table");
+        carry_table.innerHTML = "";
+
+        for (let rid = 0; rid < riders.length; rid++) {
+          rider_parc = riders[rid].parcels;
+          console.log("rp: ", rider_parc);
+          for (let i = 0; i < rider_parc.length; i++) {
+            let row = carry_table.insertRow();
+
+            row.style.border = "1px solid #000";
+
+            let rider_cell = row.insertCell();
+            let key_cell = row.insertCell();
+            let rew_cell = row.insertCell();
+
+            rider_cell.style.border = "1px solid #000";
+            rider_cell.style.backgroundColor = ridercolor[rid];
+            key_cell.style.border = "1px solid #000";
+            rew_cell.style.border = "1px solid #000";
+
+            parcel = rider_parc[i];
+
+            rider_cell.innerHTML = "<div><b>Rider" + rid + "</b></div>";
+            key_cell.innerHTML = "<div><b>" + parcel.key + "</b></div>";
+            rew_cell.innerHTML = "<div><b>" + parcel.reward + "</b></div>";
+          }
+        }
       });
     </script>
   </body>
