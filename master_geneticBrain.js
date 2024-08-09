@@ -330,11 +330,15 @@ export class Genetic {
         currRew += par[1];
       }
 
+      // if (currCarr > 0) {
+      //   console.log("Rider is carrying ", currCarr, " parcels for ", currRew);
+      // }
+
       //penality for each additional step. Makes sure the eagent eventually delivers the parcels
       let LONG_TRIP_PENALITY = 2.5;
       let real_duration = this.movement_duration * 4;
       let STEP_COST = real_duration / 1000 / this.parcel_decay;
-
+      //STEP_COST = 1;
       //console.log("STEP COST: ", STEP_COST);
       //exit();
       //console.log("DNA: ", dna);
@@ -607,7 +611,9 @@ export class Genetic {
 
   createPlan() {
     let riders_paths = [];
+    console.log("starting positions: ");
     for (const r of this.riders) {
+      console.log("Rider ", r.name, " at ", r.trg);
       const [costs, paths, parc] = this.builGraphInOut(r);
       riders_paths.push({
         costs: costs,
@@ -659,11 +665,20 @@ export class Genetic {
       if (chosen_path.length == 0 || best_fit == 0) {
         plan = this.backupPlan(this.riders[r]);
 
-        console.log("Plan for Rider ", plan);
+        console.log("Backup plan for Rider ", plan);
         //aaa = 33;
         all_plans.push(plan[0]);
         continue;
       }
+
+      let starting_action = new Action(
+        this.riders[r].src,
+        this.riders[r].trg,
+        ActionType.MOVE,
+        null
+      );
+
+      plan.push(starting_action);
 
       let actions = Action.pathToAction(
         chosen_path[0].path_in,
@@ -726,8 +741,8 @@ export class Genetic {
     }
 
     for (let r = 0; r < this.riders.length; r++) {
-      console.log("Plan for Rider ", this.riders[r].name);
-      //console.log("Plan: ", all_plans[r]);
+      // console.log("Plan for Rider ", this.riders[r].name);
+      // console.log("Plan: ", all_plans[r]);
       // console.log("len: ", all_plans[r].length, " ", all_plans.length);
       for (const act of all_plans[r]) {
         // console.log("Action: ", act);
@@ -800,8 +815,9 @@ export class Genetic {
     this.planLock = true;
     const [tmp_plan, best_fit] = this.createPlan();
 
-    // console.log("Best fit: ", best_fit);
-    if (best_fit > this.plan_fit) {
+    console.log("proposed fit ", best_fit, " current fit ", this.plan_fit);
+    let MINIMUM_GAIN = 1.2;
+    if (best_fit > this.plan_fit * MINIMUM_GAIN) {
       this.plan_fit = best_fit;
 
       for (let i = 0; i < this.riders.length; i++) {
@@ -819,6 +835,7 @@ export class Genetic {
     } else {
       console.log("New plan rejected ");
     }
+
     this.planLock = false;
   }
 
