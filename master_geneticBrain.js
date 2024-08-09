@@ -91,6 +91,7 @@ export class Genetic {
 
       let path_toZone;
       let toZone;
+
       if (closest.length == 0) {
         console.log("No delivery zones reachable");
         toZone = Infinity;
@@ -134,7 +135,7 @@ export class Genetic {
           });
 
           let path = this.field.bfs(endTile, stTile, rider.blocking_agents);
-          if (path.length == 0) {
+          if (path.length == 0 || path == -1) {
             costs[i][j] = Infinity;
             // console.log("No path from ", i, " to ", j, " nodes unreaachabl");
           } else {
@@ -304,8 +305,7 @@ export class Genetic {
     for (let i = 0; i < clean_childs.length; i++) {
       ordered_childs[subl_len[i].idx] = clean_childs[i];
     }
-    // console.log("cchilds: \t", clean_childs);
-    // console.log("ochilds: \t", ordered_childs);
+
     return ordered_childs;
   }
 
@@ -324,26 +324,19 @@ export class Genetic {
 
       //computing current carried score and number of carreied parcels
       let carriedParcels = Array.from(player_parcels);
-      let currCarr = Array.from(player_parcels).length;
+      let currCarr = Array.from(player_parcels).length + 1;
       let currRew = 0;
       for (const par of carriedParcels) {
         currRew += par[1];
       }
-
-      // if (currCarr > 0) {
-      //   console.log("Rider is carrying ", currCarr, " parcels for ", currRew);
-      // }
 
       //penality for each additional step. Makes sure the eagent eventually delivers the parcels
       let LONG_TRIP_PENALITY = 2.5;
       let real_duration = this.movement_duration * 4;
       let STEP_COST = real_duration / 1000 / this.parcel_decay;
       //STEP_COST = 1;
-      //console.log("STEP COST: ", STEP_COST);
-      //exit();
-      //console.log("DNA: ", dna);
+
       let rew = currRew;
-      // console.log("start at node : ", dna[0]);
 
       // reward of first parcel minus cost of reaching it
       rew +=
@@ -358,6 +351,7 @@ export class Genetic {
           LONG_TRIP_PENALITY * currCarr; // - penality;
         currCarr += 1;
       }
+
       rew +=
         -Math.max(nodes[dna[dna.length - 1]].out_c * currCarr, 0) * STEP_COST;
 
@@ -375,7 +369,8 @@ export class Genetic {
     pop_size = 1000,
     gen_num = 100,
     mutation_rate = 0.1,
-    elite_rate = 0.5
+    elite_rate = 0.5,
+    skip_rate = 0.2
   ) {
     let genes = [];
 
@@ -383,9 +378,12 @@ export class Genetic {
       //console.log("Riders paths: ", r);
 
       genes = Array.from(Array(r.nodes.length).keys());
-      // console.log("Genes: ", genes);
+      console.log("Genes: ", genes);
+
       if (genes.length == 0) {
-        return [[], 0];
+        let empty_plan = Array.from({ length: this.riders.length }, () => []);
+        console.log("No nodes reachable, returning empty plan ", empty_plan);
+        return [empty_plan, 0];
       }
       // this.printMat(r.costs);
       // console.log("N Nodes: ", r.nodes.length);
@@ -396,8 +394,6 @@ export class Genetic {
     let best_dna = [];
     let best_fit = 0;
     let population = [];
-
-    let skip_rate = 0.2; //TODO: check if skip rate works okay or not
 
     for (let i = 0; i < pop_size; i++) {
       let order = genes.slice();
@@ -422,22 +418,14 @@ export class Genetic {
 
       population.push(family);
     }
-    //population[0] = [];
 
     let tot_fit = 0;
     for (const family of population) {
       //console.log("DNA: ", dna);
       tot_fit += this.fitness(family, riders_paths);
     }
-    //console.log("Average fitness: ", tot_fit / pop_size);
     this.iters += 1;
     this.avg_fit += tot_fit / pop_size;
-    // console.log(
-    //   "AVG FIT: ",
-    //   this.avg_fit / this.iters + " after " + this.iters
-    // );
-
-    // console.log("INIT POP: ", population);
 
     for (let i = 0; i < gen_num; i++) {
       let new_pop = [];
@@ -456,10 +444,6 @@ export class Genetic {
 
         // console.log("Parent A: ", parentA);
         // console.log("Parent B: ", parentB);
-
-        if (parentA.length != this.nriders) {
-          asa = 3;
-        }
 
         let childA = this.multi_crossover(parentA, parentB);
         let childB = this.multi_crossover(parentB, parentA);
@@ -512,6 +496,11 @@ export class Genetic {
       }
     }
 
+    if (best_fit == 0) {
+      let empty_plan = Array.from({ length: this.riders.length }, () => []);
+      console.log("No nodes reachable, returning empty plan ", empty_plan);
+      best_dna = empty_plan;
+    }
     return [best_dna, best_fit];
   }
 
@@ -530,9 +519,7 @@ export class Genetic {
       for (const par of Array.from(rider.player_parcels)) {
         rew += par[1];
       }
-      console.log(
-        "No parcels but agent is packing, going to closest delivery zone"
-      );
+      console.log("Agent is packing, going to closest delivery zone");
 
       let closest = this.field.getClosestDeliveryZones(
         {
@@ -639,7 +626,26 @@ export class Genetic {
     console.log("Plan: ", best_path);
 
     let parcels_path = [];
+
+    // console.log("chosen parcels: ", parcels_path);
+    //console.log(paths);
+
+    //TODO:
+    console;
+    let all_plans = [];
     for (let r = 0; r < riders_paths.length; r++) {
+      let plan = [];
+
+      if (best_path[r].length == 0 || best_fit == 0) {
+        plan = this.backupPlan(this.riders[r]);
+
+        console.log("Backup plan for Rider ", plan);
+        //aaa = 33;
+        all_plans.push(plan[0]);
+        continue;
+      }
+
+      // ??? TODO
       parcels_path.push([]);
       for (const idx of best_path[r]) {
         let par = riders_paths[r].nodes[idx];
@@ -650,26 +656,7 @@ export class Genetic {
           path_out: par.path_out,
         });
       }
-    }
-
-    // console.log("chosen parcels: ", parcels_path);
-    //console.log(paths);
-
-    //TODO:
-    console;
-    let all_plans = [];
-    for (let r = 0; r < riders_paths.length; r++) {
       let chosen_path = parcels_path[r];
-      let plan = [];
-
-      if (chosen_path.length == 0 || best_fit == 0) {
-        plan = this.backupPlan(this.riders[r]);
-
-        console.log("Backup plan for Rider ", plan);
-        //aaa = 33;
-        all_plans.push(plan[0]);
-        continue;
-      }
 
       let starting_action = new Action(
         this.riders[r].src,

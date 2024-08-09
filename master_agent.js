@@ -37,7 +37,7 @@ let all_parcels = [];
 // contains all non-carried parcels
 const parcels = new Map();
 
-const NRIDERS = 2;
+const NRIDERS = 1;
 let PARCEL_DECAY = 1000;
 let riders = [];
 
@@ -284,29 +284,11 @@ async function loop(rider) {
       continue;
     }
 
-    // rider.carrying = 0;
-    // rider.player_parcels.clear();
-    // for (const p of all_parcels) {
-    //   if (p.carriedBy == rider.id) {
-    //     rider.player_parcels.set(p.id, p.reward);
-    //     rider.carrying += p.reward;
-    //   }
-    // }
-
     // if a plan exists execute, otherwise create a new one
     if (rider.plan.length > 0) {
       // if the agent has completed the movement and brain has completed the plan
       if (hasCompletedMovement(rider.position) && !brain.planLock) {
         // if the agent has reached the previous target, update the nextAction
-
-        // console.log(
-        //   "rider is in position ",
-        //   rider.position,
-        //   " and hes supposed to be either in ",
-        //   rider.plan[0].source,
-        //   " or ",
-        //   rider.plan[1].source
-        // );
 
         if (rider.position.equals(rider.plan[0].source)) {
           rider.nextAction = rider.plan.shift();
@@ -315,8 +297,14 @@ async function loop(rider) {
           rider.nextAction = rider.plan.shift();
         } else {
           console.log("SOMETHING WENT VERY WRONG HERE");
-          console.log("rider is in ", rider.position);
-          console.log("blocked? ", rider.blocking_agents);
+          console.log(
+            "rider is in position ",
+            rider.position,
+            " and hes supposed to be either in ",
+            rider.plan[0].source,
+            " or ",
+            rider.plan[1].source
+          );
         }
         rider.src = rider.nextAction.source;
         rider.trg = rider.nextAction.target;
