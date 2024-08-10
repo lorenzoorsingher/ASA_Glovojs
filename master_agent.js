@@ -11,7 +11,7 @@ import { Genetic } from "./master_geneticBrain.js";
 export const VERBOSE = false;
 const LOCAL = true;
 
-let pop = 100;
+let pop = 300;
 let gen = 30;
 let port = 3000;
 // let [pop, gen, port] = process.argv.slice(2);
@@ -276,6 +276,7 @@ function hasCompletedMovement(pos) {
 let start = Date.now();
 
 async function loop(rider) {
+  let stat = null;
   // main loop
   while (true) {
     // wait for map and player to be loaded
@@ -290,6 +291,7 @@ async function loop(rider) {
       if (hasCompletedMovement(rider.position) && !brain.planLock) {
         // if the agent has reached the previous target, update the nextAction
 
+        rider.log("stat", stat);
         // console.log("rider: ", rider.position);
         if (rider.position.equals(rider.plan[0].source)) {
           rider.nextAction = rider.plan.shift();
@@ -299,16 +301,34 @@ async function loop(rider) {
             rider.nextAction = rider.plan.shift();
             rider.nextAction = rider.plan.shift();
             // console.log("action consumed 2");
+          } else {
+            rider.log("No match found for next action");
+            rider.log(rider.position);
+            rider.log(rider.nextAction);
+            console.log(
+              "should be ",
+              rider.plan[0].source,
+              " OR ",
+              rider.plan[1].source
+            );
+            // rider.log("Retrying last move");
+            //aaa = 7;
           }
         } else {
-          console.log("Agent appears to be stuck on last move");
-          console.log("Retrying last move");
+          rider.log("Agent appears to be stuck on last move");
+          rider.log("Retrying last move");
         }
         rider.src.set(rider.nextAction.source);
         rider.trg.set(rider.nextAction.target);
         rider.no_delivery++;
 
-        console.log(rider.name, " hasn't delivered in ", rider.no_delivery);
+        rider.log(
+          "Trying to move to",
+          rider.trg,
+          " (from ",
+          rider.position,
+          ")"
+        );
 
         // extract action information
         let move = Position.getDirectionTo(rider.src, rider.trg);
@@ -316,10 +336,10 @@ async function loop(rider) {
         if (rider.isPathBlocked()) {
           rider.trg.set(rider.position);
           if (rider.position.x % 1 != 0.0 || rider.position.y % 1 != 0.0) {
-            console.log("DESYNC");
+            rider.log("DESYNC");
             azz = 8;
           }
-          console.log("Agent in the way. Recalculating plan");
+          rider.log("Agent in the way. Recalculating plan");
           brain.plan_fit = 0;
           brain.newPlan();
           continue;
@@ -335,7 +355,7 @@ async function loop(rider) {
         switch (rider.nextAction.type) {
           case ActionType.MOVE:
             if (move != "none") {
-              var stat = await rider.client.move(move);
+              stat = await rider.client.move(move);
             }
             break;
           case ActionType.PICKUP:
@@ -348,18 +368,21 @@ async function loop(rider) {
               );
               parcels.delete(rider.nextAction.bestParcel);
             } catch (error) {
-              console.error(
+              rider.log(
                 "Parcel either expired or was deleted while executing plan."
               );
             }
-            console.log("PICKING UP ", rider.nextAction.bestParcel);
+            rider.log("PICKING UP ", rider.nextAction.bestParcel);
             break;
           case ActionType.PUTDOWN:
-            console.log("PUTTING DOWN");
+            rider.log("PUTTING DOWN");
             await rider.client.putdown();
             rider.player_parcels.clear();
             rider.no_delivery = 0;
-            brain.justDelivered(rider);
+            //brain.justDelivered(rider);
+            rider.log("Delivered, asking for new plan");
+            brain.plan_fit = 0;
+            brain.newPlan();
             break;
         }
       }

@@ -38,3 +38,6 @@
 - [x] check if carried parcels are correcly evaluated when replanning
 - [x] rework parcels clock
 - [x] figure out why agent crashes when 2-action long backup plan is created and after consuming action
+
+- [ ] make sure it's possible to generate a plan with delivery only in case one agent has parcels
+- [ ] fix the stuff about fitness in delivery onyl

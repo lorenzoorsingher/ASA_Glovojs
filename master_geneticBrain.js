@@ -59,7 +59,7 @@ export class Genetic {
     let dummy_parcel = {
       x: rider.trg.x,
       y: rider.trg.y,
-      reward: 0,
+      reward: -Infinity,
     };
 
     let copy_parcels = new Map(this.parcels);
@@ -75,7 +75,9 @@ export class Genetic {
       );
       let fromPlayer;
       if (path_fromPlayer == -1) {
-        console.log("No path from player to parcel ", key);
+        rider.log("No path from player to parcel " + key);
+        // console.log("No path from player to parcel ", key);
+        console.log(p);
         fromPlayer = Infinity;
       } else {
         fromPlayer = path_fromPlayer.length - 1;
@@ -93,11 +95,9 @@ export class Genetic {
       let toZone;
 
       if (closest.length == 0) {
-        console.log("No delivery zones reachable");
         toZone = Infinity;
         path_toZone = -1;
       } else {
-        console.log("path_toZone: ", closest[0].path);
         path_toZone = closest[0].path;
         toZone = closest[0].distance - 1;
       }
@@ -326,41 +326,40 @@ export class Genetic {
       }
 
       //computing current carried score and number of carreied parcels
-      let carriedParcels = Array.from(player_parcels);
-      let currCarr = Array.from(player_parcels).length + 1;
-      let currRew = 0;
-      for (const par of carriedParcels) {
-        currRew += par[1];
+      let carried_parcels = Array.from(player_parcels);
+      let curr_carr = Array.from(player_parcels).length + 1;
+      let curr_rew = 0;
+      for (const par of carried_parcels) {
+        curr_rew += par[1];
       }
-
+      // console.log("Current reward: ", curr_rew);
       //penality for each additional step. Makes sure the eagent eventually delivers the parcels
-      let LONG_TRIP_PENALITY = 2.5;
-      let real_duration = this.movement_duration * 4;
-      let STEP_COST = real_duration / 1000 / this.parcel_decay;
-      //STEP_COST = 1;
+      let NO_DELIVERY = this.riders[r].no_delivery;
+      let LONG_TRIP_PENALITY = 0.2;
+      // let real_duration = this.movement_duration * 4;
+      // let STEP_COST = real_duration / 1000 / this.parcel_decay;
 
-      let rew = currRew;
+      let STEP_COST = 0.2 + LONG_TRIP_PENALITY; //+ (LONG_TRIP_PENALITY * NO_DELIVERY) / 100;
+
+      let rew = curr_rew;
 
       // reward of first parcel minus cost of reaching it
-      rew +=
-        nodes[dna[0]].rew -
-        Math.max(nodes[dna[0]].in_c * currCarr, 0) * STEP_COST;
-      currCarr += 1;
+      rew += nodes[dna[0]].rew - nodes[dna[0]].in_c * curr_carr * STEP_COST;
+
+      curr_carr += 1;
 
       for (let i = 1; i < dna.length; i++) {
         rew +=
-          nodes[dna[i]].rew -
-          Math.max(costs[dna[i - 1]][dna[i]] * currCarr, 0) * STEP_COST -
-          LONG_TRIP_PENALITY * currCarr; // - penality;
-        currCarr += 1;
+          nodes[dna[i]].rew - costs[dna[i - 1]][dna[i]] * STEP_COST * curr_carr;
+
+        curr_carr += 1;
       }
 
-      rew +=
-        -Math.max(nodes[dna[dna.length - 1]].out_c * currCarr, 0) * STEP_COST;
+      rew += -nodes[dna[dna.length - 1]].out_c; //* STEP_COST * curr_carr;
 
-      if (rew < 0) {
-        rew = 0;
-      }
+      // if (rew < 0) {
+      //   rew = 0;
+      // }
 
       cumulative_rew += rew;
     }
@@ -377,8 +376,35 @@ export class Genetic {
   ) {
     let genes = [];
 
-    for (const r of riders_paths) {
+    for (let rid = 0; rid < this.nriders; rid++) {
+      const r = riders_paths[rid];
       //console.log("Riders paths: ", r);
+
+      //delivery onyl
+      let agent = this.riders[rid];
+      // console.log("Agent: ", agent);
+      let closest = this.field.getClosestDeliveryZones(
+        {
+          x: agent.trg.x,
+          y: agent.trg.y,
+        },
+        agent.blocking_agents
+      );
+
+      //TODO pass closest for ALL agents to fitness and let the fitness function decide if it's worth to deliver
+      console.log("Closest: ", closest);
+      let path_toZone;
+      let toZone;
+      let delivery_only = true;
+      let delivery_only_fit = 0;
+      if (closest.length == 0) {
+        toZone = Infinity;
+        path_toZone = -1;
+        delivery_only_fit = -Infinity;
+      } else {
+        path_toZone = closest[0].path;
+        toZone = closest[0].distance - 1;
+      }
 
       genes = Array.from(Array(r.nodes.length).keys());
       // console.log("Genes: ", genes);
@@ -493,26 +519,44 @@ export class Genetic {
         }
       }
 
-      if (i % 5 == 0) {
-        console.log("Gen " + i + " avg fitness: ", tot_fit / pop_size);
-        //console.log(population.length, " ", pop_size);
-      }
+      // if (i % 5 == 0) {
+      //   console.log("Gen " + i + " avg fitness: ", tot_fit / pop_size);
+      //   //console.log(population.length, " ", pop_size);
+      // }
     }
 
     if (best_fit == 0) {
       let empty_plan = Array.from({ length: this.nriders }, () => []);
-      console.log("No nodes reachable, returning empty plan ", empty_plan);
+      console.log("Best fit is zero, returning empty plan ", empty_plan);
       best_dna = empty_plan;
     }
+
+    // this.printMat(riders_paths[0].costs);
+
+    for (let r = 0; r < this.nriders; r++) {
+      let family = best_dna[r];
+      console.log("Best family: ", family);
+
+      for (const dna of family) {
+        console.log("DNA: ", riders_paths[r].nodes[dna]);
+        if (riders_paths[r].nodes[dna].in_c == Infinity) {
+          console.log("Infinite in_c");
+          //saaa = 999;
+        }
+      }
+
+      //aa = 0;
+    }
+
     return [best_dna, best_fit];
   }
 
   backupPlan(rider) {
-    console.log("Generating backup plan for rider ", rider.name);
-    console.log("Rider position: ", rider.position);
-    console.log("Rider target: ", rider.trg);
-    console.log("Rider source: ", rider.src);
-    console.log("Rider action: ", rider.nextAction);
+    // console.log("Generating backup plan for rider ", rider.name);
+    // console.log("Rider position: ", rider.position);
+    // console.log("Rider target: ", rider.trg);
+    // console.log("Rider source: ", rider.src);
+    // console.log("Rider action: ", rider.nextAction);
 
     // let startTile = this.field.getTile({
     //   x: rider.src.x,
@@ -539,12 +583,12 @@ export class Genetic {
       );
 
       if (closest.length == 0) {
-        console.log("No delivery zones reachable");
+        rider.log("No delivery zones reachable");
       } else {
         path_to_closest = closest[0].path;
       }
     } else {
-      console.log("No parcels on rider, generating random plan");
+      rider.log("No parcels on rider, generating random plan");
       path_to_spawnable = this.field.getRandomSpawnable(
         new Position(rider.trg.x, rider.trg.y),
         rider.blocking_agents
@@ -603,7 +647,7 @@ export class Genetic {
         ActionType.MOVE,
         null
       );
-      console.log("Starting action inserted");
+      // console.log("Starting action inserted");
       // plan.push(starting_action);
       actions = [
         starting_action,
@@ -621,7 +665,7 @@ export class Genetic {
     //   act.printAction();
     // }
 
-    console.log("Generated BACKUP plan with rew ", rew);
+    console.log("[BRAIN] Generated BACKUP plan with rew ", rew);
     return [actions, rew];
   }
 
@@ -629,7 +673,7 @@ export class Genetic {
     let riders_paths = [];
     console.log("starting positions: ");
     for (const r of this.riders) {
-      console.log("Rider ", r.name, " at ", r.trg);
+      r.log("Rider at: " + r.trg.x + " " + r.trg.y);
       const [costs, paths, parc] = this.builGraphInOut(r);
       riders_paths.push({
         costs: costs,
@@ -668,7 +712,7 @@ export class Genetic {
 
         //console.log("Backup plan for Rider ", plan);
         //aaa = 33;
-        console.log("Backup plan generated");
+        console.log("[BRAIN] Backup plan generated");
         all_plans.push(plan[0]);
         continue;
       }
@@ -684,7 +728,14 @@ export class Genetic {
           parcel: par.id,
           path_in: par.path_in,
           path_out: par.path_out,
+          inc: par.in_c,
         });
+
+        // if (par.path_in == -1 || par.path_in == undefined) {
+        //   this.riders[r].log("No path in for parcel ", par);
+        //   console.log("No path in for parcel ", par);
+        //   asd = 99;
+        // }
       }
       let chosen_path = parcels_path[r];
 
@@ -694,9 +745,9 @@ export class Genetic {
         ActionType.MOVE,
         null
       );
-      console.log("Starting action inserted: ", starting_action);
+      // console.log("Starting action inserted: ", starting_action);
       plan.push(starting_action);
-
+      console.log(chosen_path[0]);
       let actions = Action.pathToAction(
         chosen_path[0].path_in,
         ActionType.PICKUP,
@@ -733,31 +784,31 @@ export class Genetic {
 
       plan = plan.concat(actions);
 
-      let corr_plan = [];
-      for (let i = 1; i < plan.length; i += 1) {
-        if (plan[i].type == ActionType.PICKUP) {
-          for (let j = 1; j < i; j++) {
-            if (plan[j].type == ActionType.MOVE) {
-              if (plan[j].source.equals(plan[i].source)) {
-                // console.log(
-                //   "###################################################################"
-                // );
-                // console.log("CONFLICT IN PICKUP ORDER: ", plan[i]);
-                corr_plan = [];
-                corr_plan = corr_plan.concat(plan.slice(0, j));
-                corr_plan = corr_plan.concat(plan.slice(i, i + 1));
-                corr_plan = corr_plan.concat(plan.slice(j, i));
-                corr_plan = corr_plan.concat(plan.slice(i + 1, plan.length));
-                plan = corr_plan;
+      // let corr_plan = [];
+      // for (let i = 1; i < plan.length; i += 1) {
+      //   if (plan[i].type == ActionType.PICKUP) {
+      //     for (let j = 1; j < i; j++) {
+      //       if (plan[j].type == ActionType.MOVE) {
+      //         if (plan[j].source.equals(plan[i].source)) {
+      //           // console.log(
+      //           //   "###################################################################"
+      //           // );
+      //           // console.log("CONFLICT IN PICKUP ORDER: ", plan[i]);
+      //           corr_plan = [];
+      //           corr_plan = corr_plan.concat(plan.slice(0, j));
+      //           corr_plan = corr_plan.concat(plan.slice(i, i + 1));
+      //           corr_plan = corr_plan.concat(plan.slice(j, i));
+      //           corr_plan = corr_plan.concat(plan.slice(i + 1, plan.length));
+      //           plan = corr_plan;
 
-                i = 0;
-                j = 0;
-                break;
-              }
-            }
-          }
-        }
-      }
+      //           i = 0;
+      //           j = 0;
+      //           break;
+      //         }
+      //       }
+      //     }
+      //   }
+      // }
 
       all_plans.push(plan);
     }
@@ -772,44 +823,6 @@ export class Genetic {
       }
     }
     return [all_plans, best_fit];
-  }
-
-  testGen() {
-    const [costs, parc] = this.builGraphInOut();
-
-    let ers = [0.1, 0.2, 0.3, 0.4, 0.5];
-    // for (const er of ers) {
-    //   this.avgs[er] = 0;
-    // }
-    for (const er of ers) {
-      const [best_path, best_fit] = this.geneticTSP(
-        costs,
-        parc,
-        100,
-        100,
-        0.01,
-        er
-      );
-
-      if (isNaN(this.avgs[er])) {
-        this.avgs[er] = 0;
-        this.avgs["cnt"] = 0;
-      }
-      this.avgs[er] += best_fit;
-      this.avgs["cnt"] += 1;
-      //console.log("Best fit ", er, " ", best_fit);
-    }
-    //console.log("Averages: ", this.avgs);
-    for (const er of ers) {
-      console.log(
-        "Average fit ",
-        er,
-        " ",
-        Math.round(this.avgs[er] / this.avgs["cnt"])
-      );
-    }
-    //console.log("Averages: ", this.avgs);
-    console.log("-----------------------------");
   }
 
   printMat(mat) {

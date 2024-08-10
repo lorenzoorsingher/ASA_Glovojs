@@ -309,7 +309,7 @@ export class Field {
   // }
 
   getRandomSpawnable(player_position, blocking_agents) {
-    console.log("Looking for a SPAWNABLE tile from ", player_position);
+    // console.log("Looking for a SPAWNABLE tile from ", player_position);
     const randomOrder = this.parcelSpawners.sort(() => Math.random() - 0.5);
     for (const spawner of randomOrder) {
       const tile = this.getTile(spawner);

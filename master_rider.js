@@ -75,4 +75,8 @@ export class Rider {
     }
     return blocked;
   }
+
+  log(...args) {
+    console.log("[", this.name, "] ", ...args);
+  }
 }
