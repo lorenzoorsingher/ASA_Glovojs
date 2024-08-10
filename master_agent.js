@@ -37,7 +37,7 @@ let all_parcels = [];
 // contains all non-carried parcels
 const parcels = new Map();
 
-const NRIDERS = 1;
+const NRIDERS = 2;
 let PARCEL_DECAY = 1000;
 let riders = [];
 
@@ -263,7 +263,7 @@ setInterval(() => {
 
   //console.log(dash_data);
   dashboard.emitMessage("map", dash_data);
-}, 200);
+}, 100);
 
 function manhattanDistance(a, b) {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
@@ -290,24 +290,29 @@ async function loop(rider) {
       if (hasCompletedMovement(rider.position) && !brain.planLock) {
         // if the agent has reached the previous target, update the nextAction
 
+        // console.log("rider: ", rider.position);
         if (rider.position.equals(rider.plan[0].source)) {
           rider.nextAction = rider.plan.shift();
-          console.log("action consumed 1");
-        } else if (rider.position.equals(rider.plan[1].source)) {
-          rider.nextAction = rider.plan.shift();
-          rider.nextAction = rider.plan.shift();
-          console.log("action consumed 2");
+          // console.log("action consumed 1");
+        } else if (rider.plan.length > 1) {
+          if (rider.position.equals(rider.plan[1].source)) {
+            rider.nextAction = rider.plan.shift();
+            rider.nextAction = rider.plan.shift();
+            // console.log("action consumed 2");
+          }
         } else {
-          console.log("SOMETHING WENT VERY WRONG HERE");
-          console.log(
-            "rider is in position ",
-            rider.position,
-            " and hes supposed to be either in ",
-            rider.plan[0].source,
-            " or ",
-            rider.plan[1].source
-          );
-          console.log(rider.plan[0].type, " and ", rider.plan[1].type);
+          // console.log("SOMETHING WENT VERY WRONG HERE");
+          // console.log(
+          //   "rider is in position ",
+          //   rider.position,
+          //   " and hes supposed to be either in ",
+          //   rider.plan[0].source,
+          //   " or ",
+          //   rider.plan[1].source
+          // );
+          // console.log(rider.plan[0].type, " and ", rider.plan[1].type);
+          console.log("Agent appears to be stuck on last move");
+          console.log("Retrying last move");
         }
         rider.src.set(rider.nextAction.source);
         rider.trg.set(rider.nextAction.target);
@@ -324,7 +329,7 @@ async function loop(rider) {
         let move = Position.getDirectionTo(rider.src, rider.trg);
 
         // console.log("rider: ", rider.position);
-        console.log("Next action: ", rider.nextAction);
+        // console.log("Next action: ", rider.nextAction);
         // console.log("stat: ", stat);
         // console.log("------------------------------------");
         // if the agent is not in the source tile, desync, something went wrong
