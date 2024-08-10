@@ -34,6 +34,7 @@
 - [x] fix bfs crashing when position is not round
 - [ ] rethink logic when it's time to replan (due to delivery or plan end)
 - [ ] penalize too many plan changes
+- [ ] penalize riders that don't deliver for too long
 - [x] check if carried parcels are correcly evaluated when replanning
 - [x] rework parcels clock
 - [x] figure out why agent crashes when 2-action long backup plan is created and after consuming action

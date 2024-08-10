@@ -315,7 +315,7 @@ export class Genetic {
   fitness(family, rider_paths) {
     let cumulative_rew = 0;
 
-    for (let r = 0; r < rider_paths.length; r++) {
+    for (let r = 0; r < this.nriders; r++) {
       let player_parcels = Array.from(this.riders[r].player_parcels);
       let costs = rider_paths[r].costs;
       let nodes = rider_paths[r].nodes;
@@ -500,7 +500,7 @@ export class Genetic {
     }
 
     if (best_fit == 0) {
-      let empty_plan = Array.from({ length: this.riders.length }, () => []);
+      let empty_plan = Array.from({ length: this.nriders }, () => []);
       console.log("No nodes reachable, returning empty plan ", empty_plan);
       best_dna = empty_plan;
     }
@@ -660,7 +660,7 @@ export class Genetic {
     //TODO:
     let parcels_path = Array.from({ length: this.nriders }, () => []);
     let all_plans = [];
-    for (let r = 0; r < riders_paths.length; r++) {
+    for (let r = 0; r < this.nriders; r++) {
       let plan = [];
 
       if (best_path[r].length == 0 || best_fit == 0) {
@@ -762,7 +762,7 @@ export class Genetic {
       all_plans.push(plan);
     }
 
-    for (let r = 0; r < this.riders.length; r++) {
+    for (let r = 0; r < this.nriders; r++) {
       console.log("Plan for Rider ", this.riders[r].name);
       // console.log("Plan: ", all_plans[r]);
       // console.log("len: ", all_plans[r].length, " ", all_plans.length);
@@ -842,7 +842,7 @@ export class Genetic {
     if (best_fit > this.plan_fit * MINIMUM_GAIN || this.plan_fit == 0) {
       this.plan_fit = best_fit;
 
-      for (let i = 0; i < this.riders.length; i++) {
+      for (let i = 0; i < this.nriders; i++) {
         this.riders[i].plan = tmp_plan[i];
         // if (
         //   this.riders[i].position.x % 1 == 0.0 &&

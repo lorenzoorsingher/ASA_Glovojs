@@ -301,68 +301,17 @@ async function loop(rider) {
             // console.log("action consumed 2");
           }
         } else {
-          // console.log("SOMETHING WENT VERY WRONG HERE");
-          // console.log(
-          //   "rider is in position ",
-          //   rider.position,
-          //   " and hes supposed to be either in ",
-          //   rider.plan[0].source,
-          //   " or ",
-          //   rider.plan[1].source
-          // );
-          // console.log(rider.plan[0].type, " and ", rider.plan[1].type);
           console.log("Agent appears to be stuck on last move");
           console.log("Retrying last move");
         }
         rider.src.set(rider.nextAction.source);
         rider.trg.set(rider.nextAction.target);
+        rider.no_delivery++;
 
-        // if (!rider.trg.equals(rider.position)) {
-        //   console.log("DIDNT REACH TARGET");
-        // } else {
-        //   rider.nextAction = rider.plan.shift();
-        //   rider.src = rider.nextAction.source;
-        //   rider.trg = rider.nextAction.target;
-        // }
+        console.log(rider.name, " hasn't delivered in ", rider.no_delivery);
 
         // extract action information
         let move = Position.getDirectionTo(rider.src, rider.trg);
-
-        // console.log("rider: ", rider.position);
-        // console.log("Next action: ", rider.nextAction);
-        // console.log("stat: ", stat);
-        // console.log("------------------------------------");
-        // if the agent is not in the source tile, desync, something went wrong
-
-        // if (!rider.src.equals(rider.position)) {
-        //   console.log("DESYNC DESYNC DESYNC");
-        //   console.log("agent in  ", rider.position, " instead of ", rider.src);
-        //   //console.log(all_parcels);
-
-        //   console.log(
-        //     "[RECOVER] Trying to recover path, checking for reachability"
-        //   );
-
-        //   // if the agent is one tile off, try to recover
-        //   if (manhattanDistance(rider.position, rider.src) <= 1) {
-        //     console.log("SRC tile reachable. Going there");
-        //     rider.plan.unshift(rider.nextAction);
-        //     rider.nextAction = new Action(
-        //       rider.position,
-        //       rider.src,
-        //       ActionType.MOVE
-        //     );
-        //     rider.src = rider.nextAction.source;
-        //     rider.trg = rider.nextAction.target;
-        //     move = Position.getDirectionTo(rider.src, rider.trg);
-
-        //     console.log("moving from ", rider.src, " to ", rider.trg);
-        //     console.log(rider.nextAction);
-        //   } else {
-        //     console.log("Agent too far from source. Game over.");
-        //     exit();
-        //   }
-        // }
 
         if (rider.isPathBlocked()) {
           rider.trg.set(rider.position);
@@ -409,6 +358,7 @@ async function loop(rider) {
             console.log("PUTTING DOWN");
             await rider.client.putdown();
             rider.player_parcels.clear();
+            rider.no_delivery = 0;
             brain.justDelivered(rider);
             break;
         }

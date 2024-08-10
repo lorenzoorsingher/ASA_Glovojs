@@ -8,6 +8,7 @@ export class Rider {
     this.carrying = 0;
     this.plan = [];
     this.plan_fit = 0;
+    this.no_delivery = 0;
     this.config = {};
 
     this.uname = uname;
