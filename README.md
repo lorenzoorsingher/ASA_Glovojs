@@ -23,17 +23,17 @@
 - [ ] Penaslize overly long paths
 - [x] make sure agent forgets parcels left in memory when the tile comes back in view and the parcel is gone
 
-- [ ] Make sure agent doesnt crash when NO plan is found (og no parcels, no delivery zones, no reachable tiles)
+- [x] Make sure agent doesnt crash when NO plan is found (og no parcels, no delivery zones, no reachable tiles)
 
 - [x] fix order of parcels in plan generation
 - [x] reimplement agent blocking logic
 
 - [x] fix crossover for multiple agents
-- [ ] make sure player_parcels are handled correctly in the planner
-- [ ] make sure parcels are correctly memorized
+- [x] make sure player_parcels are handled correctly in the planner
+- [x] make sure parcels are correctly memorized
 - [x] fix bfs crashing when position is not round
 - [ ] rethink logic when it's time to replan (due to delivery or plan end)
 - [ ] penalize too many plan changes
-- [ ] check if carried parcels are correcly evaluated when replanning
-- [ ] rework parcels clock
-- [ ] figure out why agent crashes when 2-action long backup plan is created and after consuming action
+- [x] check if carried parcels are correcly evaluated when replanning
+- [x] rework parcels clock
+- [x] figure out why agent crashes when 2-action long backup plan is created and after consuming action
