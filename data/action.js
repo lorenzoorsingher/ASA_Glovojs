@@ -16,6 +16,7 @@ export class Action {
   }
 
   static pathToAction(path, type, bestParcel) {
+    // console.log("path: ", path);
     const actions = [];
     const lastPosition = new Position();
 

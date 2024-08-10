@@ -95,7 +95,9 @@ export class Genetic {
       if (closest.length == 0) {
         console.log("No delivery zones reachable");
         toZone = Infinity;
+        path_toZone = -1;
       } else {
+        console.log("path_toZone: ", closest[0].path);
         path_toZone = closest[0].path;
         toZone = closest[0].distance - 1;
       }
@@ -137,9 +139,9 @@ export class Genetic {
           let path = this.field.bfs(endTile, stTile, rider.blocking_agents);
           if (path.length == 0 || path == -1) {
             costs[i][j] = Infinity;
+            paths[i][j] = [];
             // console.log("No path from ", i, " to ", j, " nodes unreaachabl");
           } else {
-            // console.log("Path from ", i, " to ", j, " : ", path);
             paths[i][j] = path;
             costs[i][j] = path.length;
           }
@@ -148,6 +150,7 @@ export class Genetic {
     }
 
     //this.printMat(costs);
+    // console.log("all paths: ", paths);
     return [costs, paths, prep_parcels];
   }
 
@@ -651,13 +654,11 @@ export class Genetic {
     // console.log("Generated plan with rew ", best_fit);
     console.log("Plan: ", best_path);
 
-    let parcels_path = [];
-
     // console.log("chosen parcels: ", parcels_path);
     //console.log(paths);
 
     //TODO:
-    console;
+    let parcels_path = Array.from({ length: this.nriders }, () => []);
     let all_plans = [];
     for (let r = 0; r < riders_paths.length; r++) {
       let plan = [];
@@ -673,9 +674,11 @@ export class Genetic {
       }
 
       // ??? TODO
-      parcels_path.push([]);
+
       for (const idx of best_path[r]) {
         let par = riders_paths[r].nodes[idx];
+
+        // console.log("par.path_out: ", par);
         parcels_path[r].push({
           pos: new Position(par.x, par.y),
           parcel: par.id,
@@ -715,6 +718,11 @@ export class Genetic {
 
           plan = plan.concat(actions);
         }
+      }
+
+      if (chosen_path[chosen_path.length - 1].path_out == undefined) {
+        console.log("Undefined path out");
+        console.log("choe: ", chosen_path);
       }
 
       actions = Action.pathToAction(
