@@ -75,9 +75,9 @@ export class Genetic {
       );
       let fromPlayer;
       if (path_fromPlayer == -1) {
-        rider.log("No path from player to parcel " + key);
+        // rider.log("No path from player to parcel " + key);
         // console.log("No path from player to parcel ", key);
-        console.log(p);
+        // console.log(p);
         fromPlayer = Infinity;
       } else {
         fromPlayer = path_fromPlayer.length - 1;
@@ -174,7 +174,7 @@ export class Genetic {
     let tot_fit = 0;
 
     for (const family of population) {
-      let fit = this.fitness(family, riders_paths);
+      let [fit, _] = this.fitness(family, riders_paths);
       // console.log("Fit: ", fit);
       scores.push(fit);
       tot_fit += fit;
@@ -312,62 +312,76 @@ export class Genetic {
     return ordered_childs;
   }
 
-  fitness(family, rider_paths) {
+  get_step_cost(cost_in, curr_carr) {
+    //let NO_DELIVERY = this.riders[r].no_delivery;
+
+    let LONG_TRIP_PENALITY = 0.2;
+
+    let STEP_COST = 0.2 + LONG_TRIP_PENALITY;
+    let cost = cost_in * STEP_COST * (curr_carr + 1);
+    return cost;
+  }
+
+  fitness(family, rider_paths, delivery_only_fits = null) {
     let cumulative_rew = 0;
+    let delivery_only = [];
 
     for (let r = 0; r < this.nriders; r++) {
-      let player_parcels = Array.from(this.riders[r].player_parcels);
+      // let player_parcels = Array.from(this.riders[r].player_parcels);
+
+      let delivery_only_fit = -Infinity;
+      if (delivery_only_fits != null) {
+        delivery_only_fit = delivery_only_fits[r];
+      }
+
       let costs = rider_paths[r].costs;
       let nodes = rider_paths[r].nodes;
       let dna = family[r];
+      let rew = 0;
 
-      if (dna.length == 0) {
-        continue;
-      }
+      if (dna.length > 0) {
+        let curr_carr = this.riders[r].player_parcels.size;
+        rew = this.riders[r].carrying;
 
-      //computing current carried score and number of carreied parcels
-      let carried_parcels = Array.from(player_parcels);
-      let curr_carr = Array.from(player_parcels).length + 1;
-      let curr_rew = 0;
-      for (const par of carried_parcels) {
-        curr_rew += par[1];
-      }
-      // console.log("Current reward: ", curr_rew);
-      //penality for each additional step. Makes sure the eagent eventually delivers the parcels
-      let NO_DELIVERY = this.riders[r].no_delivery;
-      let LONG_TRIP_PENALITY = 0.2;
-      // let real_duration = this.movement_duration * 4;
-      // let STEP_COST = real_duration / 1000 / this.parcel_decay;
-
-      let STEP_COST = 0.2 + LONG_TRIP_PENALITY; //+ (LONG_TRIP_PENALITY * NO_DELIVERY) / 100;
-
-      let rew = curr_rew;
-
-      // reward of first parcel minus cost of reaching it
-      rew += nodes[dna[0]].rew - nodes[dna[0]].in_c * curr_carr * STEP_COST;
-
-      curr_carr += 1;
-
-      for (let i = 1; i < dna.length; i++) {
+        // reward of first parcel minus cost of reaching it
         rew +=
-          nodes[dna[i]].rew - costs[dna[i - 1]][dna[i]] * STEP_COST * curr_carr;
+          nodes[dna[0]].rew - this.get_step_cost(nodes[dna[0]].in_c, curr_carr);
 
         curr_carr += 1;
+
+        for (let i = 1; i < dna.length; i++) {
+          rew +=
+            nodes[dna[i]].rew -
+            this.get_step_cost(costs[dna[i - 1]][dna[i]], curr_carr);
+
+          curr_carr += 1;
+        }
+
+        rew += -this.get_step_cost(nodes[dna[dna.length - 1]].out_c, curr_carr); //* STEP_COST * curr_carr;
+      } else {
+        rew = 0;
       }
 
-      rew += -nodes[dna[dna.length - 1]].out_c; //* STEP_COST * curr_carr;
-
-      // if (rew < 0) {
-      //   rew = 0;
-      // }
-
-      cumulative_rew += rew;
+      if (rew < delivery_only_fit && delivery_only_fit > 0) {
+        // console.log(
+        //   "IT'S BETTER TO ONLY DELIVER ",
+        //   delivery_only_fit,
+        //   " ",
+        //   rew
+        // );
+        cumulative_rew += delivery_only_fit;
+        delivery_only.push(true);
+      } else {
+        cumulative_rew += rew;
+        delivery_only.push(false);
+      }
     }
-    return cumulative_rew;
+    return [cumulative_rew, delivery_only];
   }
 
   geneticTSP(
     riders_paths,
+    delivery_only_fits,
     pop_size = 1000,
     gen_num = 100,
     mutation_rate = 0.1,
@@ -380,46 +394,17 @@ export class Genetic {
       const r = riders_paths[rid];
       //console.log("Riders paths: ", r);
 
-      //delivery onyl
-      let agent = this.riders[rid];
-      // console.log("Agent: ", agent);
-      let closest = this.field.getClosestDeliveryZones(
-        {
-          x: agent.trg.x,
-          y: agent.trg.y,
-        },
-        agent.blocking_agents
-      );
-
-      //TODO pass closest for ALL agents to fitness and let the fitness function decide if it's worth to deliver
-      console.log("Closest: ", closest);
-      let path_toZone;
-      let toZone;
-      let delivery_only = true;
-      let delivery_only_fit = 0;
-      if (closest.length == 0) {
-        toZone = Infinity;
-        path_toZone = -1;
-        delivery_only_fit = -Infinity;
-      } else {
-        path_toZone = closest[0].path;
-        toZone = closest[0].distance - 1;
-      }
-
       genes = Array.from(Array(r.nodes.length).keys());
-      // console.log("Genes: ", genes);
 
       if (genes.length == 0) {
         let empty_plan = Array.from({ length: this.riders.length }, () => []);
         console.log("No nodes reachable, returning empty plan ", empty_plan);
         return [empty_plan, 0];
       }
-      // this.printMat(r.costs);
-      // console.log("N Nodes: ", r.nodes.length);
-      // console.log("Nodes: ", r.nodes);
-      // console.log("Genes: ", genes);
+      // console.log(closest[0]);
     }
 
+    let best_d_o = [];
     let best_dna = [];
     let best_fit = 0;
     let population = [];
@@ -448,13 +433,15 @@ export class Genetic {
       population.push(family);
     }
 
-    let tot_fit = 0;
-    for (const family of population) {
-      //console.log("DNA: ", dna);
-      tot_fit += this.fitness(family, riders_paths);
-    }
-    this.iters += 1;
-    this.avg_fit += tot_fit / pop_size;
+    // let tot_fit = 0;
+    // for (const family of population) {
+    //   //console.log("DNA: ", dna);
+    //   tot_fit += this.fitness(family, riders_paths, delivery_only_fits);
+    // }
+
+    // //???
+    // this.iters += 1;
+    // this.avg_fit += tot_fit / pop_size;
 
     for (let i = 0; i < gen_num; i++) {
       let new_pop = [];
@@ -506,13 +493,14 @@ export class Genetic {
 
       population = new_pop;
 
-      tot_fit = 0;
+      let tot_fit = 0;
 
       for (const family of population) {
-        let fit = this.fitness(family, riders_paths);
+        let [fit, d_o] = this.fitness(family, riders_paths, delivery_only_fits);
         tot_fit += fit;
 
         if (fit > best_fit) {
+          best_d_o = d_o;
           best_fit = fit;
           best_dna = family;
           // console.log("New best fit: ", best_fit);
@@ -533,19 +521,33 @@ export class Genetic {
 
     // this.printMat(riders_paths[0].costs);
 
-    for (let r = 0; r < this.nriders; r++) {
-      let family = best_dna[r];
-      console.log("Best family: ", family);
+    for (let rid = 0; rid < this.nriders; rid++) {
+      //
+      //console.log("Rider ", rid, " plan: ", family[rid]);
+    }
 
-      for (const dna of family) {
-        console.log("DNA: ", riders_paths[r].nodes[dna]);
-        if (riders_paths[r].nodes[dna].in_c == Infinity) {
-          console.log("Infinite in_c");
-          //saaa = 999;
-        }
-      }
+    for (let r = 0; r < this.nriders; r++) {
+      //let family = best_dna[r];
+      // console.log("Best family: ", family);
+
+      // for (const dna of family) {
+      //   // console.log("DNA: ", riders_paths[r].nodes[dna]);
+      //   if (riders_paths[r].nodes[dna].in_c == Infinity) {
+      //     // console.log("Infinite in_c");
+      //     //saaa = 999;
+      //   }
+      // }
 
       //aa = 0;
+      if (best_d_o[r]) {
+        // console.log("Seems like it's better to deliver only");
+        this.riders[r].log(
+          "Seems like it's better to deliver only: ",
+          delivery_only_fits[r]
+        );
+        console.log(best_d_o);
+        best_dna[r] = "D";
+      }
     }
 
     return [best_dna, best_fit];
@@ -686,17 +688,53 @@ export class Genetic {
     //   console.log("Rider ", this.riders.indexOf(p).name);
     //   console.log("Riders paths: ", p);
     // }
+    let delivery_only_fits = [];
+    let delivery_only_plans = [];
 
+    for (let rid = 0; rid < this.nriders; rid++) {
+      // compute delivery-only plans
+      let agent = this.riders[rid];
+      let closest = this.field.getClosestDeliveryZones(
+        {
+          x: agent.trg.x,
+          y: agent.trg.y,
+        },
+        agent.blocking_agents
+      );
+
+      if (closest.length == 0) {
+        delivery_only_fits.push(-Infinity);
+        delivery_only_plans.push(-1);
+      } else {
+        let delivery_only_fit =
+          agent.carrying -
+          this.get_step_cost(closest[0].distance, agent.player_parcels.size);
+
+        if (delivery_only_fit <= 0) {
+          delivery_only_fits.push(-Infinity);
+          delivery_only_plans.push(-1);
+        } else {
+          delivery_only_fits.push(delivery_only_fit);
+          delivery_only_plans.push(
+            Action.pathToAction(closest[0].path, ActionType.PUTDOWN, null)
+          );
+        }
+      }
+    }
+
+    console.log("delivery_only_fits: ", delivery_only_fits);
     const [best_path, best_fit] = this.geneticTSP(
       riders_paths,
+      delivery_only_fits,
       this.pop,
       this.gen,
       0.3,
-      0.5
+      0.5,
+      0.2
     );
 
     // console.log("Generated plan with rew ", best_fit);
-    console.log("Plan: ", best_path);
+    // console.log("Plan: ", best_path);
 
     // console.log("chosen parcels: ", parcels_path);
     //console.log(paths);
@@ -704,111 +742,117 @@ export class Genetic {
     //TODO:
     let parcels_path = Array.from({ length: this.nriders }, () => []);
     let all_plans = [];
+
     for (let r = 0; r < this.nriders; r++) {
       let plan = [];
+      if (best_path[r] == "D") {
+        plan = delivery_only_plans[r];
+      } else {
+        plan = [];
 
-      if (best_path[r].length == 0 || best_fit == 0) {
-        plan = this.backupPlan(this.riders[r]);
+        if (best_path[r].length == 0 || best_fit == 0) {
+          plan = this.backupPlan(this.riders[r]);
 
-        //console.log("Backup plan for Rider ", plan);
-        //aaa = 33;
-        console.log("[BRAIN] Backup plan generated");
-        all_plans.push(plan[0]);
-        continue;
-      }
+          //console.log("Backup plan for Rider ", plan);
+          //aaa = 33;
+          console.log("[BRAIN] Backup plan generated");
+          all_plans.push(plan[0]);
+          continue;
+        }
 
-      // ??? TODO
+        // ??? TODO
 
-      for (const idx of best_path[r]) {
-        let par = riders_paths[r].nodes[idx];
+        for (const idx of best_path[r]) {
+          let par = riders_paths[r].nodes[idx];
 
-        // console.log("par.path_out: ", par);
-        parcels_path[r].push({
-          pos: new Position(par.x, par.y),
-          parcel: par.id,
-          path_in: par.path_in,
-          path_out: par.path_out,
-          inc: par.in_c,
-        });
+          // console.log("par.path_out: ", par);
+          parcels_path[r].push({
+            pos: new Position(par.x, par.y),
+            parcel: par.id,
+            path_in: par.path_in,
+            path_out: par.path_out,
+            inc: par.in_c,
+          });
 
-        // if (par.path_in == -1 || par.path_in == undefined) {
-        //   this.riders[r].log("No path in for parcel ", par);
-        //   console.log("No path in for parcel ", par);
-        //   asd = 99;
+          // if (par.path_in == -1 || par.path_in == undefined) {
+          //   this.riders[r].log("No path in for parcel ", par);
+          //   console.log("No path in for parcel ", par);
+          //   asd = 99;
+          // }
+        }
+        let chosen_path = parcels_path[r];
+
+        let starting_action = new Action(
+          this.riders[r].src,
+          this.riders[r].trg,
+          ActionType.MOVE,
+          null
+        );
+        // console.log("Starting action inserted: ", starting_action);
+        plan.push(starting_action);
+        // console.log(chosen_path[0]);
+        let actions = Action.pathToAction(
+          chosen_path[0].path_in,
+          ActionType.PICKUP,
+          chosen_path[0].parcel
+        );
+        plan = plan.concat(actions);
+
+        for (let i = 0; i < best_path[r].length; i++) {
+          let curridx = best_path[r][i];
+          if (i + 1 < best_path[r].length) {
+            let nextidx = best_path[r][i + 1];
+            let semi_path = riders_paths[r].paths[curridx][nextidx];
+
+            actions = Action.pathToAction(
+              semi_path,
+              ActionType.PICKUP,
+              chosen_path[i + 1].parcel
+            );
+
+            plan = plan.concat(actions);
+          }
+        }
+
+        if (chosen_path[chosen_path.length - 1].path_out == undefined) {
+          console.log("Undefined path out");
+          console.log("choe: ", chosen_path);
+        }
+
+        actions = Action.pathToAction(
+          chosen_path[chosen_path.length - 1].path_out,
+          ActionType.PUTDOWN,
+          null
+        );
+
+        plan = plan.concat(actions);
+
+        // let corr_plan = [];
+        // for (let i = 1; i < plan.length; i += 1) {
+        //   if (plan[i].type == ActionType.PICKUP) {
+        //     for (let j = 1; j < i; j++) {
+        //       if (plan[j].type == ActionType.MOVE) {
+        //         if (plan[j].source.equals(plan[i].source)) {
+        //           // console.log(
+        //           //   "###################################################################"
+        //           // );
+        //           // console.log("CONFLICT IN PICKUP ORDER: ", plan[i]);
+        //           corr_plan = [];
+        //           corr_plan = corr_plan.concat(plan.slice(0, j));
+        //           corr_plan = corr_plan.concat(plan.slice(i, i + 1));
+        //           corr_plan = corr_plan.concat(plan.slice(j, i));
+        //           corr_plan = corr_plan.concat(plan.slice(i + 1, plan.length));
+        //           plan = corr_plan;
+
+        //           i = 0;
+        //           j = 0;
+        //           break;
+        //         }
+        //       }
+        //     }
+        //   }
         // }
       }
-      let chosen_path = parcels_path[r];
-
-      let starting_action = new Action(
-        this.riders[r].src,
-        this.riders[r].trg,
-        ActionType.MOVE,
-        null
-      );
-      // console.log("Starting action inserted: ", starting_action);
-      plan.push(starting_action);
-      console.log(chosen_path[0]);
-      let actions = Action.pathToAction(
-        chosen_path[0].path_in,
-        ActionType.PICKUP,
-        chosen_path[0].parcel
-      );
-      plan = plan.concat(actions);
-
-      for (let i = 0; i < best_path[r].length; i++) {
-        let curridx = best_path[r][i];
-        if (i + 1 < best_path[r].length) {
-          let nextidx = best_path[r][i + 1];
-          let semi_path = riders_paths[r].paths[curridx][nextidx];
-
-          actions = Action.pathToAction(
-            semi_path,
-            ActionType.PICKUP,
-            chosen_path[i + 1].parcel
-          );
-
-          plan = plan.concat(actions);
-        }
-      }
-
-      if (chosen_path[chosen_path.length - 1].path_out == undefined) {
-        console.log("Undefined path out");
-        console.log("choe: ", chosen_path);
-      }
-
-      actions = Action.pathToAction(
-        chosen_path[chosen_path.length - 1].path_out,
-        ActionType.PUTDOWN,
-        null
-      );
-
-      plan = plan.concat(actions);
-
-      // let corr_plan = [];
-      // for (let i = 1; i < plan.length; i += 1) {
-      //   if (plan[i].type == ActionType.PICKUP) {
-      //     for (let j = 1; j < i; j++) {
-      //       if (plan[j].type == ActionType.MOVE) {
-      //         if (plan[j].source.equals(plan[i].source)) {
-      //           // console.log(
-      //           //   "###################################################################"
-      //           // );
-      //           // console.log("CONFLICT IN PICKUP ORDER: ", plan[i]);
-      //           corr_plan = [];
-      //           corr_plan = corr_plan.concat(plan.slice(0, j));
-      //           corr_plan = corr_plan.concat(plan.slice(i, i + 1));
-      //           corr_plan = corr_plan.concat(plan.slice(j, i));
-      //           corr_plan = corr_plan.concat(plan.slice(i + 1, plan.length));
-      //           plan = corr_plan;
-
-      //           i = 0;
-      //           j = 0;
-      //           break;
-      //         }
-      //       }
-      //     }
-      //   }
-      // }
 
       all_plans.push(plan);
     }
@@ -846,6 +890,10 @@ export class Genetic {
   }
 
   newPlan() {
+    if (this.planLock) {
+      console.log("Brain is already planning...");
+      return;
+    }
     // console.log("MyPos: ", rider.position);
     this.planLock = true;
     const [tmp_plan, best_fit] = this.createPlan();

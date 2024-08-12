@@ -37,7 +37,7 @@ let all_parcels = [];
 // contains all non-carried parcels
 const parcels = new Map();
 
-const NRIDERS = 2;
+const NRIDERS = 1;
 let PARCEL_DECAY = 1000;
 let riders = [];
 
@@ -127,14 +127,33 @@ riders.forEach((rider, index) => {
     }
 
     // update rider parcels and carried value
-    rider.carrying = 0;
-    rider.player_parcels.clear();
+
+    let carried_parcels = new Map();
+    let carrying = 0;
     for (const p of all_parcels) {
       if (p.carriedBy == rider.id) {
-        rider.player_parcels.set(p.id, p.reward);
-        rider.carrying += p.reward;
+        carried_parcels.set(p.id, p.reward);
+        carrying += p.reward;
       }
     }
+
+    if (rider.putting_down) {
+      if (carrying <= 0) {
+        rider.carrying = 0;
+        rider.player_parcels.clear();
+
+        rider.log("Delivered, asking for new plan");
+        brain.plan_fit = 0;
+        brain.newPlan();
+        rider.putting_down = false;
+      }
+    } else {
+      rider.carrying = carrying;
+      rider.player_parcels = carried_parcels;
+    }
+    // console.log(
+    //   "PARCEL SENSING-------------------------------------------------------------------------------------"
+    // );
 
     let parc_after = Array.from(parcels.keys());
 
@@ -291,7 +310,7 @@ async function loop(rider) {
       if (hasCompletedMovement(rider.position) && !brain.planLock) {
         // if the agent has reached the previous target, update the nextAction
 
-        rider.log("stat", stat);
+        // rider.log("stat", stat);
         // console.log("rider: ", rider.position);
         if (rider.position.equals(rider.plan[0].source)) {
           rider.nextAction = rider.plan.shift();
@@ -322,13 +341,13 @@ async function loop(rider) {
         rider.trg.set(rider.nextAction.target);
         rider.no_delivery++;
 
-        rider.log(
-          "Trying to move to",
-          rider.trg,
-          " (from ",
-          rider.position,
-          ")"
-        );
+        // rider.log(
+        //   "Trying to move to",
+        //   rider.trg,
+        //   " (from ",
+        //   rider.position,
+        //   ")"
+        // );
 
         // extract action information
         let move = Position.getDirectionTo(rider.src, rider.trg);
@@ -377,19 +396,25 @@ async function loop(rider) {
           case ActionType.PUTDOWN:
             rider.log("PUTTING DOWN");
             await rider.client.putdown();
-            rider.player_parcels.clear();
-            rider.no_delivery = 0;
-            //brain.justDelivered(rider);
-            rider.log("Delivered, asking for new plan");
-            brain.plan_fit = 0;
-            brain.newPlan();
+
+            if (!rider.putting_down && rider.carrying > 0) {
+              rider.putting_down = true;
+              // rider.player_parcels.clear();
+              // rider.no_delivery = 0;
+              // rider.carrying = 0;
+              //brain.justDelivered(rider);
+            }
             break;
         }
       }
     } else {
-      console.log("Plan is empty. Recalculating plan");
-      brain.plan_fit = 0;
-      brain.newPlan();
+      if (rider.putting_down) {
+        console.log("Empty plan but waiting for delivery to complete");
+      } else {
+        console.log("Plan is empty. Recalculating plan");
+        brain.plan_fit = 0;
+        brain.newPlan();
+      }
     }
     await new Promise((res) => setImmediate(res));
   }

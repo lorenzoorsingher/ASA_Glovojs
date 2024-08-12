@@ -14,6 +14,7 @@ export class Rider {
     this.uname = uname;
     this.player_init = false;
 
+    this.putting_down = false;
     this.player_parcels = new Map();
     this.blocking_agents = new Map();
 
