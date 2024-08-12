@@ -83,6 +83,7 @@
             cell_id = x + "-" + y;
             //console.log(str);
             let pardone = false;
+            let to_pickup = false;
             for (let rid = 0; rid < riders.length; rid++) {
               plan_move = riders[rid].plan[0];
               plan_pickup = riders[rid].plan[1];
@@ -111,12 +112,15 @@
               }
 
               if (plan_pickup.includes(cell_id)) {
-                color = "GreenYellow";
+                to_pickup = true;
+                //color = "GreenYellow";
               } else if (plan_drop.includes(cell_id)) {
                 color = "orange";
               }
             }
-
+            if (to_pickup) {
+              color = "GreenYellow";
+            }
             for (let rid = 0; rid < riders.length; rid++) {
               blk_agents = riders[rid].blk_agents;
 
