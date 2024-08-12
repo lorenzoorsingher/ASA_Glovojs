@@ -304,11 +304,14 @@ export class Genetic {
       clean_childs.push(clean_child);
     }
 
+    // console.log("clean_childs: \t", clean_childs);
+
     let ordered_childs = [];
     for (let i = 0; i < clean_childs.length; i++) {
       ordered_childs[subl_len[i].idx] = clean_childs[i];
     }
-
+    // console.log("ordered_childs: \t", ordered_childs);
+    // console.log("-------------------\n\n");
     return ordered_childs;
   }
 
@@ -502,11 +505,12 @@ export class Genetic {
         if (fit > best_fit) {
           best_d_o = d_o;
           best_fit = fit;
-          best_dna = family;
+          best_dna = JSON.parse(JSON.stringify(family));
           // console.log("New best fit: ", best_fit);
+          // console.log("NEW BEST DNA: ", best_dna);
         }
       }
-
+      // console.log("Best DNA: ", best_dna);
       // if (i % 5 == 0) {
       //   console.log("Gen " + i + " avg fitness: ", tot_fit / pop_size);
       //   //console.log(population.length, " ", pop_size);
@@ -521,23 +525,7 @@ export class Genetic {
 
     // this.printMat(riders_paths[0].costs);
 
-    for (let rid = 0; rid < this.nriders; rid++) {
-      //
-      //console.log("Rider ", rid, " plan: ", family[rid]);
-    }
-
     for (let r = 0; r < this.nriders; r++) {
-      //let family = best_dna[r];
-      // console.log("Best family: ", family);
-
-      // for (const dna of family) {
-      //   // console.log("DNA: ", riders_paths[r].nodes[dna]);
-      //   if (riders_paths[r].nodes[dna].in_c == Infinity) {
-      //     // console.log("Infinite in_c");
-      //     //saaa = 999;
-      //   }
-      // }
-
       //aa = 0;
       if (best_d_o[r]) {
         // console.log("Seems like it's better to deliver only");
@@ -549,7 +537,7 @@ export class Genetic {
         best_dna[r] = "D";
       }
     }
-
+    //console.log("Final TSP: ", best_dna);
     return [best_dna, best_fit];
   }
 
@@ -682,8 +670,7 @@ export class Genetic {
         paths: paths,
         nodes: parc,
       });
-
-      // r.log("Rider parc: ", parc);
+      //r.log("Rider parc: ", parc);
       // this.printMat(costs);
     }
 
@@ -783,6 +770,14 @@ export class Genetic {
           //   asd = 99;
           // }
         }
+
+        //console.log("BP: ", best_path);
+
+        for (const p of parcels_path[r]) {
+          //console.log("Parcel: ", p);
+        }
+        // console.log("PP: ", parcels_path);
+
         let chosen_path = parcels_path[r];
 
         let starting_action = new Action(

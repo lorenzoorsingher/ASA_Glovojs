@@ -310,6 +310,11 @@ async function loop(rider) {
       if (hasCompletedMovement(rider.position) && !brain.planLock) {
         // if the agent has reached the previous target, update the nextAction
 
+        // if (rider.plan[rider.plan.length - 1].source.x != rider.src.x) {
+        //   rider.log("DESYNC XDVR");
+        //   azz = 8;
+        // }
+
         // rider.log("stat", stat);
         // console.log("rider: ", rider.position);
         if (rider.position.equals(rider.plan[0].source)) {
