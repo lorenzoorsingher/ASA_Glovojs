@@ -682,6 +682,9 @@ export class Genetic {
         paths: paths,
         nodes: parc,
       });
+
+      // r.log("Rider parc: ", parc);
+      // this.printMat(costs);
     }
 
     // for (const p of riders_paths) {

@@ -15,6 +15,7 @@ export class Rider {
     this.player_init = false;
 
     this.putting_down = false;
+    this.plan_cooldown = 0;
     this.player_parcels = new Map();
     this.blocking_agents = new Map();
 

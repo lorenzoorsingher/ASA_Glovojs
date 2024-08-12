@@ -37,7 +37,7 @@ let all_parcels = [];
 // contains all non-carried parcels
 const parcels = new Map();
 
-const NRIDERS = 1;
+const NRIDERS = 2;
 let PARCEL_DECAY = 1000;
 let riders = [];
 
@@ -409,11 +409,14 @@ async function loop(rider) {
       }
     } else {
       if (rider.putting_down) {
-        console.log("Empty plan but waiting for delivery to complete");
+        rider.log("Empty plan but waiting for delivery to complete");
       } else {
-        console.log("Plan is empty. Recalculating plan");
-        brain.plan_fit = 0;
-        brain.newPlan();
+        if (Date.now() - rider.plan_cooldown > 1000) {
+          rider.plan_cooldown = Date.now();
+          rider.log("Plan is empty. Recalculating plan");
+          brain.plan_fit = 0;
+          brain.newPlan();
+        }
       }
     }
     await new Promise((res) => setImmediate(res));
