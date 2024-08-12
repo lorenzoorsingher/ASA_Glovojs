@@ -33,11 +33,16 @@
 - [x] make sure parcels are correctly memorized
 - [x] fix bfs crashing when position is not round
 - [ ] rethink logic when it's time to replan (due to delivery or plan end)
-- [ ] penalize too many plan changes
+- [x] penalize too many plan changes
 - [ ] penalize riders that don't deliver for too long
 - [x] check if carried parcels are correcly evaluated when replanning
 - [x] rework parcels clock
 - [x] figure out why agent crashes when 2-action long backup plan is created and after consuming action
 
-- [ ] make sure it's possible to generate a plan with delivery only in case one agent has parcels
-- [ ] fix the stuff about fitness in delivery onyl
+- [x] make sure it's possible to generate a plan with delivery only in case one agent has parcels
+- [x] fix the stuff about fitness in delivery onyl
+
+- [x] fix dashboard now highlighting all the parcels to be picked up
+- [x] fix plans swapping between agents (might be an indexing issue)
+- [ ] fix agent not seeing (?) parcel when in the same cell
+- [ ] make sure a valid plan is created if one agent has no reachable parcels
