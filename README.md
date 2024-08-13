@@ -25,7 +25,6 @@
 
 - [x] Make sure agent doesnt crash when NO plan is found (og no parcels, no delivery zones, no reachable tiles)
 
-- [x] fix order of parcels in plan generation
 - [x] reimplement agent blocking logic
 
 - [x] fix crossover for multiple agents
@@ -44,5 +43,8 @@
 
 - [x] fix dashboard now highlighting all the parcels to be picked up
 - [x] fix plans swapping between agents (might be an indexing issue)
-- [ ] fix agent not seeing (?) parcel when in the same cell
+- [?] fix agent not seeing (?) parcel when in the same cell (might be due to delayed replanning)
 - [ ] make sure a valid plan is created if one agent has no reachable parcels
+
+- [ ] fix order of parcels in plan generation
+- [ ] add caching system for bfs
