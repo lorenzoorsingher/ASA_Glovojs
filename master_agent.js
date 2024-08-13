@@ -11,20 +11,20 @@ import { Genetic } from "./master_geneticBrain.js";
 export const VERBOSE = false;
 const LOCAL = true;
 
-let pop = 300;
-let gen = 30;
-let port = 3000;
-// let [pop, gen, port] = process.argv.slice(2);
-// if (pop == undefined) {
-//   pop = 100;
-// }
-// if (gen == undefined) {
-//   gen = 100;
-// }
+// let pop = 300;
+// let gen = 30;
+// let port = 3000;
+let [pop, gen, port] = process.argv.slice(2);
+if (pop == undefined) {
+  pop = 100;
+}
+if (gen == undefined) {
+  gen = 30;
+}
 
-// if (port == undefined) {
-//   port = 3000;
-// }
+if (port == undefined) {
+  port = 3000;
+}
 
 console.log("Population: ", pop);
 console.log("Generations: ", gen);
@@ -45,8 +45,8 @@ let names = ["BLUE", "PINK", "GREY"];
 
 // create riders
 for (let i = 0; i < NRIDERS; i++) {
-  let uname = Math.random().toString(36).substring(5) + "_" + pop + "_" + gen;
-  uname = names[i];
+  //let uname = Math.random().toString(36).substring(5) + "_" + pop + "_" + gen;
+  let uname = names[i] + "_" + pop + "_" + gen;
   riders.push(new Rider(uname));
 }
 
