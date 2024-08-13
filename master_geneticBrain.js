@@ -194,16 +194,16 @@ export class Genetic {
    * of the genetic algorithm
    *
    * @param {Array} population - The population of the genetic algorithm
-   * @param {Array} riders_paths - The paths of the riders
+   * @param {Array} riders_graphs - The paths of the riders
    *
    * @returns {[Array, Array]} - The scores and chances (to be picked) of the population
    */
-  rouletteWheel(population, riders_paths) {
+  rouletteWheel(population, riders_graphs) {
     let scores = [];
     let tot_fit = 0;
     let min_fit = 0;
     for (const family of population) {
-      let [fit, _] = this.fitness(family, riders_paths);
+      let [fit, _] = this.fitness(family, riders_graphs);
       if (fit < 0) {
         fit = 0;
       }
@@ -364,9 +364,19 @@ export class Genetic {
     return ordered_childs;
   }
 
+  /**
+   * Computes the cost of a step (going from one node to the next)
+   * based on the cost of reaching the node and the current
+   * carrying capacity of the agent.
+   *
+   * @param {Number} cost_in - The cost of reaching the parcel
+   * @param {Number} curr_carr - The current carrying capacity of the agent
+   *
+   * @returns {Number} - The cost of the step
+   */
   getStepCost(cost_in, curr_carr) {
-    //let NO_DELIVERY = this.riders[r].no_delivery;
-
+    // TODO: dynamically change STEP_COST and penalities
+    // based on the configuration
     let LONG_TRIP_PENALITY = 0.2;
 
     let STEP_COST = 0.2 + LONG_TRIP_PENALITY;
@@ -374,25 +384,40 @@ export class Genetic {
     return cost;
   }
 
-  fitness(family, rider_paths, delivery_only_fits = null) {
+  /**
+   * Computes the fitness of a family (a list of DNAs, one for each rider)
+   * based on the paths of the riders and the delivery-only fits.
+   *
+   * The fitness is computed for plans containing parcels so delivery-only
+   * plans are computed separately once and considered only if they are better
+   * than all the other plans.
+   *
+   * @param {Array} family - The family of DNAs
+   * @param {Array} riders_graphs - The graphs for each rider
+   * @param {Array} delivery_only_fits - The delivery-only fits
+   *
+   * @returns {[Number, Array]} - The cumulative reward of the family and a list
+   * of booleans indicating if that rider should deliver only
+   */
+  fitness(family, riders_graphs, delivery_only_fits = null) {
     let cumulative_rew = 0;
     let delivery_only = [];
 
     for (let r = 0; r < this.nriders; r++) {
-      // let player_parcels = Array.from(this.riders[r].player_parcels);
-
       let delivery_only_fit = -Infinity;
       if (delivery_only_fits != null) {
         delivery_only_fit = delivery_only_fits[r];
       }
 
-      let costs = rider_paths[r].costs;
-      let nodes = rider_paths[r].nodes;
+      let costs = riders_graphs[r].costs;
+      let nodes = riders_graphs[r].nodes;
       let dna = family[r];
       let rew = 0;
 
       if (dna.length > 0) {
         let curr_carr = this.riders[r].player_parcels.size;
+
+        // reward for the amount of points the rider is already carrying
         rew = this.riders[r].carrying;
 
         // reward of first parcel minus cost of reaching it
@@ -401,6 +426,7 @@ export class Genetic {
 
         curr_carr += 1;
 
+        // reward of each parcel in DNA minus cost of reaching it
         for (let i = 1; i < dna.length; i++) {
           rew +=
             nodes[dna[i]].rew -
@@ -409,18 +435,14 @@ export class Genetic {
           curr_carr += 1;
         }
 
+        // cost of reaching the delivery zone fron the last parcel
         rew += -this.getStepCost(nodes[dna[dna.length - 1]].out_c, curr_carr); //* STEP_COST * curr_carr;
       } else {
         rew = 0;
       }
 
+      // check if it's better to deliver only
       if (rew < delivery_only_fit && delivery_only_fit > 0) {
-        // console.log(
-        //   "IT'S BETTER TO ONLY DELIVER ",
-        //   delivery_only_fit,
-        //   " ",
-        //   rew
-        // );
         cumulative_rew += delivery_only_fit;
         delivery_only.push(true);
       } else {
@@ -431,8 +453,21 @@ export class Genetic {
     return [cumulative_rew, delivery_only];
   }
 
+  /**
+   * Generates a plan for the agents based on the genetic algorithm.
+   *
+   * @param {Array} riders_graphs - The graphs for each rider
+   * @param {Array} delivery_only_fits - The delivery-only fits
+   * @param {Number} pop_size - The size of the population
+   * @param {Number} gen_num - The number of generations
+   * @param {Number} mutation_rate - The mutation rate
+   * @param {Number} elite_rate - The elite rate
+   * @param {Number} skip_rate - The skip rate
+   *
+   * @returns {[Array, Number]} - The generated plan and its fitness
+   */
   geneticTSP(
-    riders_paths,
+    riders_graphs,
     delivery_only_fits,
     pop_size = 1000,
     gen_num = 100,
@@ -442,9 +477,10 @@ export class Genetic {
   ) {
     let genes = [];
 
+    // TODO: check if this breaks when a rider has no nodes
+    // prepare the genes for the genetic algorithm
     for (let rid = 0; rid < this.nriders; rid++) {
-      const r = riders_paths[rid];
-      //console.log("Riders paths: ", r);
+      const r = riders_graphs[rid];
 
       genes = Array.from(Array(r.nodes.length).keys());
 
@@ -453,7 +489,6 @@ export class Genetic {
         console.log("No nodes reachable, returning empty plan ", empty_plan);
         return [empty_plan, 0];
       }
-      // console.log(closest[0]);
     }
 
     let best_d_o = [];
@@ -488,7 +523,7 @@ export class Genetic {
     for (let i = 0; i < gen_num; i++) {
       let new_pop = [];
 
-      const [scores, chances] = this.rouletteWheel(population, riders_paths);
+      const [scores, chances] = this.rouletteWheel(population, riders_graphs);
 
       // console.log("Scores: ", scores);
       // console.log("Chances: ", chances);
@@ -538,7 +573,11 @@ export class Genetic {
       let tot_fit = 0;
 
       for (const family of population) {
-        let [fit, d_o] = this.fitness(family, riders_paths, delivery_only_fits);
+        let [fit, d_o] = this.fitness(
+          family,
+          riders_graphs,
+          delivery_only_fits
+        );
         tot_fit += fit;
 
         if (fit > best_fit) {
@@ -562,7 +601,7 @@ export class Genetic {
       best_dna = empty_plan;
     }
 
-    // this.printMat(riders_paths[0].costs);
+    // this.printMat(riders_graphs[0].costs);
 
     for (let r = 0; r < this.nriders; r++) {
       //aa = 0;
@@ -699,12 +738,12 @@ export class Genetic {
   }
 
   createPlan() {
-    let riders_paths = [];
+    let riders_graphs = [];
     console.log("starting positions: ");
     for (const r of this.riders) {
       r.log("Rider at: " + r.trg.x + " " + r.trg.y);
       const [costs, paths, parc] = this.builGraphInOut(r);
-      riders_paths.push({
+      riders_graphs.push({
         costs: costs,
         paths: paths,
         nodes: parc,
@@ -713,7 +752,7 @@ export class Genetic {
       // this.printMat(costs);
     }
 
-    // for (const p of riders_paths) {
+    // for (const p of riders_graphs) {
     //   console.log("Rider ", this.riders.indexOf(p).name);
     //   console.log("Riders paths: ", p);
     // }
@@ -753,7 +792,7 @@ export class Genetic {
 
     console.log("delivery_only_fits: ", delivery_only_fits);
     const [best_path, best_fit] = this.geneticTSP(
-      riders_paths,
+      riders_graphs,
       delivery_only_fits,
       this.pop,
       this.gen,
@@ -792,7 +831,7 @@ export class Genetic {
         // ??? TODO
 
         for (const idx of best_path[r]) {
-          let par = riders_paths[r].nodes[idx];
+          let par = riders_graphs[r].nodes[idx];
 
           // console.log("par.path_out: ", par);
           parcels_path[r].push({
@@ -839,7 +878,7 @@ export class Genetic {
           let curridx = best_path[r][i];
           if (i + 1 < best_path[r].length) {
             let nextidx = best_path[r][i + 1];
-            let semi_path = riders_paths[r].paths[curridx][nextidx];
+            let semi_path = riders_graphs[r].paths[curridx][nextidx];
 
             actions = Action.pathToAction(
               semi_path,
