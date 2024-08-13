@@ -56,3 +56,4 @@
 - [ ] clean code
 - [ ] search&destroy legacy variables
 - [ ] reimplement parcel decay in fitness
+- [ ] is the dummy_parcel in builGraphInOut even needed? (might be a leftover from the old implementation)

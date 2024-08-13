@@ -1,6 +1,7 @@
 import { Position, Direction } from "./data/position.js";
 import { Action, ActionType } from "./data/action.js";
 import { Field } from "./data/field.js";
+import { Rider } from "./master_rider.js";
 import { sortByKey } from "./utils.js";
 
 /**
@@ -67,58 +68,61 @@ export class Genetic {
     // console.log("Parcel decay: ", this.parcel_decay);
   }
 
+  /**
+   * Translates the parcels on the field into a graph representation
+   * that can be used to generate a plan for the agents.
+   *
+   * @param {Rider} rider - The rider for which the graph is being generated
+   *
+   * @returns {[Array, Array, Array]} - The costs, paths and prep_parcels of the graph,
+   * costs and paths are both 2-dimensional arrays corresponding to the costs
+   * and paths between each pair of nodes, prep_parcels corresponds the the nodes of the graph,
+   * each element contains the coordinates and reward of the parcel and  costs and paths both to get
+   * there form the player position and to get to the closest delivery zone.
+   */
   builGraphInOut(rider) {
-    const MUL = 2;
-
     let prep_parcels = [];
-    let dummy_parcel = {
-      x: rider.trg.x,
-      y: rider.trg.y,
-      reward: -Infinity,
-    };
-
     let copy_parcels = new Map(this.parcels);
-    copy_parcels.set("rider", dummy_parcel);
 
+    // let dummy_parcel = {
+    //   x: rider.trg.x,
+    //   y: rider.trg.y,
+    //   reward: -Infinity,
+    // };
+    // copy_parcels.set("rider", dummy_parcel);
+
+    // prepare each parcel for the graph
     for (const [key, p] of copy_parcels.entries()) {
-      //console.log("rp: ", rider.trg);
-      let path_fromPlayer = this.field.bfs(
-        this.field.getTile({ x: p.x, y: p.y }),
-
-        this.field.getTile({ x: rider.trg.x, y: rider.trg.y }),
-        rider.blocking_agents
-      );
-      let fromPlayer;
-      if (path_fromPlayer == -1) {
-        // rider.log("No path from player to parcel " + key);
-        // console.log("No path from player to parcel ", key);
-        // console.log(p);
-        fromPlayer = Infinity;
+      // compute the cost and path from the player to the parcel
+      let start = this.field.getTile({ x: p.x, y: p.y });
+      let end = this.field.getTile({ x: rider.trg.x, y: rider.trg.y });
+      let path_from_player = this.field.bfs(start, end, rider.blocking_agents);
+      let cost_from_player;
+      if (path_from_player == -1) {
+        cost_from_player = Infinity;
       } else {
-        fromPlayer = path_fromPlayer.length - 1;
+        cost_from_player = path_from_player.length - 1;
       }
 
+      // compute the cost and path from the parcel to the closest delivery zone
+      start = { x: p.x, y: p.y };
+      let path_to_zone;
+      let cost_to_zone;
       let closest = this.field.getClosestDeliveryZones(
-        {
-          x: p.x,
-          y: p.y,
-        },
+        start,
         rider.blocking_agents
       );
-
-      let path_toZone;
-      let toZone;
 
       if (closest.length == 0) {
-        toZone = Infinity;
-        path_toZone = -1;
+        cost_to_zone = Infinity;
+        path_to_zone = -1;
       } else {
-        path_toZone = closest[0].path;
-        toZone = closest[0].distance - 1;
+        path_to_zone = closest[0].path;
+        cost_to_zone = closest[0].distance - 1;
       }
 
-      let inc = fromPlayer;
-      let outc = toZone;
+      let inc = cost_from_player;
+      let outc = cost_to_zone;
 
       prep_parcels.push({
         x: p.x,
@@ -127,10 +131,12 @@ export class Genetic {
         in_c: inc,
         out_c: outc,
         id: key,
-        path_in: path_fromPlayer,
-        path_out: path_toZone,
+        path_in: path_from_player,
+        path_out: path_to_zone,
       });
     }
+
+    // build graph matrices
     let costs = [];
     let paths = [];
     for (let i = 0; i < prep_parcels.length; i++) {
@@ -155,7 +161,6 @@ export class Genetic {
           if (path.length == 0 || path == -1) {
             costs[i][j] = Infinity;
             paths[i][j] = [];
-            // console.log("No path from ", i, " to ", j, " nodes unreaachabl");
           } else {
             paths[i][j] = path;
             costs[i][j] = path.length;
@@ -165,7 +170,6 @@ export class Genetic {
     }
 
     //this.printMat(costs);
-    // console.log("all paths: ", paths);
     return [costs, paths, prep_parcels];
   }
 
