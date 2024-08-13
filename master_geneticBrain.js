@@ -173,31 +173,53 @@ export class Genetic {
     return [costs, paths, prep_parcels];
   }
 
-  maskList(list, p) {
+  /**
+   * Removes a random number of elements from a list
+   *
+   * @param {Array} list - The list to be masked
+   * @returns {Array} - The masked list
+   */
+  maskList(list) {
     let num_del = list.length - (Math.floor(Math.random() * list.length) + 1);
 
     for (let i = 0; i < num_del; i++) {
       let idx = Math.floor(Math.random() * list.length);
       list.splice(idx, 1);
     }
-
     return list;
   }
 
+  /**
+   * Generates the scores and chances for the roulette wheel selection
+   * of the genetic algorithm
+   *
+   * @param {Array} population - The population of the genetic algorithm
+   * @param {Array} riders_paths - The paths of the riders
+   *
+   * @returns {[Array, Array]} - The scores and chances (to be picked) of the population
+   */
   rouletteWheel(population, riders_paths) {
     let scores = [];
     let tot_fit = 0;
-
+    let min_fit = 0;
     for (const family of population) {
       let [fit, _] = this.fitness(family, riders_paths);
-      // console.log("Fit: ", fit);
+      if (fit < 0) {
+        fit = 0;
+      }
       scores.push(fit);
-      tot_fit += fit;
+      if (fit < min_fit) {
+        min_fit = fit;
+      }
+    }
+
+    for (const score of scores) {
+      tot_fit += score - min_fit;
     }
 
     let chances = [];
     for (const score of scores) {
-      let chance = Math.round((score / tot_fit) * scores.length);
+      let chance = ((score - min_fit) / (tot_fit + 1)) * scores.length;
       chances.push(chance);
     }
 
