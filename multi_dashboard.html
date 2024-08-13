@@ -23,9 +23,9 @@
     <div id="carrying_points"></div>
 
     <div id="carry_div">
-      <table style="border: 1px solid black" id="my_carry_table">
+      <!-- <table style="border: 1px solid black" id="my_carry_table">
         <tbody id="carry_table"></tbody>
-      </table>
+      </table> -->
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -155,10 +155,21 @@
 
         // TABLE OF CARRIED PARCELS
 
-        const carry_table = document.getElementById("carry_table");
-        carry_table.innerHTML = "";
+        const carry_div = document.getElementById("carry_div");
+        carry_div_html = "";
 
         for (let rid = 0; rid < riders.length; rid++) {
+          carry_div_html +=
+            '<table style="border: 1px solid black;display: inline-block;" id="my_carry_table">';
+          carry_div_html += '<tbody id="carry_table' + rid + '"></tbody>';
+          carry_div_html += "</table>";
+        }
+        carry_div.innerHTML = carry_div_html;
+        console.log(carry_div.innerHTML);
+
+        for (let rid = 0; rid < riders.length; rid++) {
+          let carry_table = document.getElementById("carry_table" + rid);
+          carry_table.innerHTML = "";
           rider_parc = riders[rid].parcels;
           // console.log("rp: ", rider_parc);
           for (let i = 0; i < rider_parc.length; i++) {
