@@ -160,33 +160,38 @@ export class Field {
     const queue = [];
     const distance = {};
 
+    const CACHE = true;
+
     let blocking = [];
     for (const a of blocking_agents.values()) {
       blocking.push(a.x + "-" + a.y);
       //console.log("Blocking: ", blocking);
     }
 
-    // console.log("Blocking: ", blocking);
     blocking = blocking.sort();
-    // console.log("Blocking_sort: ", blocking);
-    // console.log("Start: ", start.id);
-    // console.log("End: ", end.id);
-
     let entry = start.id + "_" + end.id + "_" + blocking.join("_");
-    // let hit = false;
-    if (this.paths_cache.has(entry)) {
-      this.cache_hits += 1;
-      // console.log("CACHE HIT ", this.cache_hits);
-      // hit = true;
-      // console.log(
-      //   "HIT RATE: ",
-      //   Math.round((this.cache_hits / this.paths_cache.size) * 10000) / 100,
-      //   "%"
-      // );
+    if (CACHE) {
+      // console.log("Blocking: ", blocking);
 
-      return this.paths_cache.get(entry);
-    } else {
-      this.cache_misses += 1;
+      // console.log("Blocking_sort: ", blocking);
+      // console.log("Start: ", start.id);
+      // console.log("End: ", end.id);
+
+      // let hit = false;
+      if (this.paths_cache.has(entry)) {
+        this.cache_hits += 1;
+        // console.log("CACHE HIT ", this.cache_hits);
+        // hit = true;
+        // console.log(
+        //   "HIT RATE: ",
+        //   Math.round((this.cache_hits / this.paths_cache.size) * 10000) / 100,
+        //   "%"
+        // );
+
+        return this.paths_cache.get(entry);
+      } else {
+        this.cache_misses += 1;
+      }
     }
 
     if (
@@ -239,7 +244,9 @@ export class Field {
     // console.log("Path: ", path);
 
     // if (!hit) {
-    this.paths_cache.set(entry, path);
+    if (CACHE) {
+      this.paths_cache.set(entry, path);
+    }
     // }
 
     return path;

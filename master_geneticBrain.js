@@ -22,6 +22,8 @@ export class Genetic {
     this.avgs = {};
     this.avg_fit = 0;
     this.iters = 0;
+    this.tot_time = 0;
+    this.tot_plans = 0;
 
     // this.plan = this.createPlan(parcelsQueue)
   }
@@ -893,7 +895,13 @@ export class Genetic {
       return;
     }
     this.planLock = true;
+
+    let start = new Date().getTime();
     const [tmp_plan, best_fit] = this.createPlan();
+    this.tot_time += new Date().getTime() - start;
+    this.tot_plans += 1;
+
+    console.log("AVG plan generation ", this.tot_time / this.tot_plans, "ms");
 
     console.log("proposed fit ", best_fit, " current fit ", this.plan_fit);
     console.log("cache size: ", this.field.paths_cache.size);
