@@ -27,7 +27,7 @@ export class Genetic {
 
     // this.plan = this.createPlan(parcelsQueue)
   }
-  set_config(config) {
+  setConfig(config) {
     this.config = config;
     console.log("Config received: ", this.config);
     this.movement_duration = config.MOVEMENT_DURATION;
@@ -42,11 +42,12 @@ export class Genetic {
     }
     console.log("Parcel decay: ", this.parcel_decay);
   }
+
   updateField(field) {
     this.field = field;
   }
 
-  sort_by_key(array, key) {
+  sortByKey(array, key) {
     return array.sort(function (a, b) {
       var x = a[key];
       var y = b[key];
@@ -196,7 +197,7 @@ export class Genetic {
       return { index: idx, score: el };
     });
 
-    mapped = this.sort_by_key(mapped, "score");
+    mapped = this.sortByKey(mapped, "score");
 
     let elites = [];
     let num_elites = Math.round(mapped.length * elite_rate);
@@ -238,7 +239,7 @@ export class Genetic {
     return population[idx];
   }
 
-  multi_crossover(parentA, parentB) {
+  multiCrossover(parentA, parentB) {
     // console.log("INSIDE CROSSOVER");
     // console.log("Parent A: \t", parentA);
     // console.log("Parent B: \t", parentB);
@@ -286,7 +287,7 @@ export class Genetic {
     for (let i = 0; i < childs.length; i++) {
       subl_len.push({ len: childs[i].length, idx: i });
     }
-    subl_len = this.sort_by_key(subl_len, "len");
+    subl_len = this.sortByKey(subl_len, "len");
     // console.log("Subl len: ", subl_len);
 
     // console.log("childs: \t", childs);
@@ -317,7 +318,7 @@ export class Genetic {
     return ordered_childs;
   }
 
-  get_step_cost(cost_in, curr_carr) {
+  getStepCost(cost_in, curr_carr) {
     //let NO_DELIVERY = this.riders[r].no_delivery;
 
     let LONG_TRIP_PENALITY = 0.2;
@@ -350,19 +351,19 @@ export class Genetic {
 
         // reward of first parcel minus cost of reaching it
         rew +=
-          nodes[dna[0]].rew - this.get_step_cost(nodes[dna[0]].in_c, curr_carr);
+          nodes[dna[0]].rew - this.getStepCost(nodes[dna[0]].in_c, curr_carr);
 
         curr_carr += 1;
 
         for (let i = 1; i < dna.length; i++) {
           rew +=
             nodes[dna[i]].rew -
-            this.get_step_cost(costs[dna[i - 1]][dna[i]], curr_carr);
+            this.getStepCost(costs[dna[i - 1]][dna[i]], curr_carr);
 
           curr_carr += 1;
         }
 
-        rew += -this.get_step_cost(nodes[dna[dna.length - 1]].out_c, curr_carr); //* STEP_COST * curr_carr;
+        rew += -this.getStepCost(nodes[dna[dna.length - 1]].out_c, curr_carr); //* STEP_COST * curr_carr;
       } else {
         rew = 0;
       }
@@ -466,8 +467,8 @@ export class Genetic {
         // console.log("Parent A: ", parentA);
         // console.log("Parent B: ", parentB);
 
-        let childA = this.multi_crossover(parentA, parentB);
-        let childB = this.multi_crossover(parentB, parentA);
+        let childA = this.multiCrossover(parentA, parentB);
+        let childB = this.multiCrossover(parentB, parentA);
 
         new_pop.push(childA);
         new_pop.push(childB);
@@ -700,7 +701,7 @@ export class Genetic {
       } else {
         let delivery_only_fit =
           agent.carrying -
-          this.get_step_cost(closest[0].distance, agent.player_parcels.size);
+          this.getStepCost(closest[0].distance, agent.player_parcels.size);
 
         if (delivery_only_fit <= 0) {
           delivery_only_fits.push(-Infinity);

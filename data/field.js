@@ -37,18 +37,18 @@ export class Field {
     for (let i = 0; i < this.height; i++) {
       for (let j = 0; j < this.width; j++) {
         if (this.field[i][j].walkable) {
-          this.field[i][j].set_neighbors(this.neighbors(new Position(j, i)));
+          this.field[i][j].setNeighbors(this.neighbors(new Position(j, i)));
         }
       }
     }
     this.deliveryZones = this.getDeliveryZones();
   }
 
-  set_parcels(perceived_parcels) {
+  setParcels(perceived_parcels) {
     this.update_map();
     for (const p of perceived_parcels) {
       if (p.carriedBy == null) {
-        this.field[p.y][p.x].set_parcel(p.reward);
+        this.field[p.y][p.x].setParcel(p.reward);
         //console.log(this.field[p.y][p.x]);
       }
     }
@@ -270,13 +270,13 @@ export class Field {
       }
     }
 
-    closest = this.sort_by_key(closest, "distance");
+    closest = this.sortByKey(closest, "distance");
     // console.log("Blocking: ", blocking_agents);
     // console.log("Closest delivery zones: ", closest);
     return closest;
   }
 
-  sort_by_key(array, key) {
+  sortByKey(array, key) {
     return array.sort(function (a, b) {
       var x = a[key];
       var y = b[key];

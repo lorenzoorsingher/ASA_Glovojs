@@ -40,7 +40,7 @@ export class Rider {
     // this.plan = this.createPlan(parcelsQueue)
   }
 
-  set_config(config) {
+  setConfig(config) {
     this.config = config;
     console.log("Config received: ", this.config);
   }

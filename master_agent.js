@@ -58,8 +58,8 @@ let RESET_TIMEOUT = 50;
 // set up sensings for all riders
 riders.forEach((rider, index) => {
   rider.client.onConfig((config) => {
-    rider.set_config(config);
-    brain.set_config(config);
+    rider.setConfig(config);
+    brain.setConfig(config);
     RESET_TIMEOUT = config.RESET_TIMEOUT;
 
     if (config.PARCEL_DECADING_INTERVAL == "infinite") {
@@ -95,7 +95,7 @@ riders.forEach((rider, index) => {
   });
 
   rider.client.onParcelsSensing(async (perceived_parcels) => {
-    map.set_parcels(perceived_parcels);
+    map.setParcels(perceived_parcels);
     all_parcels = perceived_parcels.slice();
     let parc_before = Array.from(parcels.keys());
 

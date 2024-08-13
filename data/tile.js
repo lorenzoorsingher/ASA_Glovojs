@@ -12,19 +12,19 @@ export class Tile {
     this.parcel = -1;
   }
 
-  get_x() {
+  getX() {
     return this.position.x;
   }
 
-  get_y() {
+  getY() {
     return this.position.y;
   }
 
-  set_neighbors(neigh) {
+  setNeighbors(neigh) {
     this.neighbors = neigh;
   }
 
-  set_parcel(parcel_score) {
+  setParcel(parcel_score) {
     this.parcel = parcel_score;
   }
 
