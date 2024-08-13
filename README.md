@@ -1,5 +1,9 @@
 # ASA_Glovojs
 
+## NOTES
+
+- high populations seem to work better in more open maps whereas low populations work better in more closed maps. Might be due to the higher chance of replanning in busier maps that penalize the high pupulation agent since planning is more costly and it impacts the speed of the agent. While the plans might be better the speed of the "dumber" agents allows them to steal parcels and deliver them faster.
+
 ## TODO
 
 - [x] Define interfaces
@@ -20,7 +24,7 @@
 - [x] Double check for closest delivery point
 
 - [x] Make sure agent knows how much (and how many parcels) he can carry when replanning
-- [ ] Penaslize overly long paths
+- [x] Penalize overly long paths
 - [x] make sure agent forgets parcels left in memory when the tile comes back in view and the parcel is gone
 
 - [x] Make sure agent doesnt crash when NO plan is found (og no parcels, no delivery zones, no reachable tiles)
@@ -31,15 +35,14 @@
 - [x] make sure player_parcels are handled correctly in the planner
 - [x] make sure parcels are correctly memorized
 - [x] fix bfs crashing when position is not round
-- [ ] rethink logic when it's time to replan (due to delivery or plan end)
 - [x] penalize too many plan changes
-- [ ] penalize riders that don't deliver for too long
 - [x] check if carried parcels are correcly evaluated when replanning
 - [x] rework parcels clock
 - [x] figure out why agent crashes when 2-action long backup plan is created and after consuming action
 
 - [x] make sure it's possible to generate a plan with delivery only in case one agent has parcels
-- [x] fix the stuff about fitness in delivery onyl
+- [x] fix the stuff about fitness in delivery only
+- [x] rethink logic when it's time to replan (due to delivery or plan end)
 
 - [x] fix dashboard now highlighting all the parcels to be picked up
 - [x] fix plans swapping between agents (might be an indexing issue)
@@ -48,3 +51,5 @@
 
 - [ ] fix order of parcels in plan generation
 - [ ] add caching system for bfs
+- [ ] penalize riders that don't deliver for too long (exp in case of non-decaying parcels)
+- [ ] add replanning when parcels are stolen
