@@ -1,5 +1,7 @@
 import { Tile } from "./tile.js";
 import { Position, Direction } from "./position.js";
+import { sortByKey } from "../utils.js";
+
 // import { VERBOSE } from "../agent.js";
 const VERBOSE = false;
 export class Field {
@@ -270,19 +272,12 @@ export class Field {
       }
     }
 
-    closest = this.sortByKey(closest, "distance");
+    closest = sortByKey(closest, "distance");
     // console.log("Blocking: ", blocking_agents);
     // console.log("Closest delivery zones: ", closest);
     return closest;
   }
 
-  sortByKey(array, key) {
-    return array.sort(function (a, b) {
-      var x = a[key];
-      var y = b[key];
-      return x < y ? -1 : x > y ? 1 : 0;
-    });
-  }
   getDeliveryZones() {
     const positions = [];
     for (let y = 0; y < this.height; y++) {

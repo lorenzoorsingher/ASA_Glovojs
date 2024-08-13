@@ -55,3 +55,4 @@
 - [ ] add replanning when parcels are stolen
 - [ ] clean code
 - [ ] search&destroy legacy variables
+- [ ] reimplement parcel decay in fitness

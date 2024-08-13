@@ -1,58 +1,70 @@
 import { Position, Direction } from "./data/position.js";
 import { Action, ActionType } from "./data/action.js";
+import { Field } from "./data/field.js";
+import { sortByKey } from "./utils.js";
 
+/**
+ * @class Genetic
+ *
+ * Contains the genetic algorithm for the planning of the agents,
+ * it generates a plan for each agent based on the current state of the
+ * entire field and the agents. The plan will be an approximation of
+ * of a variation of the Travelling Salesman Problem that takes into
+ * account the rewards of the parcels and and the cost of reaching them.
+ *
+ * @property {Array} riders - The list of all the controlled agents
+ * @property {Number} nriders - The number of controlled agents
+ * @property {Object} config - The configuration object received from the server
+ * @property {Field} field - The field object containing the map
+ * @property {Map} parcels - The map of all the parcels on the field
+ * @property {Number} pop - The size of the population for the genetic algorithm
+ * @property {Number} gen - The number of generations for the genetic algorithm
+ * @property {Number} plan_fit - The fitness of the current plan
+ * @property {Boolean} planLock - A flag to prevent multiple plans from being generated
+ * @property {Number} tot_time - The total time spent generating plans [metrics]
+ * @property {Number} tot_plans - The total number of plans generated [metrics]
+ */
 export class Genetic {
   constructor(riders, field, parcels, pop, gen) {
+    //riders
     this.riders = riders;
     this.nriders = riders.length;
 
-    console.log("Genetic brain created with ", this.nriders, " riders");
-
-    this.config = {};
-
+    //brain settings
     this.field = field;
     this.parcels = parcels;
     this.plan_fit = 0;
     this.planLock = false;
-    // this.x = playerPosition.x;
-    // this.y = playerPosition.y;
+    this.config = {};
+
+    //Genetic params
     this.pop = pop;
     this.gen = gen;
 
-    this.avgs = {};
-    this.avg_fit = 0;
-    this.iters = 0;
+    //metrics
     this.tot_time = 0;
     this.tot_plans = 0;
 
-    // this.plan = this.createPlan(parcelsQueue)
+    console.log("Genetic brain created with ", this.nriders, " riders");
   }
+
+  /**
+   *
+   * @param {Object} config - The configuration object received from the server
+   */
   setConfig(config) {
     this.config = config;
     console.log("Config received: ", this.config);
-    this.movement_duration = config.MOVEMENT_DURATION;
 
-    this.parcel_decay = parseFloat(this.config.PARCEL_DECADING_INTERVAL);
-    if (isNaN(this.parcel_decay)) {
-      if (this.config.PARCEL_DECADING_INTERVAL === "infinite") {
-        this.parcel_decay = Infinity;
-      } else {
-        this.parcel_decay = 0;
-      }
-    }
-    console.log("Parcel decay: ", this.parcel_decay);
-  }
-
-  updateField(field) {
-    this.field = field;
-  }
-
-  sortByKey(array, key) {
-    return array.sort(function (a, b) {
-      var x = a[key];
-      var y = b[key];
-      return x < y ? -1 : x > y ? 1 : 0;
-    });
+    // this.parcel_decay = parseFloat(this.config.PARCEL_DECADING_INTERVAL);
+    // if (isNaN(this.parcel_decay)) {
+    //   if (this.config.PARCEL_DECADING_INTERVAL === "infinite") {
+    //     this.parcel_decay = Infinity;
+    //   } else {
+    //     this.parcel_decay = 0;
+    //   }
+    // }
+    // console.log("Parcel decay: ", this.parcel_decay);
   }
 
   builGraphInOut(rider) {
@@ -168,10 +180,6 @@ export class Genetic {
     return list;
   }
 
-  getRandomInt(max) {
-    return Math.floor(Math.random() * max);
-  }
-
   rouletteWheel(population, riders_paths) {
     let scores = [];
     let tot_fit = 0;
@@ -197,7 +205,7 @@ export class Genetic {
       return { index: idx, score: el };
     });
 
-    mapped = this.sortByKey(mapped, "score");
+    mapped = sortByKey(mapped, "score");
 
     let elites = [];
     let num_elites = Math.round(mapped.length * elite_rate);
@@ -287,7 +295,7 @@ export class Genetic {
     for (let i = 0; i < childs.length; i++) {
       subl_len.push({ len: childs[i].length, idx: i });
     }
-    subl_len = this.sortByKey(subl_len, "len");
+    subl_len = sortByKey(subl_len, "len");
     // console.log("Subl len: ", subl_len);
 
     // console.log("childs: \t", childs);
@@ -438,16 +446,6 @@ export class Genetic {
 
       population.push(family);
     }
-
-    // let tot_fit = 0;
-    // for (const family of population) {
-    //   //console.log("DNA: ", dna);
-    //   tot_fit += this.fitness(family, riders_paths, delivery_only_fits);
-    // }
-
-    // //???
-    // this.iters += 1;
-    // this.avg_fit += tot_fit / pop_size;
 
     for (let i = 0; i < gen_num; i++) {
       let new_pop = [];
@@ -869,27 +867,6 @@ export class Genetic {
     }
     return [all_plans, best_fit];
   }
-
-  printMat(mat) {
-    let str = "\\ \t";
-    for (let i = 0; i < mat.length; i++) {
-      str += i + "\t";
-    }
-    str += "\n";
-    for (const row of mat) {
-      str += mat.indexOf(row) + "\t";
-      for (const cell of row) {
-        let val = cell;
-        if (cell > 9000) {
-          val = "∞";
-        }
-        str += val + "\t";
-      }
-      str += "\n";
-    }
-    console.log(str);
-  }
-
   newPlan() {
     if (this.planLock) {
       console.log("Brain is already planning...");
@@ -931,8 +908,23 @@ export class Genetic {
     this.planLock = false;
   }
 
-  justDelivered(rider) {
-    let plan = this.backupPlan(rider);
-    rider.plan = plan[0];
+  printMat(mat) {
+    let str = "\\ \t";
+    for (let i = 0; i < mat.length; i++) {
+      str += i + "\t";
+    }
+    str += "\n";
+    for (const row of mat) {
+      str += mat.indexOf(row) + "\t";
+      for (const cell of row) {
+        let val = cell;
+        if (cell > 9000) {
+          val = "∞";
+        }
+        str += val + "\t";
+      }
+      str += "\n";
+    }
+    console.log(str);
   }
 }
