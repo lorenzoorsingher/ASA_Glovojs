@@ -53,3 +53,5 @@
 - [ ] add caching system for bfs
 - [ ] penalize riders that don't deliver for too long (exp in case of non-decaying parcels)
 - [ ] add replanning when parcels are stolen
+- [ ] clean code
+- [ ] search&destroy legacy variables

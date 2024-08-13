@@ -8,6 +8,9 @@ export class Field {
     this.height = height;
     this.field = [];
     this.parcelSpawners = [];
+    this.paths_cache = new Map();
+    this.cache_hits = 0;
+    this.cache_misses = 0;
 
     for (let i = 0; i < height; i++) {
       this.field[i] = [];
@@ -162,9 +165,30 @@ export class Field {
       blocking.push(a.x + "-" + a.y);
       //console.log("Blocking: ", blocking);
     }
+
     // console.log("Blocking: ", blocking);
-    // console.log("Start: ", start);
-    // console.log("End: ", end);
+    blocking = blocking.sort();
+    // console.log("Blocking_sort: ", blocking);
+    // console.log("Start: ", start.id);
+    // console.log("End: ", end.id);
+
+    let entry = start.id + "_" + end.id + "_" + blocking.join("_");
+    // let hit = false;
+    if (this.paths_cache.has(entry)) {
+      this.cache_hits += 1;
+      // console.log("CACHE HIT ", this.cache_hits);
+      // hit = true;
+      // console.log(
+      //   "HIT RATE: ",
+      //   Math.round((this.cache_hits / this.paths_cache.size) * 10000) / 100,
+      //   "%"
+      // );
+
+      return this.paths_cache.get(entry);
+    } else {
+      this.cache_misses += 1;
+    }
+
     if (
       this.isTileUnreachable(start, blocking) ||
       this.isTileUnreachable(end, blocking)
@@ -195,7 +219,7 @@ export class Field {
     }
     VERBOSE && console.log(distance[end.id]);
 
-    const path = [];
+    let path = [];
     let currentNode = end.id;
     path.push(end.id);
     while (par[currentNode] !== undefined) {
@@ -204,52 +228,22 @@ export class Field {
     }
 
     if (path.length <= 1) {
-      if (start.position.equals(end.position)) {
-        //console.log("Start and end are the same");
-      } else {
+      if (!start.position.equals(end.position)) {
         //console.log("GAWD DAMN it. Path is empty");
-        return -1;
+        path = -1;
+      } else {
+        //console.log("Start and end are the same");
       }
     }
 
-    VERBOSE &&
-      console.log(
-        "It takes ",
-        path.length - 1,
-        " steps to reach the destination"
-      );
-    //console.log("Path: ", path);
+    // console.log("Path: ", path);
+
+    // if (!hit) {
+    this.paths_cache.set(entry, path);
+    // }
+
     return path;
   }
-
-  // getClosestDeliveryZone(pos) {
-  //   const x = pos.x;
-  //   const y = pos.y;
-
-  //   let closest = null;
-  //   let smallestDistance = Infinity;
-
-  //   for (let d of this.deliveryZones) {
-  //     let path = this.bfs(this.getTile(d), this.getTile(pos));
-  //     if (path == -1) {
-  //       continue;
-  //     }
-  //     const distance = path.length - 1;
-  //     if (distance < smallestDistance && distance > 0) {
-  //       //console.log("Distance: ", distance, " ", this.getTile(d).position);
-  //       smallestDistance = distance;
-  //       closest = d;
-  //     }
-  //   }
-
-  //   if (closest == null) {
-  //     //console.log("No delivery zones reachable");
-  //     return null;
-  //   }
-
-  //   //console.log("Closest delivery zone is at ", closest.x, closest.y);
-  //   return this.getTile(closest);
-  // }
 
   getClosestDeliveryZones(pos, blocking_agents) {
     const x = pos.x;
@@ -295,19 +289,6 @@ export class Field {
     return positions;
   }
 
-  // getRandomWalkableTile() {
-  //   let x, y;
-  //   let tile;
-
-  //   do {
-  //     x = Math.floor(Math.random() * this.width);
-  //     y = Math.floor(Math.random() * this.height);
-  //     tile = this.getTile(new Position(x, y));
-  //   } while (!tile.walkable || this.isTileUnreachable(tile));
-
-  //   return tile;
-  // }
-
   getRandomSpawnable(player_position, blocking_agents) {
     // console.log("Looking for a SPAWNABLE tile from ", player_position);
     const randomOrder = this.parcelSpawners.sort(() => Math.random() - 0.5);
@@ -322,51 +303,18 @@ export class Field {
     return -1;
   }
 
-  // getRandomReachable(player_position) {
-  //   console.log("Looking for a REACHABLE tile from ", player_position);
-  //   const randomOrder = this.parcelSpawners.sort(() => Math.random() - 0.5);
-
-  //   player_tile = this.getTile(player_position);
-  //   neighbors =
-
-  //   for (const spawner of randomOrder) {
-  //     const tile = this.getTile(spawner);
-  //     let path = this.bfs(tile, this.getTile(player_position));
-  //     if (path != -1) {
-  //       return path;
-  //     }
-  //   }
-
-  //   return -1;
-  // }
-
   isDeliveryZone(pos) {
     return this.field[pos.y][pos.x].delivery;
   }
 
   isTileUnreachable(tile, blocking = []) {
     if (blocking.includes(tile.id) && blocking.length > 0) {
-      // console.log(
-      //   "Tile in position: ",
-      //   tile.position,
-      //   " is unreachable. Error: tile is blocked"
-      // );
       return true;
     }
     if (tile == null) {
-      // console.log(
-      //   "Tile in position: ",
-      //   tile.position,
-      //   " is unreachable. Error: tile is null"
-      // );
       return true;
     }
     if (!tile.walkable) {
-      // console.log(
-      //   "Tile in position: ",
-      //   tile.position,
-      //   " is unreachable. Error: tile is not walkable"
-      // );
       return true;
     }
 
@@ -375,11 +323,6 @@ export class Field {
         return false;
       }
     }
-    // console.log(
-    //   "Tile in position: ",
-    //   tile.position,
-    //   " is unreachable. Error: all neighbors are not walkable"
-    // );
     return true;
   }
 }

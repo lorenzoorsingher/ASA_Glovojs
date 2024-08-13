@@ -37,7 +37,7 @@ let all_parcels = [];
 // contains all non-carried parcels
 const parcels = new Map();
 
-const NRIDERS = 2;
+const NRIDERS = 3;
 let PARCEL_DECAY = 1000;
 let riders = [];
 

@@ -892,24 +892,26 @@ export class Genetic {
       console.log("Brain is already planning...");
       return;
     }
-    // console.log("MyPos: ", rider.position);
     this.planLock = true;
     const [tmp_plan, best_fit] = this.createPlan();
 
     console.log("proposed fit ", best_fit, " current fit ", this.plan_fit);
+    console.log("cache size: ", this.field.paths_cache.size);
+    console.log(
+      "hit rate: ",
+      Math.round(
+        (this.field.cache_hits /
+          (this.field.cache_hits + this.field.cache_misses)) *
+          10000
+      ) / 100,
+      "%"
+    );
     let MINIMUM_GAIN = 1.2;
     if (best_fit > this.plan_fit * MINIMUM_GAIN || this.plan_fit == 0) {
       this.plan_fit = best_fit;
 
       for (let i = 0; i < this.nriders; i++) {
         this.riders[i].plan = tmp_plan[i];
-        // if (
-        //   this.riders[i].position.x % 1 == 0.0 &&
-        //   this.riders[i].position.y % 1 == 0.0
-        // ) {
-        //   // console.log("Rider ", this.riders[i].position, " is on a tile");
-        //   this.riders[i].trg.set(this.riders[i].position);
-        // }
       }
 
       console.log("New plan accepted ✅");
