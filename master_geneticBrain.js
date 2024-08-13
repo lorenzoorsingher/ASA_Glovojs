@@ -226,6 +226,16 @@ export class Genetic {
     return [scores, chances];
   }
 
+  /**
+   * Returns the elite individuals, the
+   * best 'elite_rate %' of the population
+   *
+   * @param {Array} population - The population of the genetic algorithm
+   * @param {Array} scores - The scores of the population
+   * @param {Number} elite_rate - The percentage of the population to be considered elite
+   *
+   * @returns {Array} - The elite individuals
+   */
   getElites(population, scores, elite_rate) {
     let mapped = scores.map((el, idx) => {
       return { index: idx, score: el };
@@ -238,9 +248,6 @@ export class Genetic {
     for (let i = 0; i < num_elites; i++) {
       elites.push(mapped[mapped.length - i - 1].index);
     }
-    // console.log("Scores: ", scores);
-    // console.log("Mapped: ", mapped);
-    // console.log("Elites: ", elites);
 
     let elite_dna = [];
     for (const idx of elites) {
@@ -249,6 +256,15 @@ export class Genetic {
     return elite_dna;
   }
 
+  /**
+   * Picks an individual from the population based on the chances
+   * computed by the roulette wheel selection
+   *
+   * @param {Array} population - The population of the genetic algorithm
+   * @param {Array} chances - The chances of each individual to be picked
+   *
+   * @returns {Array} - The picked individual
+   */
   pickOne(population, chances) {
     let val = Math.random();
     let cum = 0;
@@ -260,32 +276,37 @@ export class Genetic {
     for (const chance of chances) {
       norm.push(chance / cum);
     }
-    // console.log("Val: ", val);
     let idx = 0;
     while (val > 0) {
       val -= norm[idx];
       idx++;
     }
     idx--;
-    // console.log("Norm: ", norm);
-    // console.log("Idx: ", idx);
 
     return population[idx];
   }
-
+  /**
+   * Performs a multi-crossover between two parents, each parent
+   * is composed of a list of DNAs (one for each rider) where the DNA
+   * corresponds to the sequence of parcels to be picked up.
+   * Each DNA will be crossed with the corresponding DNA of the other parent
+   * and duplicate parcels will be removed starting from the longest sequence.
+   *
+   * @param {Array} parentA - The first parent
+   * @param {Array} parentB - The second parent
+   *
+   * @returns {Array} - The crossed children
+   */
   multiCrossover(parentA, parentB) {
-    // console.log("INSIDE CROSSOVER");
-    // console.log("Parent A: \t", parentA);
-    // console.log("Parent B: \t", parentB);
-
     let childs = [];
+
+    // perform crossover for each rider.
+    // Each DNA is split in half and child is composed of the head of
+    // one parent and the tail of the other parent. Elements are added
+    // one by one making sure that no duplicates are present.
     for (let r = 0; r < this.nriders; r++) {
       let dnaA = parentA[r];
       let dnaB = parentB[r];
-
-      // console.log("\n\n");
-      // console.log("dnaA: ", dnaA);
-      // console.log("dnaB: ", dnaB);
 
       let seg_len = Math.floor(dnaA.length / 2);
 
@@ -309,23 +330,16 @@ export class Genetic {
       }
       let child = [].concat(head).concat(a_segment).concat(tail);
       childs.push(child);
-      //console.log("Child: ", child);
     }
-    // console.log("seg_len: ", seg_len);
-    // console.log("Start: ", start);
-    // console.log("End: ", end);
-    // console.log("Segment: ", a_segment);
-    // console.log("Head: ", head);
-    // console.log("Tail: ", tail);
+
+    // creates a list of tuples containing the length of each DNA
     let subl_len = [];
     for (let i = 0; i < childs.length; i++) {
       subl_len.push({ len: childs[i].length, idx: i });
     }
     subl_len = sortByKey(subl_len, "len");
-    // console.log("Subl len: ", subl_len);
 
-    // console.log("childs: \t", childs);
-
+    // removes duplicate parcels from the childs starting from the longest
     let clean_childs = [];
     let dupl = new Set();
     for (const sub of subl_len) {
@@ -341,14 +355,12 @@ export class Genetic {
       clean_childs.push(clean_child);
     }
 
-    // console.log("clean_childs: \t", clean_childs);
-
+    // orders the childs based on the original order
     let ordered_childs = [];
     for (let i = 0; i < clean_childs.length; i++) {
       ordered_childs[subl_len[i].idx] = clean_childs[i];
     }
-    // console.log("ordered_childs: \t", ordered_childs);
-    // console.log("-------------------\n\n");
+
     return ordered_childs;
   }
 

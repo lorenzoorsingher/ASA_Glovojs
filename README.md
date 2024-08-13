@@ -57,4 +57,4 @@
 - [ ] search&destroy legacy variables
 - [ ] reimplement parcel decay in fitness
 - [ ] is the dummy_parcel in builGraphInOut even needed? (might be a leftover from the old implementation)
-- [ ] make sure chances are computed correctly in rouletteWheel, in particular in case of negative fit (for the moment I set a lower bound for fitness as -Infinity screws with the probabilities and removed the rounding of the chances)
+- [ ] make sure chances are computed correctly in rouletteWheel, in particular in case of negative fit (for the moment I set a lower bound for fitness as -Infinity screws with the probabilities and removed the rounding of the chances) THIS MUST BE VERIFIED
