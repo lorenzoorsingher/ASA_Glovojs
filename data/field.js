@@ -13,6 +13,7 @@ export class Field {
     this.paths_cache = new Map();
     this.cache_hits = 0;
     this.cache_misses = 0;
+    this.hit_rate = 0;
 
     for (let i = 0; i < height; i++) {
       this.field[i] = [];

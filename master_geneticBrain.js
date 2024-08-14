@@ -45,6 +45,7 @@ export class Genetic {
     //metrics
     this.tot_time = 0;
     this.tot_plans = 0;
+    this.plan_time_avg = 0;
 
     console.log("Genetic brain created with ", this.nriders, " riders");
   }
@@ -916,22 +917,30 @@ export class Genetic {
     }
     this.planLock = true;
 
+    let exp_decay = 0.9;
     let start = new Date().getTime();
     const [tmp_plan, best_fit] = this.createPlan();
     this.tot_time += new Date().getTime() - start;
     this.tot_plans += 1;
+    this.plan_time_avg =
+      exp_decay * this.plan_time_avg +
+      (1 - exp_decay) * (this.tot_time / this.tot_plans);
 
     console.log("AVG plan generation ", this.tot_time / this.tot_plans, "ms");
 
     console.log("proposed fit ", best_fit, " current fit ", this.plan_fit);
     console.log("cache size: ", this.field.paths_cache.size);
+
+    let curr_hit_rate =
+      this.field.cache_hits / (this.field.cache_hits + this.field.cache_misses);
+
+    this.field.hit_rate =
+      exp_decay * this.field.hit_rate + (1 - exp_decay) * curr_hit_rate;
+    this.field.cache_hits = 0;
+    this.field.cache_misses = 0;
     console.log(
       "hit rate: ",
-      Math.round(
-        (this.field.cache_hits /
-          (this.field.cache_hits + this.field.cache_misses)) *
-          10000
-      ) / 100,
+      Math.round(this.field.hit_rate * 10000) / 100,
       "%"
     );
     const MINIMUM_GAIN = 1.2;
