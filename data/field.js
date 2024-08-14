@@ -3,6 +3,24 @@ import { Position, Direction } from "./position.js";
 import { sortByKey } from "../utils.js";
 
 const VERBOSE = false;
+
+/**
+ * Represents the game field where the agents move
+ * and contains the functions to interact with it
+ *
+ * @param {number} width width of the field
+ * @param {number} height height of the field
+ * @param {Array} tiles array of tiles
+ *
+ * @property {number} width width of the field
+ * @property {number} height height of the field
+ * @property {Array} field 2D array of tiles
+ * @property {Array} parcelSpawners array of spawnable positions
+ * @property {Map} paths_cache cache of paths
+ * @property {number} cache_hits number of cache hits
+ * @property {number} cache_misses number of cache misses
+ * @property {number} hit_rate cache hit rate
+ */
 export class Field {
   init(width, height, tiles) {
     this.width = width;
@@ -14,6 +32,7 @@ export class Field {
     this.cache_misses = 0;
     this.hit_rate = 0;
 
+    // fill the field with tiles
     for (let i = 0; i < height; i++) {
       this.field[i] = [];
       for (let j = 0; j < width; j++) {
@@ -30,11 +49,14 @@ export class Field {
         this.field[i][j] = new Tile(pos, found, delivery);
       }
     }
+
+    // populate the parcel spawners list
     for (const t of tiles) {
       if (t.parcelSpawner) {
         this.parcelSpawners.push(new Position(t.x, t.y));
       }
     }
+
     //load neighbors
     for (let i = 0; i < this.height; i++) {
       for (let j = 0; j < this.width; j++) {
@@ -43,9 +65,17 @@ export class Field {
         }
       }
     }
+
+    //load delivery zones
     this.deliveryZones = this.getDeliveryZones();
   }
 
+  /**
+   * Returns a synthetic representation of the map
+   * used by the dashboard
+   *
+   * @returns {Array} array of the tiles
+   */
   getMap() {
     let tiles = [];
     for (let i = 0; i < this.height; i++) {
@@ -65,60 +95,29 @@ export class Field {
     return tiles;
   }
 
+  /**
+   * Returns the tile at a given position
+   *
+   * @param {Position} pos position of the tile
+   *
+   * @returns {Tile} tile at the given position
+   */
   getTile(pos) {
     if (pos.x < 0 || pos.x >= this.width || pos.y < 0 || pos.y >= this.height) {
       console.log("Tile out of bounds");
       return -1;
     }
     let tile = this.field[pos.y][pos.x];
-    //console.log("TL:", this.field[pos.y][pos.x].position);
-    if (tile == undefined) {
-      console.log("Tile is null: ", pos);
-      aaaa = 3;
-    }
     return tile;
   }
 
-  printMap() {
-    for (let i = 0; i < this.height; i++) {
-      let row = "";
-      for (let j = 0; j < this.width; j++) {
-        if (this.field[i][j].walkable) {
-          row += "O ";
-        } else {
-          row += "  ";
-        }
-      }
-      VERBOSE && console.log(row);
-    }
-  }
-
-  printPath(start, end, path) {
-    let s = "   ";
-    for (let i = 1; i <= this.width; i += 1) {
-      s += i - 1 + " ".repeat(2 - i / 10);
-    }
-    VERBOSE && console.log(s);
-
-    for (let i = 0; i < this.height; i++) {
-      let row = i + " " + " ".repeat(2 - (i + 1) / 10);
-      for (let j = 0; j < this.width; j++) {
-        if (i == start.y && j == start.x) {
-          row += "S ";
-        } else if (i == end.y && j == end.x) {
-          row += "E ";
-        } else if (path.includes(this.field[i][j].id)) {
-          row += "X ";
-        } else if (this.field[i][j].walkable) {
-          row += "O ";
-        } else {
-          row += "  ";
-        }
-      }
-      VERBOSE && console.log(row);
-    }
-  }
-
+  /**
+   * Returns the walkable neighbors of a given position
+   *
+   * @param {Position} pos position of the tile
+   *
+   * @returns {Array} array of walkable neighbors
+   */
   neighbors(pos) {
     let x = pos.x;
     let y = pos.y;
@@ -138,6 +137,16 @@ export class Field {
     return neighbors;
   }
 
+  /**
+   * Computes the shortest path between two positions using
+   * the Breadth First Search algorithm
+   *
+   * @param {Position} start start position
+   * @param {Position} end end position
+   * @param {Array} blocking_agents list of blocking agents (tiles to be avoided)
+   *
+   * @returns {Array} shortest path
+   */
   bfs(start, end, blocking_agents) {
     const par = {};
     const queue = [];
@@ -148,43 +157,31 @@ export class Field {
     let blocking = [];
     for (const a of blocking_agents.values()) {
       blocking.push(a.x + "-" + a.y);
-      //console.log("Blocking: ", blocking);
     }
 
+    // creates a unique cache entry for the combination of start, end and blocking agents
     blocking = blocking.sort();
     let entry = start.id + "_" + end.id + "_" + blocking.join("_");
+
+    // check if the path is already in the cache
     if (CACHE) {
-      // console.log("Blocking: ", blocking);
-
-      // console.log("Blocking_sort: ", blocking);
-      // console.log("Start: ", start.id);
-      // console.log("End: ", end.id);
-
-      // let hit = false;
       if (this.paths_cache.has(entry)) {
         this.cache_hits += 1;
-        // console.log("CACHE HIT ", this.cache_hits);
-        // hit = true;
-        // console.log(
-        //   "HIT RATE: ",
-        //   Math.round((this.cache_hits / this.paths_cache.size) * 10000) / 100,
-        //   "%"
-        // );
-
         return this.paths_cache.get(entry);
       } else {
         this.cache_misses += 1;
       }
     }
 
+    // check whether the start or end tile is unreachable
     if (
       this.isTileUnreachable(start, blocking) ||
       this.isTileUnreachable(end, blocking)
     ) {
-      //console.log("BFS: Start or End tile is unreachable");
       return -1;
     }
 
+    // BFS
     distance[start.id] = 0;
     queue.push(this.getTile(start.position));
     while (queue.length > 0) {
@@ -198,14 +195,9 @@ export class Field {
             distance[n_tile.id] = distance[node.id] + 1;
             queue.push(n_tile);
           }
-        } else {
-          //console.log("Tile " + n.x + "-" + n.y + " is blocked");
         }
-
-        //console.log(n.x + "-" + n.y);
       }
     }
-    VERBOSE && console.log(distance[end.id]);
 
     let path = [];
     let currentNode = end.id;
@@ -217,24 +209,25 @@ export class Field {
 
     if (path.length <= 1) {
       if (!start.position.equals(end.position)) {
-        //console.log("GAWD DAMN it. Path is empty");
         path = -1;
-      } else {
-        //console.log("Start and end are the same");
       }
     }
 
-    // console.log("Path: ", path);
-
-    // if (!hit) {
+    // if cache is enabled, store the path in the cache
     if (CACHE) {
       this.paths_cache.set(entry, path);
     }
-    // }
-
     return path;
   }
 
+  /**
+   * Returns the closest delivery zones to a given position
+   *
+   * @param {Position} pos starting position
+   * @param {Array} blocking_agents list of blocking agents (tiles to be avoided)
+   *
+   * @returns {Array} array of closest delivery zones
+   */
   getClosestDeliveryZones(pos, blocking_agents) {
     const x = pos.x;
     const y = pos.y;
@@ -259,19 +252,31 @@ export class Field {
     return closest;
   }
 
+  /**
+   * Returns all delivery zones in the field
+   *
+   * @returns {Array} array of delivery zones
+   */
   getDeliveryZones() {
     const positions = [];
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
         if (this.field[y][x].delivery) {
           positions.push(new Position(x, y));
-          VERBOSE && console.log("Found delivery zone at ", x, y);
         }
       }
     }
     return positions;
   }
 
+  /**
+   * Returns a random spawnable position
+   *
+   * @param {Position} player_position position of the player
+   * @param {Array} blocking_agents list of blocking agents (tiles to be avoided)
+   *
+   * @returns {Array} path to the spawnable position
+   */
   getRandomSpawnable(player_position, blocking_agents) {
     // console.log("Looking for a SPAWNABLE tile from ", player_position);
     const randomOrder = this.parcelSpawners.sort(() => Math.random() - 0.5);
@@ -282,10 +287,18 @@ export class Field {
         return path;
       }
     }
-
     return -1;
   }
 
+  /**
+   * Checks whether a tile is null, not walkable, under a blocking agent
+   * or unreachable from its neighbors
+   *
+   * @param {Tile} tile tile to be checked
+   * @param {Array} blocking list of blocking agents (tiles to be avoided)
+   *
+   * @returns {boolean} whether the tile is unreachable
+   */
   isTileUnreachable(tile, blocking = []) {
     if (blocking.includes(tile.id) && blocking.length > 0) {
       return true;

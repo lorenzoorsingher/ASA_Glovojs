@@ -247,6 +247,11 @@ setInterval(() => {
 
 let start = Date.now();
 
+/**
+ * Main loop for the agents
+ *
+ * @param {Rider} rider
+ */
 async function loop(rider) {
   // main loop
   while (true) {
@@ -319,16 +324,16 @@ async function loop(rider) {
 
             try {
               rider.player_parcels.set(
-                rider.nextAction.bestParcel,
-                parcels.get(rider.nextAction.bestParcel).reward
+                rider.nextAction.action_parcel,
+                parcels.get(rider.nextAction.action_parcel).reward
               );
-              parcels.delete(rider.nextAction.bestParcel);
+              parcels.delete(rider.nextAction.action_parcel);
             } catch (error) {
               rider.log(
                 "Parcel either expired or was deleted while executing plan."
               );
             }
-            rider.log("PICKING UP ", rider.nextAction.bestParcel);
+            rider.log("PICKING UP ", rider.nextAction.action_parcel);
             break;
           case ActionType.PUTDOWN:
             rider.log("PUTTING DOWN");
