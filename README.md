@@ -55,11 +55,11 @@
 - [ ] make sure cache doesn't get too big
 - [ ] penalize riders that don't deliver for too long (exp in case of non-decaying parcels)
 - [ ] add replanning when parcels are stolen
-- [ ] clean code
-- [ ] search&destroy legacy variables
-- [ ] reimplement parcel decay in fitness
-- [ ] is the dummy_parcel in builGraphInOut even needed? (might be a leftover from the old implementation)
-- [ ] make sure chances are computed correctly in rouletteWheel, in particular in case of negative fit (for the moment I set a lower bound for fitness as -Infinity screws with the probabilities and removed the rounding of the chances) THIS MUST BE VERIFIED
-- [ ] dynamically change STEP_COST and penalities based on the config
+- [x] clean code
+- [x] search&destroy legacy variables
+- [x] reimplement parcel decay in fitness
+- [x] is the dummy_parcel in builGraphInOut even needed? (might be a leftover from the old implementation)
+- [x] make sure chances are computed correctly in rouletteWheel, in particular in case of negative fit (for the moment I set a lower bound for fitness as -Infinity screws with the probabilities and removed the rounding of the chances) THIS MUST BE VERIFIED
+- [x] dynamically change STEP_COST and penalities based on the config
 - [ ] exponential decay for metrics might not be that beneficial
 - [x] reimplement parcels clock

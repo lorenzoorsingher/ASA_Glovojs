@@ -58,15 +58,16 @@ export class Genetic {
     this.config = config;
     console.log("Config received: ", this.config);
 
-    // this.parcel_decay = parseFloat(this.config.PARCEL_DECADING_INTERVAL);
-    // if (isNaN(this.parcel_decay)) {
-    //   if (this.config.PARCEL_DECADING_INTERVAL === "infinite") {
-    //     this.parcel_decay = Infinity;
-    //   } else {
-    //     this.parcel_decay = 0;
-    //   }
-    // }
-    // console.log("Parcel decay: ", this.parcel_decay);
+    let parcel_decay = parseFloat(this.config.PARCEL_DECADING_INTERVAL);
+    if (isNaN(parcel_decay)) {
+      if (this.config.PARCEL_DECADING_INTERVAL === "infinite") {
+        this.config.PARCEL_DECADING_INTERVAL = 10;
+      } else {
+        this.config.PARCEL_DECADING_INTERVAL = 0;
+      }
+    } else {
+      this.config.PARCEL_DECADING_INTERVAL = parcel_decay;
+    }
   }
 
   /**
@@ -360,7 +361,9 @@ export class Genetic {
   /**
    * Computes the cost of a step (going from one node to the next)
    * based on the cost of reaching the node and the current
-   * carrying capacity of the agent.
+   * carrying capacity of the agent. The penalty is dinamically
+   * computed based on the number of parcels the agent is carrying and
+   * the decay of the parcels.
    *
    * @param {number} cost_in - The cost of reaching the parcel
    * @param {number} curr_carr - The current carrying capacity of the agent
@@ -368,11 +371,10 @@ export class Genetic {
    * @returns {number} - The cost of the step
    */
   getStepCost(cost_in, curr_carr) {
-    // TODO: dynamically change STEP_COST and penalities
-    // based on the configuration
-    let LONG_TRIP_PENALITY = 0.2;
+    let decay_bonus = (this.config.PARCEL_DECADING_INTERVAL - 1) / 9;
 
-    let STEP_COST = 0.2 + LONG_TRIP_PENALITY;
+    let STEP_COST = 0.5 - decay_bonus * 0.2;
+
     let cost = cost_in * STEP_COST * (curr_carr + 1);
     return cost;
   }
