@@ -1,31 +1,30 @@
 import { Position, Direction } from "./position.js";
 
+/**
+ * Represents a tile in the field
+ *
+ * @param {Position} position position of the tile
+ * @param {boolean} walk it's a walkable tile
+ * @param {boolean} delivery it's a delivery zone
+ *
+ * @property {Position} position position of the tile
+ * @property {boolean} walkable it's a walkable tile
+ * @property {boolean} delivery it's a delivery zone
+ * @property {string} id unique identifier
+ * @property {Array} neighbors array of reachable neighbors
+ *
+ */
 export class Tile {
   constructor(position, walk, delivery) {
     this.position = position;
     this.walkable = walk;
-    this.hasAgent = false;
     this.delivery = delivery;
     this.id = Position.serialize(this.position);
     this.neighbors = [];
-
-    this.parcel = -1;
-  }
-
-  getX() {
-    return this.position.x;
-  }
-
-  getY() {
-    return this.position.y;
   }
 
   setNeighbors(neigh) {
     this.neighbors = neigh;
-  }
-
-  setAgent(bool) {
-    this.hasAgent = bool;
   }
 
   getNeighbors() {
