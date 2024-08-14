@@ -262,6 +262,8 @@ async function loop(rider) {
     if (rider.plan.length > 0) {
       // if the agent has completed the movement and brain has completed the plan
       if (hasCompletedMovement(rider.position) && !brain.planLock) {
+        // pick action from plan (depending on when planning was started
+        // agent might at the first or second step)
         if (rider.position.equals(rider.plan[0].source)) {
           rider.nextAction = rider.plan.shift();
         } else if (rider.plan.length > 1) {
@@ -272,7 +274,7 @@ async function loop(rider) {
             rider.log("No match found for next action");
             rider.log(rider.position);
             rider.log(rider.nextAction);
-            console.log(
+            rider.log(
               "should be ",
               rider.plan[0].source,
               " OR ",
@@ -283,6 +285,8 @@ async function loop(rider) {
           rider.log("Agent appears to be stuck on last move");
           rider.log("Retrying last move");
         }
+
+        //update agent position and target
         rider.src.set(rider.nextAction.source);
         rider.trg.set(rider.nextAction.target);
         rider.no_delivery++;
@@ -290,6 +294,7 @@ async function loop(rider) {
         // extract action information
         let move = Position.getDirectionTo(rider.src, rider.trg);
 
+        // check if the path is blocked
         if (rider.isPathBlocked()) {
           rider.trg.set(rider.position);
           rider.log("Agent in the way. Recalculating plan");
@@ -333,10 +338,6 @@ async function loop(rider) {
 
             if (!rider.putting_down && rider.carrying > 0) {
               rider.putting_down = true;
-              // rider.player_parcels.clear();
-              // rider.no_delivery = 0;
-              // rider.carrying = 0;
-              //brain.justDelivered(rider);
             }
             break;
         }
