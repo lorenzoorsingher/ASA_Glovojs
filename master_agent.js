@@ -196,15 +196,16 @@ setInterval(() => {
 
       if (rider.plan.length > 0) {
         for (const p of rider.plan) {
+          let move_id = Position.serialize(p.source);
           switch (p.type) {
             case ActionType.MOVE:
-              plan_move.push(p.source.serialize());
+              plan_move.push(move_id);
               break;
             case ActionType.PICKUP:
-              plan_pickup.push(p.source.serialize());
+              plan_pickup.push(move_id);
               break;
             case ActionType.PUTDOWN:
-              plan_drop.push(p.source.serialize());
+              plan_drop.push(move_id);
               break;
           }
         }

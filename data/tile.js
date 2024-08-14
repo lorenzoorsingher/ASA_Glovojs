@@ -6,7 +6,7 @@ export class Tile {
     this.walkable = walk;
     this.hasAgent = false;
     this.delivery = delivery;
-    this.id = position.serialize();
+    this.id = Position.serialize(this.position);
     this.neighbors = [];
 
     this.parcel = -1;
