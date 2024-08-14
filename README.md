@@ -46,11 +46,13 @@
 
 - [x] fix dashboard now highlighting all the parcels to be picked up
 - [x] fix plans swapping between agents (might be an indexing issue)
-- [?] fix agent not seeing (?) parcel when in the same cell (might be due to delayed replanning)
-- [ ] make sure a valid plan is created if one agent has no reachable parcels
+- [x] make sure a valid plan is created if one agent has no reachable parcels
+- [x] make sure in geneticTSP when one rider has no nodes (so zero genes) it doesn't happen that a random plan is generated for ALL riders.
+- [?] fix agent not seeing (?) parcel when in the same cell (might be due to delayed replanning OR too short bfs)
 
 - [ ] fix order of parcels in plan generation
 - [ ] add caching system for bfs
+- [ ] make sure cache doesn't get too big
 - [ ] penalize riders that don't deliver for too long (exp in case of non-decaying parcels)
 - [ ] add replanning when parcels are stolen
 - [ ] clean code
@@ -59,4 +61,3 @@
 - [ ] is the dummy_parcel in builGraphInOut even needed? (might be a leftover from the old implementation)
 - [ ] make sure chances are computed correctly in rouletteWheel, in particular in case of negative fit (for the moment I set a lower bound for fitness as -Infinity screws with the probabilities and removed the rounding of the chances) THIS MUST BE VERIFIED
 - [ ] dynamically change STEP_COST and penalities based on the config
-- [ ] make sure in geneticTSP when one rider has no nodes (so zero genes) it doesn't happen that a random plan is generated for ALL riders.
