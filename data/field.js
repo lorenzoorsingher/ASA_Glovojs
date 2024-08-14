@@ -47,24 +47,6 @@ export class Field {
     this.deliveryZones = this.getDeliveryZones();
   }
 
-  setParcels(perceived_parcels) {
-    this.update_map();
-    for (const p of perceived_parcels) {
-      if (p.carriedBy == null) {
-        this.field[p.y][p.x].setParcel(p.reward);
-        //console.log(this.field[p.y][p.x]);
-      }
-    }
-  }
-
-  update_map() {
-    for (let i = 0; i < this.height; i++) {
-      for (let j = 0; j < this.width; j++) {
-        this.field[i][j].parcel = -1;
-      }
-    }
-  }
-
   getMap() {
     let tiles = [];
     for (let i = 0; i < this.height; i++) {
@@ -77,7 +59,6 @@ export class Field {
         if (this.field[i][j].delivery) {
           cell["type"] = "D";
         }
-        cell["parcel"] = this.field[i][j].parcel;
         tiles[i][j] = cell;
       }
     }

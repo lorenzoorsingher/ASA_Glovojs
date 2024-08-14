@@ -24,10 +24,6 @@ export class Tile {
     this.neighbors = neigh;
   }
 
-  setParcel(parcel_score) {
-    this.parcel = parcel_score;
-  }
-
   setAgent(bool) {
     this.hasAgent = bool;
   }
