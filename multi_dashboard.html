@@ -8,7 +8,7 @@
     <title>dashboard</title>
   </head>
   <body>
-    <h1>Dashboard</h1>
+    <h1>GlovoJS</h1>
 
     <div id="mapdiv">
       <table
@@ -22,11 +22,7 @@
     <div id="carrying"></div>
     <div id="carrying_points"></div>
 
-    <div id="carry_div">
-      <!-- <table style="border: 1px solid black" id="my_carry_table">
-        <tbody id="carry_table"></tbody>
-      </table> -->
-    </div>
+    <div id="carry_div"></div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -43,8 +39,22 @@
         parcels = data["parc"];
         riders = data["riders"];
 
-        let pathcolors = ["blue", "violet", "grey", "darkgreen"];
-        let ridercolor = ["lightblue", "pink", "lightgrey", "MediumSeaGreen"];
+        let pathcolors = [
+          "blue",
+          "violet",
+          "grey",
+          "darkgreen",
+          "black",
+          "white",
+        ];
+        let ridercolor = [
+          "lightblue",
+          "pink",
+          "lightgrey",
+          "MediumSeaGreen",
+          "darkgrey",
+          "white",
+        ];
         //   document.getElementById('info').innerHTML = "<div><h2>"+plan_target+"</h2><div>";
 
         //   document.getElementById('carrying').innerHTML = "<div>"+rider_parcels.map((el, idx) => {

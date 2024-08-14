@@ -39,7 +39,7 @@ let PARCEL_DECAY = 1000;
 
 // create riders
 let riders = [];
-let names = ["BLUE", "PINK", "GREY"];
+let names = ["BLUE", "PINK", "GREY", "GREEN", "BLACK", "WHITE"];
 for (let i = 0; i < NRIDERS; i++) {
   //let uname = Math.random().toString(36).substring(5) + "_" + pop + "_" + gen;
   let uname = names[i] + "_" + POP + "_" + GEN;
@@ -91,19 +91,17 @@ riders.forEach((rider, index) => {
     for (const [key, value] of parcels.entries()) {
       let parc_pos = new Position(value.x, value.y);
       let found = false;
-      for (const r of riders) {
-        let dist = manhattanDistance(r.position, parc_pos);
+      let dist = manhattanDistance(rider.position, parc_pos);
 
-        if (dist < r.config.PARCELS_OBSERVATION_DISTANCE) {
-          for (const p of perceived_parcels) {
-            if (p.id == key && p.carriedBy == null) {
-              found = true;
-              break;
-            }
+      if (dist < rider.config.PARCELS_OBSERVATION_DISTANCE) {
+        for (const p of perceived_parcels) {
+          if (p.id == key && p.carriedBy == null) {
+            found = true;
+            break;
           }
-          if (!found) {
-            parcels.delete(key);
-          }
+        }
+        if (!found) {
+          parcels.delete(key);
         }
       }
     }
