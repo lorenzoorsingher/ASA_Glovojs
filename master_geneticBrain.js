@@ -14,16 +14,16 @@ import { sortByKey } from "./utils.js";
  * account the rewards of the parcels and and the cost of reaching them.
  *
  * @property {Array} riders - The list of all the controlled agents
- * @property {Number} nriders - The number of controlled agents
+ * @property {number} nriders - The number of controlled agents
  * @property {Object} config - The configuration object received from the server
  * @property {Field} field - The field object containing the map
  * @property {Map} parcels - The map of all the parcels on the field
- * @property {Number} pop - The size of the population for the genetic algorithm
- * @property {Number} gen - The number of generations for the genetic algorithm
- * @property {Number} plan_fit - The fitness of the current plan
+ * @property {number} pop - The size of the population for the genetic algorithm
+ * @property {number} gen - The number of generations for the genetic algorithm
+ * @property {number} plan_fit - The fitness of the current plan
  * @property {Boolean} planLock - A flag to prevent multiple plans from being generated
- * @property {Number} tot_time - The total time spent generating plans [metrics]
- * @property {Number} tot_plans - The total number of plans generated [metrics]
+ * @property {number} tot_time - The total time spent generating plans [metrics]
+ * @property {number} tot_plans - The total number of plans generated [metrics]
  */
 export class Genetic {
   constructor(riders, field, parcels, pop, gen) {
@@ -225,7 +225,7 @@ export class Genetic {
    *
    * @param {Array} population - The population of the genetic algorithm
    * @param {Array} scores - The scores of the population
-   * @param {Number} elite_rate - The percentage of the population to be considered elite
+   * @param {number} elite_rate - The percentage of the population to be considered elite
    *
    * @returns {Array} - The elite individuals
    */
@@ -362,10 +362,10 @@ export class Genetic {
    * based on the cost of reaching the node and the current
    * carrying capacity of the agent.
    *
-   * @param {Number} cost_in - The cost of reaching the parcel
-   * @param {Number} curr_carr - The current carrying capacity of the agent
+   * @param {number} cost_in - The cost of reaching the parcel
+   * @param {number} curr_carr - The current carrying capacity of the agent
    *
-   * @returns {Number} - The cost of the step
+   * @returns {number} - The cost of the step
    */
   getStepCost(cost_in, curr_carr) {
     // TODO: dynamically change STEP_COST and penalities
@@ -455,10 +455,10 @@ export class Genetic {
    *
    * @param {Array} riders_graphs - The graphs for each rider
    * @param {Array} delivery_only_fits - The delivery-only fits
-   * @param {Number} pop_size - The size of the population
-   * @param {Number} gen_num - The number of generations
-   * @param {Number} mutation_rate - The mutation rate
-   * @param {Number} elite_rate - The elite rate
+   * @param {number} pop_size - The size of the population
+   * @param {number} gen_num - The number of generations
+   * @param {number} mutation_rate - The mutation rate
+   * @param {number} elite_rate - The elite rate
    *
    * @returns {[Array, Number]} - The generated plan and its fitness
    */

@@ -83,7 +83,7 @@ riders.forEach((rider, index) => {
 
   rider.client.onYou(({ id, name, x, y, score }) => {
     if (!rider.player_init) {
-      rider.init(id, name, score, new Position(x, y), brain);
+      rider.init(id, name, new Position(x, y), brain);
       rider.player_init = true;
       rider.trg.set(rider.position);
       if (rider.position.x % 1 != 0.0 || rider.position.y % 1 != 0.0) {
