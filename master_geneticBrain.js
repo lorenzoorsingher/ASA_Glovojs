@@ -82,14 +82,6 @@ export class Genetic {
    */
   builGraphInOut(rider) {
     let prep_parcels = [];
-    // let copy_parcels = new Map(this.parcels);
-
-    // let dummy_parcel = {
-    //   x: rider.trg.x,
-    //   y: rider.trg.y,
-    //   reward: -Infinity,
-    // };
-    // copy_parcels.set("rider", dummy_parcel);
 
     // prepare each parcel for the graph
     for (const [key, p] of this.parcels.entries()) {
@@ -615,23 +607,31 @@ export class Genetic {
     return [best_dna, best_fit];
   }
 
+  /**
+   * The function will check if the rider is carrying parcels, if so
+   * it will try to generate a plan to deliver them. If no delivery zones
+   * are reachable or the rider is not carrying any parcels, the function
+   * will generate a plan to move to a random spawnable tile.
+   * If these options are not available, the function will return a
+   * reflexive move.
+   *
+   * @param {Rider} rider
+   * @returns {Array} - The sequence of actions for the backup plan
+   */
   backupPlan(rider) {
     let rew = 1;
 
     let path_to_closest = -1;
     let path_to_spawnable = -1;
-    if (Array.from(rider.player_parcels).length > 0) {
-      for (const par of Array.from(rider.player_parcels)) {
-        rew += par[1];
-      }
 
+    // if rider is carrying parcels, generate a plan to deliver them
+    // otherwise generate a plan to move to a random spawnable tile
+    if (rider.carrying > 0) {
+      rew += rider.carrying;
       console.log("Agent is packing, going to closest delivery zone");
 
       let closest = this.field.getClosestDeliveryZones(
-        {
-          x: rider.trg.x,
-          y: rider.trg.y,
-        },
+        rider.trg,
         rider.blocking_agents
       );
 
@@ -649,13 +649,6 @@ export class Genetic {
     }
 
     let actions = [];
-    // let starting_action = new Action(
-    //   rider.src,
-    //   rider.trg,
-    //   ActionType.MOVE,
-    //   null
-    // );
-    // actions.push(starting_action);
 
     if (path_to_closest != -1) {
       console.log("[BACKUP] A reachable delivery zone was found!");
@@ -700,8 +693,6 @@ export class Genetic {
         ActionType.MOVE,
         null
       );
-      // console.log("Starting action inserted");
-      // plan.push(starting_action);
       actions = [
         starting_action,
         new Action(
@@ -712,11 +703,6 @@ export class Genetic {
         ),
       ];
     }
-    //assa = 3;
-
-    // for (const act of actions) {
-    //   act.printAction();
-    // }
 
     console.log("[BRAIN] Generated BACKUP plan with rew ", rew);
     return [actions, rew];
@@ -917,6 +903,12 @@ export class Genetic {
     }
     return [all_plans, best_fit];
   }
+
+  /**
+   * This is the function agents will call to generate a new plan.
+   * A plan will be created and if it satisfies the fitness condition
+   * it will be accepted, otherwise it will be rejected.
+   */
   newPlan() {
     if (this.planLock) {
       console.log("Brain is already planning...");
@@ -942,7 +934,7 @@ export class Genetic {
       ) / 100,
       "%"
     );
-    let MINIMUM_GAIN = 1.2;
+    const MINIMUM_GAIN = 1.2;
     if (best_fit > this.plan_fit * MINIMUM_GAIN || this.plan_fit == 0) {
       this.plan_fit = best_fit;
 
@@ -958,6 +950,12 @@ export class Genetic {
     this.planLock = false;
   }
 
+  /**
+   *  This is a utility function used to print the matrix of costs
+   *  representing the graph of the parcels used by the genetic algorithm.
+   *
+   * @param {Array.Array} mat
+   */
   printMat(mat) {
     let str = "\\ \t";
     for (let i = 0; i < mat.length; i++) {
