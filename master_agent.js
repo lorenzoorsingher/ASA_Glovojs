@@ -33,11 +33,10 @@ const dashboard = new MyServer(port);
 
 let map_init = false;
 const map = new Field();
-let all_parcels = [];
 // contains all non-carried parcels
 const parcels = new Map();
 
-const NRIDERS = 3;
+const NRIDERS = 1;
 let PARCEL_DECAY = 1000;
 let riders = [];
 
@@ -95,10 +94,13 @@ riders.forEach((rider, index) => {
   });
 
   rider.client.onParcelsSensing(async (perceived_parcels) => {
-    map.setParcels(perceived_parcels);
-    all_parcels = perceived_parcels.slice();
+    // TODO: do we need this?
+    // map.setParcels(perceived_parcels);
+
     let parc_before = Array.from(parcels.keys());
 
+    // if memorized parcels in the sensing range are not present
+    // anymore, remove them from the parcels list
     for (const [key, value] of parcels.entries()) {
       let parc_pos = new Position(value.x, value.y);
       let found = false;
@@ -112,31 +114,29 @@ riders.forEach((rider, index) => {
               break;
             }
           }
+          if (!found) {
+            parcels.delete(key);
+          }
         }
-      }
-      if (!found) {
-        parcels.delete(key);
       }
     }
 
-    // update and add free parcels
+    // update and add free parcels and
+    // update rider parcels and carried value
+    let carried_parcels = new Map();
+    let carrying = 0;
     for (const p of perceived_parcels) {
       if (p.carriedBy == null) {
         parcels.set(p.id, p);
-      }
-    }
-
-    // update rider parcels and carried value
-
-    let carried_parcels = new Map();
-    let carrying = 0;
-    for (const p of all_parcels) {
-      if (p.carriedBy == rider.id) {
+      } else if (p.carriedBy == rider.id) {
         carried_parcels.set(p.id, p.reward);
         carrying += p.reward;
       }
     }
 
+    // if rider is in the process of putting down and the
+    // sensing reveals that the rider is not carrying any parcels,
+    // confirm delivery and ask for new plan. Otherwise, update carrying value
     if (rider.putting_down) {
       if (carrying <= 0) {
         rider.carrying = 0;
@@ -151,16 +151,13 @@ riders.forEach((rider, index) => {
       rider.carrying = carrying;
       rider.player_parcels = carried_parcels;
     }
-    // console.log(
-    //   "PARCEL SENSING-------------------------------------------------------------------------------------"
-    // );
 
     let parc_after = Array.from(parcels.keys());
 
+    // if parcels have changed during the sensing, recalculate plan
     let changed = JSON.stringify(parc_before) != JSON.stringify(parc_after);
     if (changed) {
       console.log("Parcels changed. Recalculating plan");
-
       brain.newPlan();
     }
   });
@@ -177,28 +174,23 @@ riders.forEach((rider, index) => {
   });
 });
 
-// // PARCELS CLOCK
-// setInterval(() => {
-//   for (const [key, value] of parcels.entries()) {
-//     value.reward--;
-//     if (value.reward <= 0) {
-//       parcels.delete(key);
-//     } else {
-//       parcels.set(key, value);
-//     }
-//   }
-
-//   riders.forEach((rider) => {
-//     for (let [key, value] of rider.player_parcels.entries()) {
-//       value--;
-//       if (value <= 0) {
-//         rider.player_parcels.delete(key);
-//       } else {
-//         rider.player_parcels.set(key, value);
-//       }
-//     }
-//   });
-// }, PARCEL_DECAY);
+// PARCELS CLOCK
+setInterval(() => {
+  riders.forEach((rider) => {
+    for (const [key, value] of parcels.entries()) {
+      let parc_pos = new Position(value.x, value.y);
+      let dist = manhattanDistance(rider.position, parc_pos);
+      if (dist >= rider.config.PARCELS_OBSERVATION_DISTANCE) {
+        value.reward--;
+        if (value.reward <= 0) {
+          parcels.delete(key);
+        } else {
+          parcels.set(key, value);
+        }
+      }
+    }
+  });
+}, PARCEL_DECAY);
 
 // let lastPosition = new Position(0, 0);
 // // HARD RESET

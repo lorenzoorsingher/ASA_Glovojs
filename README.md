@@ -62,3 +62,4 @@
 - [ ] make sure chances are computed correctly in rouletteWheel, in particular in case of negative fit (for the moment I set a lower bound for fitness as -Infinity screws with the probabilities and removed the rounding of the chances) THIS MUST BE VERIFIED
 - [ ] dynamically change STEP_COST and penalities based on the config
 - [ ] exponential decay for metrics might not be that beneficial
+- [x] reimplement parcels clock
