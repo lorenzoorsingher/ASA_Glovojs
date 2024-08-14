@@ -1,65 +1,59 @@
 console.log("Starting...");
-// import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 import { Field } from "./data/field.js";
 import { Position } from "./data/position.js";
-// import { Genetic } from "./multi_geneticBrain.js";
 import { MyServer } from "./server.js";
 import { Action, ActionType } from "./data/action.js";
 import { Rider } from "./master_rider.js";
 import { Genetic } from "./master_geneticBrain.js";
 
+import { manhattanDistance, hasCompletedMovement } from "./utils.js";
+
 export const VERBOSE = false;
 const LOCAL = true;
 
-// let pop = 300;
-// let gen = 30;
-// let port = 3000;
-let [pop, gen, port] = process.argv.slice(2);
-if (pop == undefined) {
-  pop = 100;
+let [NRIDERS, POP, GEN, PORT] = process.argv.slice(2);
+if (NRIDERS == undefined) {
+  NRIDERS = 1;
 }
-if (gen == undefined) {
-  gen = 30;
+if (POP == undefined) {
+  POP = 100;
 }
-
-if (port == undefined) {
-  port = 3000;
+if (GEN == undefined) {
+  GEN = 30;
 }
 
-console.log("Population: ", pop);
-console.log("Generations: ", gen);
+if (PORT == undefined) {
+  PORT = 3000;
+}
 
-const dashboard = new MyServer(port);
+console.log("Population: ", POP);
+console.log("Generations: ", GEN);
+
+const dashboard = new MyServer(PORT);
 
 let map_init = false;
-const map = new Field();
-// contains all non-carried parcels
-const parcels = new Map();
+const map = new Field(); // contains the game map
+const parcels = new Map(); // contains all non-carried parcels
 
-const NRIDERS = 1;
 let PARCEL_DECAY = 1000;
-let riders = [];
-
-let names = ["BLUE", "PINK", "GREY"];
 
 // create riders
+let riders = [];
+let names = ["BLUE", "PINK", "GREY"];
 for (let i = 0; i < NRIDERS; i++) {
   //let uname = Math.random().toString(36).substring(5) + "_" + pop + "_" + gen;
-  let uname = names[i] + "_" + pop + "_" + gen;
+  let uname = names[i] + "_" + POP + "_" + GEN;
   riders.push(new Rider(uname));
 }
 
 //create brain with associated riders
-let brain = new Genetic(riders, map, parcels, pop, gen);
-
-let RESET_TIMEOUT = 50;
+let brain = new Genetic(riders, map, parcels, POP, GEN);
 
 // set up sensings for all riders
 riders.forEach((rider, index) => {
   rider.client.onConfig((config) => {
     rider.setConfig(config);
     brain.setConfig(config);
-    RESET_TIMEOUT = config.RESET_TIMEOUT;
 
     if (config.PARCEL_DECADING_INTERVAL == "infinite") {
       PARCEL_DECAY = Infinity;
@@ -85,18 +79,11 @@ riders.forEach((rider, index) => {
       rider.init(id, name, new Position(x, y), brain);
       rider.player_init = true;
       rider.trg.set(rider.position);
-      if (rider.position.x % 1 != 0.0 || rider.position.y % 1 != 0.0) {
-        console.log("DESYNC");
-        azz = 8;
-      }
     }
     rider.updatePosition(x, y);
   });
 
   rider.client.onParcelsSensing(async (perceived_parcels) => {
-    // TODO: do we need this?
-    // map.setParcels(perceived_parcels);
-
     let parc_before = Array.from(parcels.keys());
 
     // if memorized parcels in the sensing range are not present
@@ -163,10 +150,13 @@ riders.forEach((rider, index) => {
   });
 
   rider.client.onAgentsSensing(async (perceived_agents) => {
+    // if other agents are within BLOCKING_DISTANCE blocks
+    // of the rider, add them to its blocking_agents list
     rider.blocking_agents.clear();
+    let BLOCKING_DISTANCE = 100;
     for (const a of perceived_agents) {
       if (a.name != "god") {
-        if (manhattanDistance(rider.position, a) < 100) {
+        if (manhattanDistance(rider.position, a) < BLOCKING_DISTANCE) {
           rider.blocking_agents.set(a.id, a);
         }
       }
@@ -177,6 +167,7 @@ riders.forEach((rider, index) => {
 // PARCELS CLOCK
 setInterval(() => {
   riders.forEach((rider) => {
+    // reduce reward of parcels that are not in the sensing range
     for (const [key, value] of parcels.entries()) {
       let parc_pos = new Position(value.x, value.y);
       let dist = manhattanDistance(rider.position, parc_pos);
@@ -192,28 +183,10 @@ setInterval(() => {
   });
 }, PARCEL_DECAY);
 
-// let lastPosition = new Position(0, 0);
-// // HARD RESET
-// setInterval(() => {
-//   if (lastPosition.equals(rider.position)) {
-//     console.log("HARD RESET--------------------------------------------------");
-//     if (hasCompletedMovement(rider.position)) {
-//       trg = rider.position;
-//     }
-//     rider.plan_fit = 0;
-//     //rider.parcels.clear();
-//     newPlan();
-//   } else {
-//     //console.log("NO RESET");
-//   }
-//   lastPosition.x = rider.position.x;
-//   lastPosition.y = rider.position.y;
-// }, RESET_TIMEOUT * Math.floor(Math.random() * 100) + 150);
-
 // DASHBOARD UPDATE
 setInterval(() => {
+  //organize all the logging data to be sent to the dashboard
   let update_map = map.getMap();
-
   let riders_data = [];
 
   riders.forEach((rider) => {
@@ -260,7 +233,6 @@ setInterval(() => {
     }
   });
   let dash_parcels = [];
-  // console.log("parcc ", parcels);
   for (const [key, p] of parcels.entries()) {
     dash_parcels.push({ x: p.x, y: p.y, reward: p.reward });
   }
@@ -272,22 +244,12 @@ setInterval(() => {
     parc: dash_parcels,
   };
 
-  //console.log(dash_data);
   dashboard.emitMessage("map", dash_data);
 }, 100);
-
-function manhattanDistance(a, b) {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-}
-
-function hasCompletedMovement(pos) {
-  return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
-}
 
 let start = Date.now();
 
 async function loop(rider) {
-  let stat = null;
   // main loop
   while (true) {
     // wait for map and player to be loaded
@@ -300,23 +262,12 @@ async function loop(rider) {
     if (rider.plan.length > 0) {
       // if the agent has completed the movement and brain has completed the plan
       if (hasCompletedMovement(rider.position) && !brain.planLock) {
-        // if the agent has reached the previous target, update the nextAction
-
-        // if (rider.plan[rider.plan.length - 1].source.x != rider.src.x) {
-        //   rider.log("DESYNC XDVR");
-        //   azz = 8;
-        // }
-
-        // rider.log("stat", stat);
-        // console.log("rider: ", rider.position);
         if (rider.position.equals(rider.plan[0].source)) {
           rider.nextAction = rider.plan.shift();
-          // console.log("action consumed 1");
         } else if (rider.plan.length > 1) {
           if (rider.position.equals(rider.plan[1].source)) {
             rider.nextAction = rider.plan.shift();
             rider.nextAction = rider.plan.shift();
-            // console.log("action consumed 2");
           } else {
             rider.log("No match found for next action");
             rider.log(rider.position);
@@ -327,8 +278,6 @@ async function loop(rider) {
               " OR ",
               rider.plan[1].source
             );
-            // rider.log("Retrying last move");
-            //aaa = 7;
           }
         } else {
           rider.log("Agent appears to be stuck on last move");
@@ -338,23 +287,11 @@ async function loop(rider) {
         rider.trg.set(rider.nextAction.target);
         rider.no_delivery++;
 
-        // rider.log(
-        //   "Trying to move to",
-        //   rider.trg,
-        //   " (from ",
-        //   rider.position,
-        //   ")"
-        // );
-
         // extract action information
         let move = Position.getDirectionTo(rider.src, rider.trg);
 
         if (rider.isPathBlocked()) {
           rider.trg.set(rider.position);
-          if (rider.position.x % 1 != 0.0 || rider.position.y % 1 != 0.0) {
-            rider.log("DESYNC");
-            azz = 8;
-          }
           rider.log("Agent in the way. Recalculating plan");
           brain.plan_fit = 0;
           brain.newPlan();
@@ -362,7 +299,7 @@ async function loop(rider) {
         }
 
         //avoid server spam
-        while (Date.now() - start < rider.config.MOVEMENT_DURATION) {
+        while (Date.now() - start < rider.config.MOVEMENT_DURATION / 2) {
           await new Promise((res) => setImmediate(res));
         }
         start = Date.now();
@@ -371,7 +308,7 @@ async function loop(rider) {
         switch (rider.nextAction.type) {
           case ActionType.MOVE:
             if (move != "none") {
-              stat = await rider.client.move(move);
+              await rider.client.move(move);
             }
             break;
           case ActionType.PICKUP:
@@ -420,6 +357,7 @@ async function loop(rider) {
   }
 }
 
+// start the loop for all riders
 for (let i = 0; i < riders.length; i++) {
   loop(riders[i]);
 }

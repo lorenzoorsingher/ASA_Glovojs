@@ -2,7 +2,6 @@ import { Tile } from "./tile.js";
 import { Position, Direction } from "./position.js";
 import { sortByKey } from "../utils.js";
 
-// import { VERBOSE } from "../agent.js";
 const VERBOSE = false;
 export class Field {
   init(width, height, tiles) {
@@ -285,10 +284,6 @@ export class Field {
     }
 
     return -1;
-  }
-
-  isDeliveryZone(pos) {
-    return this.field[pos.y][pos.x].delivery;
   }
 
   isTileUnreachable(tile, blocking = []) {
