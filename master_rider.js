@@ -4,7 +4,8 @@ import { Genetic } from "./master_geneticBrain.js";
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 
 /**
- * A rider is a player in the game.
+ * A rider is a player in the game. This class contains
+ * all the information about the player's state and actions.
  *
  * @param {string} uname The username of the rider
  *
@@ -27,8 +28,6 @@ import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
  * @property {Position} src the player's action source position
  * @property {Position} trg the player's action target position
  * @property {Action} nextAction the player's next action
- *
- *
  */
 export class Rider {
   constructor(uname) {
@@ -56,10 +55,10 @@ export class Rider {
 
   /**
    *
-   * @param {string} id
-   * @param {string} name
-   * @param {{x:number, y:number}} position
-   * @param {Genetic} brain
+   * @param {string} id  id of the rider
+   * @param {string} name  name of the rider
+   * @param {{x:number, y:number}} position  starting position of the rider
+   * @param {Genetic} brain  brain of the rider
    */
   init(id, name, position, brain) {
     this.id = id;
@@ -73,16 +72,29 @@ export class Rider {
     this.nextAction = null;
   }
 
+  /**
+   * @param {Map} config configuration of the game
+   */
   setConfig(config) {
     this.config = config;
     console.log("Config received: ", this.config);
   }
 
+  /**
+   * @param {number} x x coordinate of the player
+   * @param {number} y y coordinate of the player
+   */
   updatePosition(x, y) {
     this.position.x = x;
     this.position.y = y;
   }
 
+  /**
+   * Checks whether the target of the current action
+   * is blocked by another agent
+   *
+   * @returns {boolean} whether the target is blocked
+   */
   isPathBlocked() {
     let blocked = false;
     for (const a of this.blocking_agents.values()) {
@@ -94,6 +106,11 @@ export class Rider {
     return blocked;
   }
 
+  /**
+   * Function to log messages with the player's name
+   *
+   * @param  {...any} args arguments to log
+   */
   log(...args) {
     console.log("[", this.name, "] ", ...args);
   }
