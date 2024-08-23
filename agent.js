@@ -1,12 +1,12 @@
 console.log("Starting...");
 import { Field } from "./data/field.js";
 import { Position } from "./data/position.js";
-import { MyServer } from "./server.js";
+import { MyServer } from "./data/server.js";
 import { Action, ActionType } from "./data/action.js";
-import { Rider } from "./rider.js";
-import { Genetic } from "./geneticBrain.js";
+import { Rider } from "./data/rider.js";
+import { Genetic } from "./data/geneticBrain.js";
 
-import { manhattanDistance, hasCompletedMovement } from "./utils.js";
+import { manhattanDistance, hasCompletedMovement } from "./data/utils.js";
 
 export const VERBOSE = false;
 const LOCAL = true;

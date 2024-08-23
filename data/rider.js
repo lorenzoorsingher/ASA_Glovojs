@@ -1,5 +1,4 @@
-import { Position } from "./data/position.js";
-import { Action, ActionType } from "./data/action.js";
+import { Position } from "./position.js";
 import { Genetic } from "./geneticBrain.js";
 import { DeliverooApi } from "@unitn-asa/deliveroo-js-client";
 

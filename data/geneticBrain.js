@@ -1,6 +1,6 @@
-import { Position, Direction } from "./data/position.js";
-import { Action, ActionType } from "./data/action.js";
-import { Field } from "./data/field.js";
+import { Position, Direction } from "./position.js";
+import { Action, ActionType } from "./action.js";
+import { Field } from "./field.js";
 import { Rider } from "./rider.js";
 import { sortByKey } from "./utils.js";
 

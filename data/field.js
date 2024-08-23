@@ -1,6 +1,6 @@
 import { Tile } from "./tile.js";
 import { Position, Direction } from "./position.js";
-import { sortByKey } from "../utils.js";
+import { sortByKey } from "./utils.js";
 
 const VERBOSE = false;
 
