@@ -3,8 +3,8 @@ import { Field } from "./data/field.js";
 import { Position } from "./data/position.js";
 import { MyServer } from "./server.js";
 import { Action, ActionType } from "./data/action.js";
-import { Rider } from "./master_rider.js";
-import { Genetic } from "./master_geneticBrain.js";
+import { Rider } from "./rider.js";
+import { Genetic } from "./geneticBrain.js";
 
 import { manhattanDistance, hasCompletedMovement } from "./utils.js";
 
