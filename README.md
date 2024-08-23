@@ -6,6 +6,26 @@
 
 ## Project Structure
 
+```
+GlovoJS
+├── data
+│   ├── action.js
+│   ├── field.js
+│   ├── geneticBrain.js
+│   ├── position.js
+│   ├── rider.js
+│   ├── server.js
+│   ├── tile.js
+│   └── utils.js
+├── images
+├── agent.js
+├── dashboard.css
+├── index.js
+├── multi_dashboard.html
+├── package.json
+└── README.md
+```
+
 ## Implementation
 
 The system is implemented in JavaScript via Node.js, each component is implemented as a class and the main loop is implemented in agent.js, which is the entry point of the system. The main components are:
