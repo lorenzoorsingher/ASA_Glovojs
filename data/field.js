@@ -190,6 +190,13 @@ export class Field {
     return neighbors;
   }
 
+  bfs(couples, blocking_agents) {
+    return couples.map(couple => {
+      const path = this.bfsSingle(couple.start, couple.end, blocking_agents);
+      return { i: couple.i, j: couple.j, path: path };
+    });
+  }
+
   /**
    * Computes the shortest path between two positions using
    * the Breadth First Search algorithm
@@ -200,7 +207,7 @@ export class Field {
    *
    * @returns {Array} shortest path
    */
-  bfs(start, end, blocking_agents) {
+  bfsSingle(start, end, blocking_agents) {
     const par = {};
     const queue = [];
     const distance = {};
@@ -283,28 +290,23 @@ export class Field {
    * @returns {Array} array of closest delivery zones
    */
   getClosestDeliveryZones(pos, blocking_agents) {
-    const x = pos.x;
-    const y = pos.y;
+    console.log("Getting closest delivery zones for position:", pos);
 
     let closest = [];
 
     for (let d of this.deliveryZones) {
-      const path = this.bfs(
-        this.getTile(d),
-        this.getTile(pos),
-        blocking_agents
-      );
-      if (path != -1) {
-        const distance = path.length - 1;
-        closest.push({ x: d.x, y: d.y, distance: distance, path: path });
-      }
+        const bfsResult = this.bfs([{start: this.getTile(d), end: this.getTile(pos), i: 0, j: 0}], blocking_agents);
+        if (bfsResult.length > 0 && bfsResult[0].path !== -1) {
+            const path = bfsResult[0].path;
+            const distance = path.length - 1;
+            closest.push({ x: d.x, y: d.y, distance: distance, path: path });
+        }
     }
 
     closest = sortByKey(closest, "distance");
-    // console.log("Blocking: ", blocking_agents);
-    // console.log("Closest delivery zones: ", closest);
+    console.log("Closest delivery zones:", closest);
     return closest;
-  }
+}
 
   /**
    * Returns all delivery zones in the field
@@ -336,7 +338,12 @@ export class Field {
     const randomOrder = this.parcelSpawners.sort(() => Math.random() - 0.5);
     for (const spawner of randomOrder) {
       const tile = this.getTile(spawner);
-      let path = this.bfs(tile, this.getTile(player_position), blocking_agents);
+      let path = this.bfsWrapper([{
+        start: tile,
+        end: this.getTile(player_position),
+        i: 0,
+        j: 0
+    }], blocking_agents);
       if (path != -1) {
         return path;
       }
@@ -372,34 +379,73 @@ export class Field {
     return true;
   }
 
-  async bfsWrapper(start, end, blocking_agents) {
-    console.log("bfsWrapper called with start:", start, "end:", end);
+  async bfsWrapper(couples, blocking_agents) {
+    console.log("bfsWrapper called with couples:", JSON.stringify(couples, null, 2));
 
-    // Ensure start and end are Position objects
-    const startPos = start instanceof Tile ? start.position : (start instanceof Position ? start : new Position(start.x, start.y));
-    const endPos = end instanceof Tile ? end.position : (end instanceof Position ? end : new Position(end.x, end.y));
+    // Ensure couples is always an array
+    const couplesArray = Array.isArray(couples) ? couples : [couples];
 
-    // Round the start and end positions
-    const roundedStart = new Position(Math.round(startPos.x), Math.round(startPos.y));
-    const roundedEnd = new Position(Math.round(endPos.x), Math.round(endPos.y));
+    if (couplesArray.length === 0) {
+        console.warn("No valid couples provided to bfsWrapper");
+        return [];
+    }
+
+    const processedCouples = couplesArray.map((couple, index) => {
+        if (!couple || typeof couple !== 'object') {
+            console.warn(`Invalid couple at index ${index}:`, couple);
+            return null;
+        }
+
+        const startPos = couple.start instanceof Tile ? couple.start.position : 
+            (couple.start instanceof Position ? couple.start : new Position(couple.start.x, couple.start.y));
+        const endPos = couple.end instanceof Tile ? couple.end.position : 
+            (couple.end instanceof Position ? couple.end : new Position(couple.end.x, couple.end.y));
+
+        if (isNaN(startPos.x) || isNaN(startPos.y) || isNaN(endPos.x) || isNaN(endPos.y)) {
+            console.warn(`Invalid coordinates for couple at index ${index}:`, { start: startPos, end: endPos });
+            return null;
+        }
+
+        const roundedStart = new Position(Math.round(startPos.x), Math.round(startPos.y));
+        const roundedEnd = new Position(Math.round(endPos.x), Math.round(endPos.y));
+
+        return { ...couple, start: roundedStart, end: roundedEnd };
+    }).filter(couple => couple !== null);
+
+    if (processedCouples.length === 0) {
+        console.warn("No valid couples after processing in bfsWrapper");
+        return [];
+    }
 
     if (this.USE_PDDL) {
         try {
-            console.log("Calling bfs_pddl with rounded positions:", roundedStart, roundedEnd);
-            const path = await bfs_pddl(roundedStart, roundedEnd, blocking_agents);
-            
-            if (path === -1) {
-                console.log("PDDL-based BFS failed, falling back to standard BFS");
-                return this.bfs(roundedStart, roundedEnd, blocking_agents);
+            console.log("Calling bfs_pddl with processed couples:", JSON.stringify(processedCouples, null, 2));
+            const results = await bfs_pddl(processedCouples, blocking_agents);
+
+            if (results.length === 0) {
+                console.warn("bfs_pddl returned no results, falling back to standard BFS");
+                return this.bfs(processedCouples, blocking_agents);
             }
-            return path;
+
+            return results;
         } catch (error) {
             console.error("Error in PDDL-based BFS:", error);
-            console.log("Falling back to standard BFS");
-            return this.bfs(roundedStart, roundedEnd, blocking_agents);
+            console.log("Falling back to standard BFS for all");
+            return this.bfs(processedCouples, blocking_agents);
         }
     } else {
-        return this.bfs(roundedStart, roundedEnd, blocking_agents);
+        return this.bfs(processedCouples, blocking_agents);
     }
-  }
+}
+
+bfs(couples, blocking_agents) {
+    if (!Array.isArray(couples)) {
+        console.warn("bfs received non-array couples:", couples);
+        return [];
+    }
+    return couples.map(couple => {
+        const path = this.bfsSingle(couple.start, couple.end, blocking_agents);
+        return { i: couple.i, j: couple.j, path: path };
+    });
+}
 }

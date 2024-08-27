@@ -1,92 +1,129 @@
 import { onlineSolver } from "@unitn-asa/pddl-client";
 import { Position } from "../data/position.js";
+import { Action, ActionType } from "../data/action.js";
 import { map } from "../master_agent.js";
 
-export async function bfs_pddl(start, end, blocking_agents) {
-    console.log("bfs_pddl called with start:", start, "end:", end);
-    
-    try {
-        const startX = Math.round(start.x);
-        const startY = Math.round(start.y);
-        const endX = Math.round(end.x);
-        const endY = Math.round(end.y);
+export async function bfs_pddl(couplesInput, blocking_agents) {
+    console.log("bfs_pddl called with input:", couplesInput);
 
-        console.log("Rounded coordinates:", { startX, startY, endX, endY });
+    // Ensure couples is always an array
+    const couples = Array.isArray(couplesInput) ? couplesInput : [couplesInput];
+
+    try {
+        if (couples.length === 0) {
+            console.error("No valid couples provided");
+            return [];
+        }
 
         let initialState = [];
-        initialState.push(`(at t_${startX}_${startY})`);
+        let objectives = [];
+        let agentObjects = [];
 
+        // Process each couple
+        couples.forEach((couple, index) => {
+            if (!couple || !couple.start || !couple.end) {
+                console.error("Invalid couple:", couple);
+                return;
+            }
+
+            const { start, end, i, j } = couple;
+            const startX = Math.round(start.x);
+            const startY = Math.round(start.y);
+            const endX = Math.round(end.x);
+            const endY = Math.round(end.y);
+
+            const agentName = `agent${index}`;
+            agentObjects.push(`${agentName} - agent`);
+            initialState.push(`(at ${agentName} t_${startX}_${startY})`);
+            objectives.push(`(at ${agentName} t_${endX}_${endY})`);
+        });
+
+        // Add connected predicates from map.beliefSet
         for (let [belief, value] of map.beliefSet.entries) {
             if (value && belief.startsWith('connected')) {
                 initialState.push(`(${belief})`);
             }
         }
 
+        // Add blocking agents as obstacles
         for (let agent of blocking_agents) {
-            initialState.push(`(obstacle t_${agent.x}_${agent.y})`);
+            if (agent && typeof agent.x === 'number' && typeof agent.y === 'number' &&
+                !isNaN(agent.x) && !isNaN(agent.y)) {
+                initialState.push(`(obstacle t_${Math.round(agent.x)}_${Math.round(agent.y)})`);
+            }
         }
 
-        let objective_str = `(at t_${endX}_${endY})`;
-
-        let domainString = `\
-(define (domain BFS)
-  (:requirements :strips)
+        // Construct the PDDL domain string
+        let domainString = `
+(define (domain multi-agent-BFS)
+  (:requirements :strips :typing)
+  (:types agent location)
   (:predicates
-    (at ?pos)
-    (connected ?from ?to)
-    (obstacle ?pos)
+    (at ?a - agent ?pos - location)
+    (connected ?from ?to - location)
+    (obstacle ?pos - location)
   )
   (:action move
-    :parameters (?from ?to)
-    :precondition (and (at ?from) (connected ?from ?to) (not (obstacle ?to)))
-    :effect (and (not (at ?from)) (at ?to))
+    :parameters (?a - agent ?from ?to - location)
+    :precondition (and (at ?a ?from) (connected ?from ?to) (not (obstacle ?to)))
+    :effect (and (not (at ?a ?from)) (at ?a ?to))
   )
 )`;
 
-        let problemString = `\
-(define (problem bfs-problem)
-  (:domain BFS)
-  (:objects ${map.beliefSet.objects.join(' ')})
-  (:init ${initialState.join(' ')})
-  (:goal ${objective_str})
+        // Construct the PDDL problem string
+        let problemString = `
+(define (problem multi-agent-bfs-problem)
+  (:domain multi-agent-BFS)
+  (:objects
+    ${agentObjects.join(' ')}
+    ${map.beliefSet.objects.join(' ')} - location
+  )
+  (:init
+    ${initialState.join('\n    ')}
+  )
+  (:goal (and
+    ${objectives.join('\n    ')}
+  ))
 )`;
 
-        console.log("Domain:", domainString);
-        console.log("Problem:", problemString);
-        
+        // console.log("Domain:", domainString);
+        // console.log("Problem:", problemString);
+
         console.log("Calling PDDL solver...");
-        let pddlResult;
-        try {
-            pddlResult = await onlineSolver(domainString, problemString);
-        } catch (solverError) {
-            console.error("Error from PDDL solver:", solverError);
-            return -1;
-        }
+        let pddlResult = await onlineSolver(domainString, problemString);
 
         console.log("PDDL solver returned:", pddlResult);
 
         if (!pddlResult || !Array.isArray(pddlResult) || pddlResult.length === 0) {
-            console.log("No valid path found by PDDL solver");
-            return -1;
+            console.log("No valid paths found by PDDL solver");
+            return couples.map(() => ({ path: -1 }));
         }
 
-        let path = [`${start.x}-${start.y}`];
-        for (let action of pddlResult) {
-            if (action && typeof action.action === 'string' && Array.isArray(action.args) && action.args.length >= 2) {
-                let [_, to] = action.args;
-                if (typeof to === 'string') {
+        // Extract paths for each agent
+        let paths = couples.map((couple, index) => {
+            let agentName = `agent${index}`;
+            let path = [];
+            let previousPosition = new Position(Math.round(couple.start.x), Math.round(couple.start.y));
+            
+            for (let action of pddlResult) {
+                if (action && action.action === 'move' && action.args[0] === agentName) {
+                    let [_, __, to] = action.args;
                     let [prefix, x, y] = to.split('_');
                     if (x && y) {
-                        path.push(`${x}-${y}`);
+                        let newPosition = new Position(parseInt(x), parseInt(y));
+                        path.push(new Action(previousPosition, newPosition, ActionType.MOVE, null));
+                        previousPosition = newPosition;
                     }
                 }
             }
-        }
+            
+            return { i: couple.i, j: couple.j, path: path.length > 0 ? path : -1 };
+        });
 
-        console.log("PDDL path found:", path);
-        return path;
+        console.log("PDDL paths found:", paths);
+        return paths;
     } catch (error) {
         console.error("Error in bfs_pddl:", error);
-        return -1;
+        return couples.map(() => ({ path: -1 }));
     }
 }
