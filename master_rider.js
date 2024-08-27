@@ -70,6 +70,7 @@ export class Rider {
     this.src = new Position(position.x, position.y);
     this.trg = new Position(position.x, position.y);
     this.nextAction = null;
+    this.plan = [];
   }
 
   /**

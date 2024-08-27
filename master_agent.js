@@ -5,11 +5,14 @@ import { MyServer } from "./server.js";
 import { Action, ActionType } from "./data/action.js";
 import { Rider } from "./master_rider.js";
 import { Genetic } from "./master_geneticBrain.js";
+import { Beliefset } from "@unitn-asa/pddl-client";
 
 import { manhattanDistance, hasCompletedMovement } from "./utils.js";
+import { bfs_pddl } from "./planner/bfs_pddl.js";
 
 export const VERBOSE = false;
 const LOCAL = true;
+export const USE_PDDL = true;
 
 let [NRIDERS, POP, GEN, PORT] = process.argv.slice(2);
 if (NRIDERS == undefined) {
@@ -32,10 +35,35 @@ console.log("Generations: ", GEN);
 const dashboard = new MyServer(PORT);
 
 let map_init = false;
-const map = new Field(); // contains the game map
+const map = new Field(USE_PDDL); // contains the game map
 const parcels = new Map(); // contains all non-carried parcels
 
 let PARCEL_DECAY = 1000;
+
+class Intention {
+  goal;
+  type;
+  pickUp;
+  deliver;
+  stop;
+  reached;
+  started;
+  planner = { 'pickup': bfs_pddl }
+  move;
+
+  constructor(goal, pickUp = false, deliver = false, type, client) {
+    this.goal = goal;
+    this.pickUp = pickUp;
+    this.deliver = deliver;
+    this.type = type;
+    this.stop = false;
+    this.reached = false;
+    this.started = false;
+    this.move = {
+
+    }
+  }
+}
 
 // create riders
 let riders = [];
@@ -48,6 +76,8 @@ for (let i = 0; i < NRIDERS; i++) {
 
 //create brain with associated riders
 let brain = new Genetic(riders, map, parcels, POP, GEN);
+let agentsBeliefSet;
+let parcelsBeliefSet;
 
 // set up sensings for all riders
 riders.forEach((rider, index) => {
@@ -83,6 +113,8 @@ riders.forEach((rider, index) => {
     rider.updatePosition(x, y);
   });
 
+  parcelsBeliefSet = new Beliefset();
+
   rider.client.onParcelsSensing(async (perceived_parcels) => {
     let parc_before = Array.from(parcels.keys());
 
@@ -96,11 +128,13 @@ riders.forEach((rider, index) => {
       if (dist < rider.config.PARCELS_OBSERVATION_DISTANCE) {
         for (const p of perceived_parcels) {
           if (p.id == key && p.carriedBy == null) {
+            parcelsBeliefSet.declare(`parcel_t${p.x}_${p.y}`);
             found = true;
             break;
           }
         }
         if (!found) {
+          parcelsBeliefSet.undeclare(`parcel_t${value.x}_${value.y}`);
           parcels.delete(key);
         }
       }
@@ -147,20 +181,36 @@ riders.forEach((rider, index) => {
     }
   });
 
+  agentsBeliefSet = new Beliefset();
+
   rider.client.onAgentsSensing(async (perceived_agents) => {
     // if other agents are within BLOCKING_DISTANCE blocks
     // of the rider, add them to its blocking_agents list
+
+    // reset blocking agents every time the sensing is updated
     rider.blocking_agents.clear();
+    // clear belief set
+    // for (const a of perceived_agents) {
+    //   agentsBeliefSet.undeclare(`agent_t${a.x}_${a.y}`);
+    // }
+    // Undeclare all agents currently stored in the belief set
+    agentsBeliefSet.objects.forEach((obj) => {
+      agentsBeliefSet.undeclare(obj);
+    });
+
+
     let BLOCKING_DISTANCE = 100;
     for (const a of perceived_agents) {
       if (a.name != "god") {
         if (manhattanDistance(rider.position, a) < BLOCKING_DISTANCE) {
           rider.blocking_agents.set(a.id, a);
+          agentsBeliefSet.declare(`agent_t${a.x}_${a.y}`);
         }
       }
     }
   });
 });
+  
 
 // PARCELS CLOCK
 setInterval(() => {
@@ -220,7 +270,7 @@ setInterval(() => {
       let blk_agents = [];
       for (const blk of rider.blocking_agents.values()) {
         blk_agents.push(blk.x + "-" + blk.y);
-      }
+      }   
 
       riders_data.push({
         x: rider.position.x,
@@ -303,8 +353,21 @@ async function loop(rider) {
           rider.trg.set(rider.position);
           rider.log("Agent in the way. Recalculating plan");
           brain.plan_fit = 0;
-          brain.newPlan();
+          await brain.newPlan();
           continue;
+        }
+        
+        // Use the current position as start and the target as end
+        let start = new Position(Math.round(rider.position.x), Math.round(rider.position.y));
+        let end = new Position(rider.trg.x, rider.trg.y);
+        
+        let path = await map.bfsWrapper(start, end, rider.blocking_agents);
+        
+        if (path === -1) {
+            rider.log("No path found. Recalculating plan");
+            brain.plan_fit = 0;
+            await brain.newPlan();
+            continue;
         }
 
         //avoid server spam
@@ -348,21 +411,23 @@ async function loop(rider) {
       }
     } else {
       if (rider.putting_down) {
-        rider.log("Empty plan but waiting for delivery to complete");
+          rider.log("Empty plan but waiting for delivery to complete");
       } else {
-        if (Date.now() - rider.plan_cooldown > 1000) {
-          rider.plan_cooldown = Date.now();
-          rider.log("Plan is empty. Recalculating plan");
-          brain.plan_fit = 0;
-          brain.newPlan();
-        }
+          if (Date.now() - rider.plan_cooldown > 1000) {
+              rider.plan_cooldown = Date.now();
+              rider.log("Plan is empty. Recalculating plan");
+              brain.plan_fit = 0;
+              await brain.newPlan();
+          }
       }
     }
-    await new Promise((res) => setImmediate(res));
+  await new Promise((res) => setImmediate(res));
   }
 }
 
 // start the loop for all riders
 for (let i = 0; i < riders.length; i++) {
-  loop(riders[i]);
+  loop(riders[i]).catch(error => console.error(`Error in loop for rider ${i}:`, error));
 }
+
+export { parcelsBeliefSet, agentsBeliefSet, map }

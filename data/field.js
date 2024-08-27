@@ -1,6 +1,8 @@
 import { Tile } from "./tile.js";
 import { Position, Direction } from "./position.js";
 import { sortByKey } from "../utils.js";
+import { Beliefset } from "@unitn-asa/pddl-client";
+import { bfs_pddl } from "../planner/bfs_pddl.js";
 
 const VERBOSE = false;
 
@@ -22,6 +24,12 @@ const VERBOSE = false;
  * @property {number} hit_rate cache hit rate
  */
 export class Field {
+
+  constructor(usePddl = false) {
+    this.USE_PDDL = usePddl;
+    this.beliefSet = new Beliefset();
+  }
+
   init(width, height, tiles) {
     this.width = width;
     this.height = height;
@@ -31,23 +39,28 @@ export class Field {
     this.cache_hits = 0;
     this.cache_misses = 0;
     this.hit_rate = 0;
+    this.beliefSet = new Beliefset();
 
-    // fill the field with tiles
-    for (let i = 0; i < height; i++) {
-      this.field[i] = [];
-      for (let j = 0; j < width; j++) {
-        let found = false;
-        let delivery = false;
-        for (const t of tiles) {
-          if (t.x == j && t.y == i) {
-            found = true;
-            delivery = t.delivery;
-            break;
-          }
+      // Initialize the field
+      for (let i = 0; i < height; i++) {
+        this.field[i] = [];
+        for (let j = 0; j < width; j++) {
+            let found = false;
+            let delivery = false;
+            for (const t of tiles) {
+                if (t.x == j && t.y == i) {
+                    found = true;
+                    delivery = t.delivery;
+                    break;
+                }
+            }
+            let pos = new Position(j, i);
+            this.field[i][j] = new Tile(pos, found, delivery);
+            // Add object to beliefSet if the tile is walkable
+            if (found) {
+                this.beliefSet.addObject(`t_${j}_${i}`);
+            }
         }
-        let pos = new Position(j, i);
-        this.field[i][j] = new Tile(pos, found, delivery);
-      }
     }
 
     // populate the parcel spawners list
@@ -57,18 +70,35 @@ export class Field {
       }
     }
 
-    //load neighbors
-    for (let i = 0; i < this.height; i++) {
-      for (let j = 0; j < this.width; j++) {
+    // //load neighbors
+    // for (let i = 0; i < this.height; i++) {
+    //   for (let j = 0; j < this.width; j++) {
+    //     if (this.field[i][j].walkable) {
+    //       this.field[i][j].setNeighbors(this.neighbors(new Position(j, i)));
+    //       let neighbors = this.neighbors(new Position(j, i));
+    //       for (let neighbor of neighbors) {
+    //         this.beliefSet.declare(`connected t_${j}_${i} t_${neighbor.x}_${neighbor.y}`);
+    //       }
+    //     }
+    //   }
+    // }
+
+  // Populate neighbors and connected predicates
+  for (let i = 0; i < height; i++) {
+    for (let j = 0; j < width; j++) {
         if (this.field[i][j].walkable) {
-          this.field[i][j].setNeighbors(this.neighbors(new Position(j, i)));
+            let neighbors = this.getNeighbors(j, i);
+            this.field[i][j].setNeighbors(neighbors);
+            for (let neighbor of neighbors) {
+                this.beliefSet.declare(`connected t_${j}_${i} t_${neighbor.x}_${neighbor.y}`);
+            }
         }
-      }
-    }
+    } 
 
     //load delivery zones
     this.deliveryZones = this.getDeliveryZones();
   }
+}
 
   /**
    * Returns a synthetic representation of the map
@@ -111,6 +141,25 @@ export class Field {
     return tile;
   }
 
+  getNeighbors(x, y) {
+    const neighbors = [];
+    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // Left, Right, Up, Down
+
+    for (const [dx, dy] of directions) {
+        const newX = x + dx;
+        const newY = y + dy;
+        if (this.isValidPosition(newX, newY) && this.field[newY][newX].walkable) {
+            neighbors.push(new Position(newX, newY));
+        }
+    }
+
+    return neighbors;
+  }
+
+  isValidPosition(x, y) {
+      return x >= 0 && x < this.width && y >= 0 && y < this.height;
+  }
+
   /**
    * Returns the walkable neighbors of a given position
    *
@@ -124,15 +173,19 @@ export class Field {
     const neighbors = [];
     if (x > 0 && this.field[y][x - 1].walkable) {
       neighbors.push({ x: x - 1, y });
+      this.beliefSet.declare(`connected t_${x}_${y} t_${x-1}_${y}`);
     }
     if (x < this.width - 1 && this.field[y][x + 1].walkable) {
       neighbors.push({ x: x + 1, y });
+      this.beliefSet.declare(`connected t_${x}_${y} t_${x+1}_${y}`);
     }
     if (y > 0 && this.field[y - 1][x].walkable) {
       neighbors.push({ x, y: y - 1 });
+      this.beliefSet.declare(`connected t_${x}_${y} t_${x}_${y-1}`);
     }
     if (y < this.height - 1 && this.field[y + 1][x].walkable) {
       neighbors.push({ x, y: y + 1 });
+      this.beliefSet.declare(`connected t_${x}_${y} t_${x}_${y+1}`);
     }
     return neighbors;
   }
@@ -219,6 +272,7 @@ export class Field {
     }
     return path;
   }
+
 
   /**
    * Returns the closest delivery zones to a given position
@@ -316,5 +370,36 @@ export class Field {
       }
     }
     return true;
+  }
+
+  async bfsWrapper(start, end, blocking_agents) {
+    console.log("bfsWrapper called with start:", start, "end:", end);
+
+    // Ensure start and end are Position objects
+    const startPos = start instanceof Tile ? start.position : (start instanceof Position ? start : new Position(start.x, start.y));
+    const endPos = end instanceof Tile ? end.position : (end instanceof Position ? end : new Position(end.x, end.y));
+
+    // Round the start and end positions
+    const roundedStart = new Position(Math.round(startPos.x), Math.round(startPos.y));
+    const roundedEnd = new Position(Math.round(endPos.x), Math.round(endPos.y));
+
+    if (this.USE_PDDL) {
+        try {
+            console.log("Calling bfs_pddl with rounded positions:", roundedStart, roundedEnd);
+            const path = await bfs_pddl(roundedStart, roundedEnd, blocking_agents);
+            
+            if (path === -1) {
+                console.log("PDDL-based BFS failed, falling back to standard BFS");
+                return this.bfs(roundedStart, roundedEnd, blocking_agents);
+            }
+            return path;
+        } catch (error) {
+            console.error("Error in PDDL-based BFS:", error);
+            console.log("Falling back to standard BFS");
+            return this.bfs(roundedStart, roundedEnd, blocking_agents);
+        }
+    } else {
+        return this.bfs(roundedStart, roundedEnd, blocking_agents);
+    }
   }
 }
