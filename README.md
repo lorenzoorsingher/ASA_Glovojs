@@ -64,5 +64,6 @@
 - [ ] exponential decay for metrics might not be that beneficial
 - [x] reimplement parcels clock
 
-- [ ] revert back graph building to the old version
-- [ ] getClosestDeliveryZones and getRandomSpawnable still use normal bfs
+- [x] revert back graph building to the old version
+- [x] getClosestDeliveryZones and getRandomSpawnable still use normal bfs
+- [ ] also getClosestDeliveryZones must be updated to use the new parallelized

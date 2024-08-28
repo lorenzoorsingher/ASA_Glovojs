@@ -483,10 +483,10 @@ export class Field {
 
     if (this.USE_PDDL) {
       try {
-        console.log(
-          "Calling bfs_pddl with processed couples:",
-          JSON.stringify(processedCouples, null, 2)
-        );
+        // console.log(
+        //   // "Calling bfs_pddl with processed couples:",
+        //   JSON.stringify(processedCouples, null, 2)
+        // );
         const results = await bfs_pddl(processedCouples, blocking_agents);
 
         if (results.length === 0) {

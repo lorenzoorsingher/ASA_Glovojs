@@ -88,9 +88,9 @@ export class Genetic {
 
     // Prepare each parcel for the graph
     for (const [key, p] of this.parcels.entries()) {
-      console.log(`Processing parcel ${key} at (${p.x}, ${p.y})`);
+      // console.log(`Processing parcel ${key} at (${p.x}, ${p.y})`);
 
-      console.log("Parcel:", p);
+      // console.log("Parcel:", p);
       // Compute the cost and path from the player to the parcel
       // let start = this.field.getTile({ x: p.x, y: p.y });
       let start = new Position(p.x, p.y);
