@@ -349,8 +349,8 @@ export class Field {
       let to_spawner = await this.bfsWrapper(
         [
           {
-            start: spawner,
-            end: player_position,
+            start: player_position,
+            end: spawner,
             i: 0,
             j: 0,
           },
