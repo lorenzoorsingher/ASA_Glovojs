@@ -343,12 +343,12 @@ export class Field {
     // console.log("Looking for a SPAWNABLE tile from ", player_position);
     const randomOrder = this.parcelSpawners.sort(() => Math.random() - 0.5);
     for (const spawner of randomOrder) {
-      const tile = this.getTile(spawner);
+      //const tile = this.getTile(spawner);
       let path = this.bfsWrapper(
         [
           {
-            start: tile,
-            end: this.getTile(player_position),
+            start: spawner,
+            end: player_position,
             i: 0,
             j: 0,
           },
