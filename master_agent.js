@@ -12,7 +12,7 @@ import { bfs_pddl } from "./planner/bfs_pddl.js";
 
 export const VERBOSE = false;
 const LOCAL = true;
-export const USE_PDDL = false;
+export const USE_PDDL = true;
 
 let [NRIDERS, POP, GEN, PORT] = process.argv.slice(2);
 if (NRIDERS == undefined) {
