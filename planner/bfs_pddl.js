@@ -2,12 +2,31 @@ import { onlineSolver } from "@unitn-asa/pddl-client";
 import { Position } from "../data/position.js";
 import { Action, ActionType } from "../data/action.js";
 import { map } from "../master_agent.js";
-import fs from "fs"; // Updated to use import instead of require
+
+const pddlCache = new Map();
+
+function generateCacheKey(couples, obstacles) {
+  const couplesKey = couples.map(c => `${c.start.x},${c.start.y}-${c.end.x},${c.end.y}`).join('|');
+  
+  let obstaclesKey = '';
+  if (Array.isArray(obstacles)) {
+    obstaclesKey = obstacles.map(o => `${o.x},${o.y}`).sort().join('|');
+  } else if (obstacles instanceof Map) {
+    obstaclesKey = Array.from(obstacles.values())
+      .map(o => `${o.x},${o.y}`)
+      .sort()
+      .join('|');
+  } else if (typeof obstacles === 'object' && obstacles !== null) {
+    obstaclesKey = Object.values(obstacles)
+      .map(o => `${o.x},${o.y}`)
+      .sort()
+      .join('|');
+  }
+
+  return `${couplesKey}#${obstaclesKey}`;
+}
 
 export async function bfs_pddl(couplesInput, blocking_agents) {
-  //   console.log("bfs_pddl called with input:", couplesInput);
-
-  // Ensure couples is always an array
   const couples = Array.isArray(couplesInput) ? couplesInput : [couplesInput];
 
   try {
@@ -16,11 +35,17 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
       return [];
     }
 
+    const cacheKey = generateCacheKey(couples, blocking_agents);
+    
+    if (pddlCache.has(cacheKey)) {
+      console.log("Cache hit!");
+      return pddlCache.get(cacheKey);
+    }
+
     let initialState = [];
     let objectives = [];
     let agentObjects = [];
 
-    // Process each couple
     couples.forEach((couple, index) => {
       if (!couple || !couple.start || !couple.end) {
         console.error("Invalid couple:", couple);
@@ -39,29 +64,18 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
       objectives.push(`(at ${agentName} t_${endX}_${endY})`);
     });
 
-    // Add connected predicates from map.beliefSet
     for (let [belief, value] of map.beliefSet.entries) {
       if (value && belief.startsWith("connected")) {
         initialState.push(`(${belief})`);
       }
     }
 
-    // Add blocking agents as obstacles
-    for (let agent of blocking_agents) {
-      if (
-        agent &&
-        typeof agent.x === "number" &&
-        typeof agent.y === "number" &&
-        !isNaN(agent.x) &&
-        !isNaN(agent.y)
-      ) {
-        initialState.push(
-          `(obstacle t_${Math.round(agent.x)}_${Math.round(agent.y)})`
-        );
+    for (let agent of blocking_agents.values()) {
+      if (agent && typeof agent.x === "number" && typeof agent.y === "number" && !isNaN(agent.x) && !isNaN(agent.y)) {
+        initialState.push(`(obstacle t_${Math.round(agent.x)}_${Math.round(agent.y)})`);
       }
     }
 
-    // Construct the PDDL domain string
     let domainString = `
 (define (domain multi-agent-BFS)
   (:requirements :strips :typing)
@@ -78,7 +92,6 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
   )
 )`;
 
-    // Construct the PDDL problem string
     let problemString = `
 (define (problem multi-agent-bfs-problem)
   (:domain multi-agent-BFS)
@@ -94,65 +107,34 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
   ))
 )`;
 
-    // if (couples.length > 1) {
-    //   // console.log("Domain:", domainString);
-    //   console.log("Problem:", problemString);
-    // }
-
-    // //print domainString and problemString to file
-    // if (couples.length > 1) {
-    //   // Print domainString to file
-    //   fs.writeFileSync(
-    //     "/home/lollo/Documents/Uni/ASA/ASA_Glovojs/planner/domain.pddl",
-    //     domainString
-    //   );
-
-    //   // Print problemString to file
-    //   fs.writeFileSync(
-    //     "/home/lollo/Documents/Uni/ASA/ASA_Glovojs/planner/problem.pddl",
-    //     problemString
-    //   );
-    //}
-    // console.log("Calling PDDL solver...");
     let pddlResult = await onlineSolver(domainString, problemString);
 
-    // if (couples.length > 1) {
-    //   console.log("more than 1 BFS task");
-    //   console.log("PDDL solver returned:", pddlResult);
-    // }
     if (!pddlResult || !Array.isArray(pddlResult) || pddlResult.length === 0) {
       console.log("No valid paths found by PDDL solver");
       return couples.map(() => ({ path: -1 }));
     }
 
-    // Extract paths for each agent
     let paths = couples.map((couple, index) => {
-      //let agentName = `agent${index}`;
       let path = [];
+      let agentName = `agent${index}`;
 
-      let move = pddlResult[0].args[1];
-      move = move.slice(2).replace("_", "-");
-      path.push(move);
       for (let action of pddlResult) {
-        if (
-          action &&
-          action.action === "MOVE" //&&
-        ) {
-          move = action.args[2];
+        if (action && action.action === "MOVE" && action.args[0] === agentName) {
+          let move = action.args[2];
           move = move.slice(2).replace("_", "-");
           path.push(move);
         }
       }
-      //   console.log("PDDL path: ", path);
-      //   console.log("PDDL result:", {
-      //     i: couple.i,
-      //     j: couple.j,
-      //     path: path.length > 0 ? path : -1,
-      //   });
-      return { i: couple.i, j: couple.j, path: path.length > 0 ? path : -1 };
+
+      return { 
+        i: couple.i, 
+        j: couple.j, 
+        path: path.length > 0 ? path : -1 
+      };
     });
 
-    // console.log("PDDL paths found:", paths);
+    pddlCache.set(cacheKey, paths);
+
     return paths;
   } catch (error) {
     console.error("Error in bfs_pddl:", error);

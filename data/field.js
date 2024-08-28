@@ -294,25 +294,32 @@ export class Field {
    * @returns {Array} array of closest delivery zones
    */
   async getClosestDeliveryZones(pos, blocking_agents) {
-    // console.log("Getting closest delivery zones for position:", pos);
+    console.log("Getting closest delivery zones for position:", pos);
 
-    let closest = [];
+    let couples = this.deliveryZones.map((deliveryZone, index) => ({
+      start: pos,
+      end: deliveryZone,
+      i: index,
+      j: 0  // We're using j=0 as we don't need it for this function
+    }));
 
-    for (let d of this.deliveryZones) {
-      // console.log("[CLSTDLV] ", [{ start: d, end: pos, i: 0, j: 0 }]);
-      const bfsResult = await this.bfsWrapper(
-        [{ start: pos, end: d, i: 0, j: 0 }],
-        blocking_agents
-      );
-      if (bfsResult.length > 0 && bfsResult[0].path !== -1) {
-        const path = bfsResult[0].path;
-        const distance = path.length - 1;
-        closest.push({ x: d.x, y: d.y, distance: distance, path: path });
+    const bfsResults = await this.bfsWrapper(couples, blocking_agents);
+
+    let closest = bfsResults.map(result => {
+      if (result.path !== -1) {
+        return {
+          x: this.deliveryZones[result.i].x,
+          y: this.deliveryZones[result.i].y,
+          distance: result.path.length - 1,
+          path: result.path
+        };
       }
-    }
+      return null;
+    }).filter(result => result !== null);
 
     closest = sortByKey(closest, "distance");
-    // console.log("Closest delivery zones:", closest);
+
+    console.log("Closest delivery zones:", closest);
     return closest;
   }
 
