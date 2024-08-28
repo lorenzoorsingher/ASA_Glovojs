@@ -63,3 +63,5 @@
 - [x] dynamically change STEP_COST and penalities based on the config
 - [ ] exponential decay for metrics might not be that beneficial
 - [x] reimplement parcels clock
+
+- [ ] revert back graph building to the old version

@@ -24,7 +24,6 @@ const VERBOSE = false;
  * @property {number} hit_rate cache hit rate
  */
 export class Field {
-
   constructor(usePddl = false) {
     this.USE_PDDL = usePddl;
     this.beliefSet = new Beliefset();
@@ -41,26 +40,26 @@ export class Field {
     this.hit_rate = 0;
     this.beliefSet = new Beliefset();
 
-      // Initialize the field
-      for (let i = 0; i < height; i++) {
-        this.field[i] = [];
-        for (let j = 0; j < width; j++) {
-            let found = false;
-            let delivery = false;
-            for (const t of tiles) {
-                if (t.x == j && t.y == i) {
-                    found = true;
-                    delivery = t.delivery;
-                    break;
-                }
-            }
-            let pos = new Position(j, i);
-            this.field[i][j] = new Tile(pos, found, delivery);
-            // Add object to beliefSet if the tile is walkable
-            if (found) {
-                this.beliefSet.addObject(`t_${j}_${i}`);
-            }
+    // Initialize the field
+    for (let i = 0; i < height; i++) {
+      this.field[i] = [];
+      for (let j = 0; j < width; j++) {
+        let found = false;
+        let delivery = false;
+        for (const t of tiles) {
+          if (t.x == j && t.y == i) {
+            found = true;
+            delivery = t.delivery;
+            break;
+          }
         }
+        let pos = new Position(j, i);
+        this.field[i][j] = new Tile(pos, found, delivery);
+        // Add object to beliefSet if the tile is walkable
+        if (found) {
+          this.beliefSet.addObject(`t_${j}_${i}`);
+        }
+      }
     }
 
     // populate the parcel spawners list
@@ -83,22 +82,24 @@ export class Field {
     //   }
     // }
 
-  // Populate neighbors and connected predicates
-  for (let i = 0; i < height; i++) {
-    for (let j = 0; j < width; j++) {
+    // Populate neighbors and connected predicates
+    for (let i = 0; i < height; i++) {
+      for (let j = 0; j < width; j++) {
         if (this.field[i][j].walkable) {
-            let neighbors = this.getNeighbors(j, i);
-            this.field[i][j].setNeighbors(neighbors);
-            for (let neighbor of neighbors) {
-                this.beliefSet.declare(`connected t_${j}_${i} t_${neighbor.x}_${neighbor.y}`);
-            }
+          let neighbors = this.getNeighbors(j, i);
+          this.field[i][j].setNeighbors(neighbors);
+          for (let neighbor of neighbors) {
+            this.beliefSet.declare(
+              `connected t_${j}_${i} t_${neighbor.x}_${neighbor.y}`
+            );
+          }
         }
-    } 
+      }
 
-    //load delivery zones
-    this.deliveryZones = this.getDeliveryZones();
+      //load delivery zones
+      this.deliveryZones = this.getDeliveryZones();
+    }
   }
-}
 
   /**
    * Returns a synthetic representation of the map
@@ -144,21 +145,26 @@ export class Field {
 
   getNeighbors(x, y) {
     const neighbors = [];
-    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // Left, Right, Up, Down
+    const directions = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ]; // Left, Right, Up, Down
 
     for (const [dx, dy] of directions) {
-        const newX = x + dx;
-        const newY = y + dy;
-        if (this.isValidPosition(newX, newY) && this.field[newY][newX].walkable) {
-            neighbors.push(new Position(newX, newY));
-        }
+      const newX = x + dx;
+      const newY = y + dy;
+      if (this.isValidPosition(newX, newY) && this.field[newY][newX].walkable) {
+        neighbors.push(new Position(newX, newY));
+      }
     }
 
     return neighbors;
   }
 
   isValidPosition(x, y) {
-      return x >= 0 && x < this.width && y >= 0 && y < this.height;
+    return x >= 0 && x < this.width && y >= 0 && y < this.height;
   }
 
   /**
@@ -174,19 +180,19 @@ export class Field {
     const neighbors = [];
     if (x > 0 && this.field[y][x - 1].walkable) {
       neighbors.push({ x: x - 1, y });
-      this.beliefSet.declare(`connected t_${x}_${y} t_${x-1}_${y}`);
+      this.beliefSet.declare(`connected t_${x}_${y} t_${x - 1}_${y}`);
     }
     if (x < this.width - 1 && this.field[y][x + 1].walkable) {
       neighbors.push({ x: x + 1, y });
-      this.beliefSet.declare(`connected t_${x}_${y} t_${x+1}_${y}`);
+      this.beliefSet.declare(`connected t_${x}_${y} t_${x + 1}_${y}`);
     }
     if (y > 0 && this.field[y - 1][x].walkable) {
       neighbors.push({ x, y: y - 1 });
-      this.beliefSet.declare(`connected t_${x}_${y} t_${x}_${y-1}`);
+      this.beliefSet.declare(`connected t_${x}_${y} t_${x}_${y - 1}`);
     }
     if (y < this.height - 1 && this.field[y + 1][x].walkable) {
       neighbors.push({ x, y: y + 1 });
-      this.beliefSet.declare(`connected t_${x}_${y} t_${x}_${y+1}`);
+      this.beliefSet.declare(`connected t_${x}_${y} t_${x}_${y + 1}`);
     }
     return neighbors;
   }
@@ -208,6 +214,7 @@ export class Field {
 
     const CACHE = true;
 
+    console.log("[BFSSINGLE] called from: ", start, " to: ", end);
     let startTile = this.getTile(start);
     let endTile = this.getTile(end);
 
@@ -276,7 +283,6 @@ export class Field {
     return path;
   }
 
-
   /**
    * Returns the closest delivery zones to a given position
    *
@@ -291,19 +297,24 @@ export class Field {
     let closest = [];
 
     for (let d of this.deliveryZones) {
-      console.log([{start: this.getTile(d), end: this.getTile(pos), i: 0, j: 0}]);
-        const bfsResult = this.bfs([{start: this.getTile(d), end: this.getTile(pos), i: 0, j: 0}], blocking_agents);
-        if (bfsResult.length > 0 && bfsResult[0].path !== -1) {
-            const path = bfsResult[0].path;
-            const distance = path.length - 1;
-            closest.push({ x: d.x, y: d.y, distance: distance, path: path });
-        }
+      console.log([
+        { start: this.getTile(d), end: this.getTile(pos), i: 0, j: 0 },
+      ]);
+      const bfsResult = this.bfs(
+        [{ start: this.getTile(d), end: this.getTile(pos), i: 0, j: 0 }],
+        blocking_agents
+      );
+      if (bfsResult.length > 0 && bfsResult[0].path !== -1) {
+        const path = bfsResult[0].path;
+        const distance = path.length - 1;
+        closest.push({ x: d.x, y: d.y, distance: distance, path: path });
+      }
     }
 
     closest = sortByKey(closest, "distance");
     console.log("Closest delivery zones:", closest);
     return closest;
-}
+  }
 
   /**
    * Returns all delivery zones in the field
@@ -335,12 +346,17 @@ export class Field {
     const randomOrder = this.parcelSpawners.sort(() => Math.random() - 0.5);
     for (const spawner of randomOrder) {
       const tile = this.getTile(spawner);
-      let path = this.bfsWrapper([{
-        start: tile,
-        end: this.getTile(player_position),
-        i: 0,
-        j: 0
-    }], blocking_agents);
+      let path = this.bfsWrapper(
+        [
+          {
+            start: tile,
+            end: this.getTile(player_position),
+            i: 0,
+            j: 0,
+          },
+        ],
+        blocking_agents
+      );
       if (path != -1) {
         return path;
       }
@@ -381,79 +397,115 @@ export class Field {
   }
 
   async bfsWrapper(couples, blocking_agents) {
-    console.log("bfsWrapper called with couples:", JSON.stringify(couples, null, 2));
+    // console.log(
+    //   "bfsWrapper called with couples:",
+    //   JSON.stringify(couples, null, 2)
+    // );
 
     if (!Array.isArray(couples) || couples.length === 0) {
-        console.warn("No valid couples provided to bfsWrapper");
-        return [];
+      console.warn("No valid couples provided to bfsWrapper");
+      return [];
     }
 
-    const processedCouples = couples.map((couple, index) => {
-        if (!couple || typeof couple !== 'object') {
-            console.warn(`Invalid couple at index ${index}:`, couple);
-            return null;
+    const processedCouples = couples
+      .map((couple, index) => {
+        console.log("[BFSWRAPPER] Processing couple:", couple);
+        if (!couple || typeof couple !== "object") {
+          console.warn(`Invalid couple at index ${index}:`, couple);
+          return null;
         }
 
-        const startPos = couple.start instanceof Tile ? couple.start.position : 
-            (couple.start instanceof Position ? couple.start : new Position(couple.start.x, couple.start.y));
-        const endPos = couple.end instanceof Tile ? couple.end.position : 
-            (couple.end instanceof Position ? couple.end : new Position(couple.end.x, couple.end.y));
+        const startPos =
+          couple.start instanceof Tile
+            ? couple.start.position
+            : couple.start instanceof Position
+            ? couple.start
+            : new Position(couple.start.x, couple.start.y);
+        const endPos =
+          couple.end instanceof Tile
+            ? couple.end.position
+            : couple.end instanceof Position
+            ? couple.end
+            : new Position(couple.end.x, couple.end.y);
 
-        if (isNaN(startPos.x) || isNaN(startPos.y) || isNaN(endPos.x) || isNaN(endPos.y)) {
-            console.warn(`Invalid coordinates for couple at index ${index}:`, { start: startPos, end: endPos });
-            return null;
+        if (
+          isNaN(startPos.x) ||
+          isNaN(startPos.y) ||
+          isNaN(endPos.x) ||
+          isNaN(endPos.y)
+        ) {
+          console.warn(`Invalid coordinates for couple at index ${index}:`, {
+            start: startPos,
+            end: endPos,
+          });
+          return null;
         }
 
-        const roundedStart = new Position(Math.round(startPos.x), Math.round(startPos.y));
-        const roundedEnd = new Position(Math.round(endPos.x), Math.round(endPos.y));
+        const roundedStart = new Position(
+          Math.round(startPos.x),
+          Math.round(startPos.y)
+        );
+        const roundedEnd = new Position(
+          Math.round(endPos.x),
+          Math.round(endPos.y)
+        );
 
         return { ...couple, start: roundedStart, end: roundedEnd };
-    }).filter(couple => couple !== null);
+      })
+      .filter((couple) => couple !== null);
 
     if (processedCouples.length === 0) {
-        console.warn("No valid couples after processing in bfsWrapper");
-        return [];
+      console.warn("No valid couples after processing in bfsWrapper");
+      return [];
     }
 
     // Handle single couple case
-    if (processedCouples.length === 1 && processedCouples[0].start.equals(processedCouples[0].end)) {
-        console.log("Single self-couple detected. Returning empty path.");
-        return [{ i: processedCouples[0].i, j: processedCouples[0].j, path: [] }];
+    if (
+      processedCouples.length === 1 &&
+      processedCouples[0].start.equals(processedCouples[0].end)
+    ) {
+      console.log("Single self-couple detected. Returning empty path.");
+      return [{ i: processedCouples[0].i, j: processedCouples[0].j, path: [] }];
     }
 
     if (this.USE_PDDL) {
-        try {
-            console.log("Calling bfs_pddl with processed couples:", JSON.stringify(processedCouples, null, 2));
-            const results = await bfs_pddl(processedCouples, blocking_agents);
+      try {
+        console.log(
+          "Calling bfs_pddl with processed couples:",
+          JSON.stringify(processedCouples, null, 2)
+        );
+        const results = await bfs_pddl(processedCouples, blocking_agents);
 
-            if (results.length === 0) {
-                console.warn("bfs_pddl returned no results, falling back to standard BFS");
-                return this.bfs(processedCouples, blocking_agents);
-            }
-
-            return results;
-        } catch (error) {
-            console.error("Error in PDDL-based BFS:", error);
-            console.log("Falling back to standard BFS for all");
-            return this.bfs(processedCouples, blocking_agents);
+        if (results.length === 0) {
+          console.warn(
+            "bfs_pddl returned no results, falling back to standard BFS"
+          );
+          return this.bfs(processedCouples, blocking_agents);
         }
-    } else {
-        return this.bfs(processedCouples, blocking_agents);
-    }
-}
 
+        return results;
+      } catch (error) {
+        console.error("Error in PDDL-based BFS:", error);
+        console.log("Falling back to standard BFS for all");
+        return this.bfs(processedCouples, blocking_agents);
+      }
+    } else {
+      return this.bfs(processedCouples, blocking_agents);
+    }
+  }
 
   bfs(couples, blocking_agents) {
     console.log("bfs called with couples:", JSON.stringify(couples, null, 2));
     console.log("blocking_agents:", JSON.stringify(blocking_agents, null, 2));
-      if (!Array.isArray(couples)) {
-          console.warn("bfs received non-array couples:", couples);
-          return [];
-      }
-      return couples.map(couple => {
-          console.log("bfs called from: ", couple.start.position, " to: ", couple.end.position);
-          const path = this.bfsSingle(couple.start.position, couple.end.position, blocking_agents);
-          return { i: couple.i, j: couple.j, path: path };
-      });
+    if (!Array.isArray(couples)) {
+      console.warn("bfs received non-array couples:", couples);
+      return [];
+    }
+    return couples.map((couple) => {
+      console.log("[BFS] processing couple ", couple);
+      console.log("bfs called from: ", couple.start, " to: ", couple.end);
+      const path = this.bfsSingle(couple.start, couple.end, blocking_agents);
+      return { i: couple.i, j: couple.j, path: path };
+    });
   }
 }
