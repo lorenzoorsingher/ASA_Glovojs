@@ -270,6 +270,8 @@ export class Field {
       currentNode = par[currentNode].id;
     }
 
+    path = path.reverse();
+
     if (path.length <= 1) {
       if (!start.equals(end)) {
         path = -1;
@@ -299,7 +301,7 @@ export class Field {
     for (let d of this.deliveryZones) {
       // console.log("[CLSTDLV] ", [{ start: d, end: pos, i: 0, j: 0 }]);
       const bfsResult = await this.bfsWrapper(
-        [{ start: d, end: pos, i: 0, j: 0 }],
+        [{ start: pos, end: d, i: 0, j: 0 }],
         blocking_agents
       );
       if (bfsResult.length > 0 && bfsResult[0].path !== -1) {

@@ -93,9 +93,9 @@ export class Genetic {
       // console.log("Parcel:", p);
       // Compute the cost and path from the player to the parcel
       // let start = this.field.getTile({ x: p.x, y: p.y });
-      let start = new Position(p.x, p.y);
+      let start = rider.trg;
       // console.log(`Start tile: ${start.position.x}, ${start.position.y}`);
-      let end = rider.trg;
+      let end = new Position(p.x, p.y);
       // console.log(`End tile: ${end.position.x}, ${end.position.y}`);
 
       // if (!start || !end) {
@@ -120,7 +120,8 @@ export class Genetic {
       }
 
       // Compute the cost and path from the parcel to the closest delivery zone
-      start = { x: p.x, y: p.y };
+      //start = { x: p.x, y: p.y };
+      start = new Position(p.x, p.y);
       let closest = await this.field.getClosestDeliveryZones(
         start,
         rider.blocking_agents
@@ -168,20 +169,22 @@ export class Genetic {
     let bfsCouples = [];
     for (let i = 0; i < prep_parcels.length; i++) {
       for (let j = 0; j < prep_parcels.length; j++) {
-        let stTile = this.field.getTile({
-          x: prep_parcels[i].x,
-          y: prep_parcels[i].y,
-        });
-        let endTile = this.field.getTile({
-          x: prep_parcels[j].x,
-          y: prep_parcels[j].y,
-        });
-        bfsCouples.push({
-          start: endTile.position,
-          end: stTile.position,
-          i,
-          j,
-        });
+        if (i != j) {
+          let stTile = this.field.getTile({
+            x: prep_parcels[i].x,
+            y: prep_parcels[i].y,
+          });
+          let endTile = this.field.getTile({
+            x: prep_parcels[j].x,
+            y: prep_parcels[j].y,
+          });
+          bfsCouples.push({
+            start: stTile.position,
+            end: endTile.position,
+            i,
+            j,
+          });
+        }
       }
     }
 

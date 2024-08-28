@@ -67,3 +67,5 @@
 - [x] revert back graph building to the old version
 - [x] getClosestDeliveryZones and getRandomSpawnable still use normal bfs
 - [ ] also getClosestDeliveryZones must be updated to use the new parallelized
+
+- [ ] parcel paths BFSs are duplicated

@@ -108,37 +108,39 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
 
     // Extract paths for each agent
     let paths = couples.map((couple, index) => {
-      let agentName = `agent${index}`;
+      //let agentName = `agent${index}`;
       let path = [];
       let previousPosition = new Position(
         Math.round(couple.start.x),
         Math.round(couple.start.y)
       );
-
+      let move = pddlResult[0].args[1];
+      move = move.slice(2).replace("_", "-");
+      path.push(move);
       for (let action of pddlResult) {
         if (
           action &&
-          action.action === "move" &&
-          action.args[0] === agentName
+          action.action === "MOVE" //&&
+          //action.args[0] === agentName
         ) {
+          //   console.log("PDDL action:", action);
           let [_, __, to] = action.args;
           let [prefix, x, y] = to.split("_");
-          if (x && y) {
-            let newPosition = new Position(parseInt(x), parseInt(y));
-            path.push(
-              new Action(previousPosition, newPosition, ActionType.MOVE, null)
-            );
-            previousPosition = newPosition;
-          }
+
+          move = action.args[2];
+          move = move.slice(2).replace("_", "-");
+          path.push(move);
+        } else {
+          //   console.log("INVALID ACTION:", action);
         }
       }
 
-      console.log("PDDL path: ", path);
-      console.log("PDDL result:", {
-        i: couple.i,
-        j: couple.j,
-        path: path.length > 0 ? path : -1,
-      });
+      //   console.log("PDDL path: ", path);
+      //   console.log("PDDL result:", {
+      //     i: couple.i,
+      //     j: couple.j,
+      //     path: path.length > 0 ? path : -1,
+      //   });
 
       return { i: couple.i, j: couple.j, path: path.length > 0 ? path : -1 };
     });
