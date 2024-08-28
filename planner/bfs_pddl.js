@@ -133,6 +133,13 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
         }
       }
 
+      console.log("PDDL path: ", path);
+      console.log("PDDL result:", {
+        i: couple.i,
+        j: couple.j,
+        path: path.length > 0 ? path : -1,
+      });
+
       return { i: couple.i, j: couple.j, path: path.length > 0 ? path : -1 };
     });
 

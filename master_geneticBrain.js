@@ -219,6 +219,8 @@ export class Genetic {
     // Process the results
     for (let result of bfsResults) {
       let { i, j, path } = result;
+
+      console.log("result: ", result);
       if (path === -1 || path.length === 0) {
         costs[i][j] = Infinity;
         paths[i][j] = [];
