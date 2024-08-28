@@ -2,6 +2,7 @@ import { onlineSolver } from "@unitn-asa/pddl-client";
 import { Position } from "../data/position.js";
 import { Action, ActionType } from "../data/action.js";
 import { map } from "../master_agent.js";
+import fs from "fs"; // Updated to use import instead of require
 
 export async function bfs_pddl(couplesInput, blocking_agents) {
   //   console.log("bfs_pddl called with input:", couplesInput);
@@ -93,14 +94,32 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
   ))
 )`;
 
-    // console.log("Domain:", domainString);
-    // console.log("Problem:", problemString);
+    // if (couples.length > 1) {
+    //   // console.log("Domain:", domainString);
+    //   console.log("Problem:", problemString);
+    // }
 
+    // //print domainString and problemString to file
+    // if (couples.length > 1) {
+    //   // Print domainString to file
+    //   fs.writeFileSync(
+    //     "/home/lollo/Documents/Uni/ASA/ASA_Glovojs/planner/domain.pddl",
+    //     domainString
+    //   );
+
+    //   // Print problemString to file
+    //   fs.writeFileSync(
+    //     "/home/lollo/Documents/Uni/ASA/ASA_Glovojs/planner/problem.pddl",
+    //     problemString
+    //   );
+    //}
     // console.log("Calling PDDL solver...");
     let pddlResult = await onlineSolver(domainString, problemString);
 
-    // console.log("PDDL solver returned:", pddlResult);
-
+    // if (couples.length > 1) {
+    //   console.log("more than 1 BFS task");
+    //   console.log("PDDL solver returned:", pddlResult);
+    // }
     if (!pddlResult || !Array.isArray(pddlResult) || pddlResult.length === 0) {
       console.log("No valid paths found by PDDL solver");
       return couples.map(() => ({ path: -1 }));
@@ -110,10 +129,7 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
     let paths = couples.map((couple, index) => {
       //let agentName = `agent${index}`;
       let path = [];
-      let previousPosition = new Position(
-        Math.round(couple.start.x),
-        Math.round(couple.start.y)
-      );
+
       let move = pddlResult[0].args[1];
       move = move.slice(2).replace("_", "-");
       path.push(move);
@@ -121,27 +137,18 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
         if (
           action &&
           action.action === "MOVE" //&&
-          //action.args[0] === agentName
         ) {
-          //   console.log("PDDL action:", action);
-          let [_, __, to] = action.args;
-          let [prefix, x, y] = to.split("_");
-
           move = action.args[2];
           move = move.slice(2).replace("_", "-");
           path.push(move);
-        } else {
-          //   console.log("INVALID ACTION:", action);
         }
       }
-
       //   console.log("PDDL path: ", path);
       //   console.log("PDDL result:", {
       //     i: couple.i,
       //     j: couple.j,
       //     path: path.length > 0 ? path : -1,
       //   });
-
       return { i: couple.i, j: couple.j, path: path.length > 0 ? path : -1 };
     });
 
