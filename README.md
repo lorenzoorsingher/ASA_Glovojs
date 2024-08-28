@@ -65,3 +65,4 @@
 - [x] reimplement parcels clock
 
 - [ ] revert back graph building to the old version
+- [ ] getClosestDeliveryZones and getRandomSpawnable still use normal bfs
