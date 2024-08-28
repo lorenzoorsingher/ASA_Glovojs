@@ -411,13 +411,13 @@ export class Field {
           console.log("[BFSWRAPPER] Start is a tile");
           crash = 234243;
         } else if (couple.start instanceof Position) {
-          console.log("[BFSWRAPPER] Start is a position");
+          // console.log("[BFSWRAPPER] Start is a position");
         } else {
           console.log("[BFSWRAPPER] Start is neither a tile nor a position");
           crash = 234243;
         }
 
-        console.log("[BFSWRAPPER] Processing couple:", couple);
+        // console.log("[BFSWRAPPER] Processing couple:", couple);
 
         if (!couple || typeof couple !== "object") {
           console.warn(`Invalid couple at index ${index}:`, couple);
