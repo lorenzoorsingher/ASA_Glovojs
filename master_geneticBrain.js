@@ -728,7 +728,7 @@ export class Genetic {
    * @param {Rider} rider
    * @returns {Array} - The sequence of actions for the backup plan
    */
-  backupPlan(rider) {
+  async backupPlan(rider) {
     let rew = 1;
 
     let path_to_closest = -1;
@@ -740,7 +740,7 @@ export class Genetic {
       rew += rider.carrying;
       console.log("Agent is packing, going to closest delivery zone");
 
-      let closest = this.field.getClosestDeliveryZones(
+      let closest = await this.field.getClosestDeliveryZones(
         rider.trg,
         rider.blocking_agents
       );
@@ -752,10 +752,17 @@ export class Genetic {
       }
     } else {
       rider.log("No parcels on rider, generating random plan");
-      path_to_spawnable = this.field.getRandomSpawnable(
+      let spawnable = await this.field.getRandomSpawnable(
         new Position(rider.trg.x, rider.trg.y),
         rider.blocking_agents
       );
+
+      if (spawnable == -1) {
+        rider.log("No spawnable tiles reachable");
+      } else {
+        console.log("Spawnable tile found at: ", spawnable[0]);
+        path_to_spawnable = spawnable[0].path;
+      }
     }
 
     let actions = [];
@@ -765,6 +772,9 @@ export class Genetic {
       actions = Action.pathToAction(path_to_closest, ActionType.PUTDOWN, null);
     } else if (path_to_spawnable != -1) {
       console.log("[BACKUP] A reachable spawnable tile was found!");
+
+      console.log("path to spawnable: ", path_to_spawnable);
+
       actions = Action.pathToAction(path_to_spawnable, ActionType.MOVE, null);
       rew = 0;
     } else {
@@ -835,163 +845,158 @@ export class Genetic {
    * @returns {Array} - The sequence of actions for each rider
    */
   async createPlan() {
-    try {
-      let riders_graphs = [];
+    let riders_graphs = [];
 
-      // build the parcels graph for each rider with the costs and paths to move
-      // from one parcel to another as well as the information (cost to reach, cost to deliver
-      // and reward) of each parcel
-      console.log("starting positions: ");
-      for (const r of this.riders) {
-        r.log("Rider at: " + r.trg.x + " " + r.trg.y);
-        const [costs, paths, parc] = await this.buildGraphInOut(r);
-        riders_graphs.push({
-          costs: costs,
-          paths: paths,
-          nodes: parc,
-        });
-      }
+    // build the parcels graph for each rider with the costs and paths to move
+    // from one parcel to another as well as the information (cost to reach, cost to deliver
+    // and reward) of each parcel
+    console.log("starting positions: ");
+    for (const r of this.riders) {
+      r.log("Rider at: " + r.trg.x + " " + r.trg.y);
+      const [costs, paths, parc] = await this.buildGraphInOut(r);
+      riders_graphs.push({
+        costs: costs,
+        paths: paths,
+        nodes: parc,
+      });
+    }
 
-      // compute the delivery-only fits for each rider and generate the delivery plans
-      // that will be used in case the fitness of the generated plan is lower
-      // than the delivery-only plan
-      let delivery_only_fits = [];
-      let delivery_only_plans = [];
-      for (let rid = 0; rid < this.nriders; rid++) {
-        let agent = this.riders[rid];
-        let closest = this.field.getClosestDeliveryZones(
-          agent.trg,
-          agent.blocking_agents
-        );
+    // compute the delivery-only fits for each rider and generate the delivery plans
+    // that will be used in case the fitness of the generated plan is lower
+    // than the delivery-only plan
+    let delivery_only_fits = [];
+    let delivery_only_plans = [];
+    for (let rid = 0; rid < this.nriders; rid++) {
+      let agent = this.riders[rid];
+      let closest = await this.field.getClosestDeliveryZones(
+        agent.trg,
+        agent.blocking_agents
+      );
 
-        if (closest.length == 0) {
+      if (closest.length == 0) {
+        delivery_only_fits.push(-Infinity);
+        delivery_only_plans.push(-1);
+      } else {
+        let delivery_only_fit =
+          agent.carrying -
+          this.getStepCost(closest[0].distance, agent.player_parcels.size);
+
+        if (delivery_only_fit <= 0) {
           delivery_only_fits.push(-Infinity);
           delivery_only_plans.push(-1);
         } else {
-          let delivery_only_fit =
-            agent.carrying -
-            this.getStepCost(closest[0].distance, agent.player_parcels.size);
-
-          if (delivery_only_fit <= 0) {
-            delivery_only_fits.push(-Infinity);
-            delivery_only_plans.push(-1);
-          } else {
-            delivery_only_fits.push(delivery_only_fit);
-            delivery_only_plans.push(
-              Action.pathToAction(closest[0].path, ActionType.PUTDOWN, null)
-            );
-          }
+          delivery_only_fits.push(delivery_only_fit);
+          delivery_only_plans.push(
+            Action.pathToAction(closest[0].path, ActionType.PUTDOWN, null)
+          );
         }
       }
-      console.log("delivery_only_fits: ", delivery_only_fits);
-
-      // generate the plan using the genetic algorithm
-      const [best_path, best_fit] = this.geneticTSP(
-        riders_graphs,
-        delivery_only_fits,
-        this.pop,
-        this.gen,
-        0.3,
-        0.5,
-        0.2
-      );
-
-      //TODO:
-      let parcels_path = Array.from({ length: this.nriders }, () => []);
-      let all_plans = [];
-
-      // generate the sequence of actions for each rider based on the generated plan
-      for (let r = 0; r < this.nriders; r++) {
-        let plan = [];
-
-        if (best_path[r] == "D") {
-          // if plan is to deliver only, assign it
-          plan = delivery_only_plans[r];
-        } else {
-          // if no valid plan was found or fitness is 0 generate a backup plan
-          if (best_path[r].length == 0 || best_fit == 0) {
-            plan = this.backupPlan(this.riders[r]);
-
-            console.log("[BRAIN] Backup plan generated");
-            all_plans.push(plan[0]);
-            continue;
-          }
-
-          // prepare the list of parcels to be picked up
-          for (const idx of best_path[r]) {
-            let par = riders_graphs[r].nodes[idx];
-
-            parcels_path[r].push({
-              pos: new Position(par.x, par.y),
-              parcel: par.id,
-              path_in: par.path_in,
-              path_out: par.path_out,
-              inc: par.in_c,
-            });
-          }
-
-          let chosen_path = parcels_path[r];
-
-          // insert current rider action as first action in case
-          // the rider is not at the starting position yet
-          let starting_action = new Action(
-            this.riders[r].src,
-            this.riders[r].trg,
-            ActionType.MOVE,
-            null
-          );
-
-          plan.push(starting_action);
-
-          // insert actions for reaching the first parcel
-          let actions = Action.pathToAction(
-            chosen_path[0].path_in,
-            ActionType.PICKUP,
-            chosen_path[0].parcel
-          );
-          plan = plan.concat(actions);
-
-          // insert actions for reaching the rest of the parcels
-          for (let i = 0; i < best_path[r].length; i++) {
-            let curridx = best_path[r][i];
-            if (i + 1 < best_path[r].length) {
-              let nextidx = best_path[r][i + 1];
-              let semi_path = riders_graphs[r].paths[curridx][nextidx];
-
-              actions = Action.pathToAction(
-                semi_path,
-                ActionType.PICKUP,
-                chosen_path[i + 1].parcel
-              );
-
-              plan = plan.concat(actions);
-            }
-          }
-
-          // insert actions for reaching the delivery zone and delivering the parcels
-          actions = Action.pathToAction(
-            chosen_path[chosen_path.length - 1].path_out,
-            ActionType.PUTDOWN,
-            null
-          );
-          plan = plan.concat(actions);
-        }
-
-        all_plans.push(plan);
-      }
-
-      // print the generated plans
-      for (let r = 0; r < this.nriders; r++) {
-        console.log("Plan for Rider ", this.riders[r].name);
-        for (const act of all_plans[r]) {
-          act.printAction();
-        }
-      }
-      return [all_plans, best_fit];
-    } catch (error) {
-      console.error("Error in createPlan:", error);
-      return [[], 0];
     }
+    console.log("delivery_only_fits: ", delivery_only_fits);
+
+    // generate the plan using the genetic algorithm
+    const [best_path, best_fit] = this.geneticTSP(
+      riders_graphs,
+      delivery_only_fits,
+      this.pop,
+      this.gen,
+      0.3,
+      0.5,
+      0.2
+    );
+
+    //TODO:
+    let parcels_path = Array.from({ length: this.nriders }, () => []);
+    let all_plans = [];
+
+    // generate the sequence of actions for each rider based on the generated plan
+    for (let r = 0; r < this.nriders; r++) {
+      let plan = [];
+
+      if (best_path[r] == "D") {
+        // if plan is to deliver only, assign it
+        plan = delivery_only_plans[r];
+      } else {
+        // if no valid plan was found or fitness is 0 generate a backup plan
+        if (best_path[r].length == 0 || best_fit == 0) {
+          plan = await this.backupPlan(this.riders[r]);
+
+          console.log("[BRAIN] Backup plan generated");
+          all_plans.push(plan[0]);
+          continue;
+        }
+
+        // prepare the list of parcels to be picked up
+        for (const idx of best_path[r]) {
+          let par = riders_graphs[r].nodes[idx];
+
+          parcels_path[r].push({
+            pos: new Position(par.x, par.y),
+            parcel: par.id,
+            path_in: par.path_in,
+            path_out: par.path_out,
+            inc: par.in_c,
+          });
+        }
+
+        let chosen_path = parcels_path[r];
+
+        // insert current rider action as first action in case
+        // the rider is not at the starting position yet
+        let starting_action = new Action(
+          this.riders[r].src,
+          this.riders[r].trg,
+          ActionType.MOVE,
+          null
+        );
+
+        plan.push(starting_action);
+
+        // insert actions for reaching the first parcel
+        let actions = Action.pathToAction(
+          chosen_path[0].path_in,
+          ActionType.PICKUP,
+          chosen_path[0].parcel
+        );
+        plan = plan.concat(actions);
+
+        // insert actions for reaching the rest of the parcels
+        for (let i = 0; i < best_path[r].length; i++) {
+          let curridx = best_path[r][i];
+          if (i + 1 < best_path[r].length) {
+            let nextidx = best_path[r][i + 1];
+            let semi_path = riders_graphs[r].paths[curridx][nextidx];
+
+            actions = Action.pathToAction(
+              semi_path,
+              ActionType.PICKUP,
+              chosen_path[i + 1].parcel
+            );
+
+            plan = plan.concat(actions);
+          }
+        }
+
+        // insert actions for reaching the delivery zone and delivering the parcels
+        actions = Action.pathToAction(
+          chosen_path[chosen_path.length - 1].path_out,
+          ActionType.PUTDOWN,
+          null
+        );
+        plan = plan.concat(actions);
+      }
+
+      all_plans.push(plan);
+    }
+
+    // print the generated plans
+    for (let r = 0; r < this.nriders; r++) {
+      console.log("Plan for Rider ", this.riders[r].name);
+      for (const act of all_plans[r]) {
+        act.printAction();
+      }
+    }
+    return [all_plans, best_fit];
   }
 
   /**

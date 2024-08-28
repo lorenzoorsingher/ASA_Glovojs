@@ -291,14 +291,14 @@ export class Field {
    *
    * @returns {Array} array of closest delivery zones
    */
-  getClosestDeliveryZones(pos, blocking_agents) {
+  async getClosestDeliveryZones(pos, blocking_agents) {
     // console.log("Getting closest delivery zones for position:", pos);
 
     let closest = [];
 
     for (let d of this.deliveryZones) {
       // console.log("[CLSTDLV] ", [{ start: d, end: pos, i: 0, j: 0 }]);
-      const bfsResult = this.bfs(
+      const bfsResult = await this.bfsWrapper(
         [{ start: d, end: pos, i: 0, j: 0 }],
         blocking_agents
       );
@@ -339,12 +339,12 @@ export class Field {
    *
    * @returns {Array} path to the spawnable position
    */
-  getRandomSpawnable(player_position, blocking_agents) {
+  async getRandomSpawnable(player_position, blocking_agents) {
     // console.log("Looking for a SPAWNABLE tile from ", player_position);
     const randomOrder = this.parcelSpawners.sort(() => Math.random() - 0.5);
     for (const spawner of randomOrder) {
       //const tile = this.getTile(spawner);
-      let path = this.bfsWrapper(
+      let to_spawner = await this.bfsWrapper(
         [
           {
             start: spawner,
@@ -355,8 +355,12 @@ export class Field {
         ],
         blocking_agents
       );
-      if (path != -1) {
-        return path;
+
+      // console.log("[SOAWNER] ", to_spawner);
+      if (to_spawner.length > 0) {
+        // console.log("Found a spawnable tile at ", to_spawner);
+        // console.log("Spawner: ", to_spawner[0].path);
+        return to_spawner;
       }
     }
     return -1;
@@ -468,14 +472,14 @@ export class Field {
       return [];
     }
 
-    // Handle single couple case
-    if (
-      processedCouples.length === 1 &&
-      processedCouples[0].start.equals(processedCouples[0].end)
-    ) {
-      console.log("Single self-couple detected. Returning empty path.");
-      return [{ i: processedCouples[0].i, j: processedCouples[0].j, path: [] }];
-    }
+    // // Handle single couple case
+    // if (
+    //   processedCouples.length === 1 &&
+    //   processedCouples[0].start.equals(processedCouples[0].end)
+    // ) {
+    //   console.log("Single self-couple detected. Returning empty path.");
+    //   return [{ i: processedCouples[0].i, j: processedCouples[0].j, path: [] }];
+    // }
 
     if (this.USE_PDDL) {
       try {
@@ -489,6 +493,8 @@ export class Field {
           console.warn(
             "bfs_pddl returned no results, falling back to standard BFS"
           );
+
+          crashnow = 44545;
           return this.bfs(processedCouples, blocking_agents);
         }
 
