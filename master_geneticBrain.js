@@ -921,6 +921,7 @@ export class Genetic {
           // The path is already a sequence of Action objects, so we don't need to convert it
           // We just need to add pickup and putdown actions
 
+          console.log("plan: ", plan);
           if (plan.length > 0) {
             // Add pickup action at the end of the path
             let lastMove = plan[plan.length - 1];

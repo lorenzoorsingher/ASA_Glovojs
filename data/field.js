@@ -271,7 +271,7 @@ export class Field {
     }
 
     if (path.length <= 1) {
-      if (!start.position.equals(end.position)) {
+      if (!start.equals(end)) {
         path = -1;
       }
     }
