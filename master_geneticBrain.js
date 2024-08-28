@@ -162,6 +162,8 @@ export class Genetic {
       paths[i][i] = [];
     }
 
+    //TODO: BFS returns steps in reverse order so stTile and endTile are swapped here. Gotta fix this
+
     // Create a list of all start-end couples
     let bfsCouples = [];
     for (let i = 0; i < prep_parcels.length; i++) {
@@ -175,8 +177,8 @@ export class Genetic {
           y: prep_parcels[j].y,
         });
         bfsCouples.push({
-          start: stTile.position,
-          end: endTile.position,
+          start: endTile.position,
+          end: stTile.position,
           i,
           j,
         });
@@ -226,11 +228,11 @@ export class Genetic {
       }
     }
 
-    console.log("Finished building graph");
+    // console.log("Finished building graph");
 
-    this.printMat(costs);
-    console.log("pp: ", prep_parcels);
-    console.log("paths: ", paths);
+    // this.printMat(costs);
+    // console.log("pp: ", prep_parcels);
+    // console.log("paths: ", paths);
     // console.log("path_in: ", prep_parcels[0].path_in);
     //ddddd = 88;
     return [costs, paths, prep_parcels];
