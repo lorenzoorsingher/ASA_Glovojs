@@ -214,7 +214,7 @@ export class Field {
 
     const CACHE = true;
 
-    console.log("[BFSSINGLE] called from: ", start, " to: ", end);
+    // console.log("[BFSSINGLE] called from: ", start, " to: ", end);
     let startTile = this.getTile(start);
     let endTile = this.getTile(end);
 
@@ -292,16 +292,14 @@ export class Field {
    * @returns {Array} array of closest delivery zones
    */
   getClosestDeliveryZones(pos, blocking_agents) {
-    console.log("Getting closest delivery zones for position:", pos);
+    // console.log("Getting closest delivery zones for position:", pos);
 
     let closest = [];
 
     for (let d of this.deliveryZones) {
-      console.log([
-        { start: this.getTile(d), end: this.getTile(pos), i: 0, j: 0 },
-      ]);
+      // console.log("[CLSTDLV] ", [{ start: d, end: pos, i: 0, j: 0 }]);
       const bfsResult = this.bfs(
-        [{ start: this.getTile(d), end: this.getTile(pos), i: 0, j: 0 }],
+        [{ start: d, end: pos, i: 0, j: 0 }],
         blocking_agents
       );
       if (bfsResult.length > 0 && bfsResult[0].path !== -1) {
@@ -312,7 +310,7 @@ export class Field {
     }
 
     closest = sortByKey(closest, "distance");
-    console.log("Closest delivery zones:", closest);
+    // console.log("Closest delivery zones:", closest);
     return closest;
   }
 
@@ -409,7 +407,18 @@ export class Field {
 
     const processedCouples = couples
       .map((couple, index) => {
+        if (couple.start instanceof Tile) {
+          console.log("[BFSWRAPPER] Start is a tile");
+          crash = 234243;
+        } else if (couple.start instanceof Position) {
+          console.log("[BFSWRAPPER] Start is a position");
+        } else {
+          console.log("[BFSWRAPPER] Start is neither a tile nor a position");
+          crash = 234243;
+        }
+
         console.log("[BFSWRAPPER] Processing couple:", couple);
+
         if (!couple || typeof couple !== "object") {
           console.warn(`Invalid couple at index ${index}:`, couple);
           return null;
@@ -495,15 +504,15 @@ export class Field {
   }
 
   bfs(couples, blocking_agents) {
-    console.log("bfs called with couples:", JSON.stringify(couples, null, 2));
-    console.log("blocking_agents:", JSON.stringify(blocking_agents, null, 2));
+    // console.log("bfs called with couples:", JSON.stringify(couples, null, 2));
+    // console.log("blocking_agents:", JSON.stringify(blocking_agents, null, 2));
     if (!Array.isArray(couples)) {
       console.warn("bfs received non-array couples:", couples);
       return [];
     }
     return couples.map((couple) => {
-      console.log("[BFS] processing couple ", couple);
-      console.log("bfs called from: ", couple.start, " to: ", couple.end);
+      // console.log("[BFS] processing couple ", couple);
+      // console.log("bfs called from: ", couple.start, " to: ", couple.end);
       const path = this.bfsSingle(couple.start, couple.end, blocking_agents);
       return { i: couple.i, j: couple.j, path: path };
     });

@@ -88,169 +88,189 @@ export class Genetic {
 
     // Prepare each parcel for the graph
     for (const [key, p] of this.parcels.entries()) {
-        console.log(`Processing parcel ${key} at (${p.x}, ${p.y})`);
+      console.log(`Processing parcel ${key} at (${p.x}, ${p.y})`);
 
-        // Compute the cost and path from the player to the parcel
-        let start = this.field.getTile({ x: p.x, y: p.y });
-        // console.log(`Start tile: ${start.position.x}, ${start.position.y}`);
-        let end = this.field.getTile({ x: rider.trg.x, y: rider.trg.y });
-        // console.log(`End tile: ${end.position.x}, ${end.position.y}`);
+      console.log("Parcel:", p);
+      // Compute the cost and path from the player to the parcel
+      // let start = this.field.getTile({ x: p.x, y: p.y });
+      let start = new Position(p.x, p.y);
+      // console.log(`Start tile: ${start.position.x}, ${start.position.y}`);
+      let end = rider.trg;
+      // console.log(`End tile: ${end.position.x}, ${end.position.y}`);
 
-        if (!start || !end) {
-          console.log(`⚠️ Invalid start or end tile for parcel ${key}:`, { start, end });
-          continue;
-        }
+      // if (!start || !end) {
+      //   console.log(`⚠️ Invalid start or end tile for parcel ${key}:`, {
+      //     start,
+      //     end,
+      //   });
+      //   continue;
+      // }
 
-        let path_from_player = await this.field.bfsWrapper([{start, end, i: 0, j: 0}], rider.blocking_agents);
-        let cost_from_player, path_from_player_result;
-        if (path_from_player.length === 0 || path_from_player[0].path === -1) {
-          cost_from_player = Infinity;
-          path_from_player_result = [];
+      let bfs_result = await this.field.bfsWrapper(
+        [{ start, end, i: 0, j: 0 }],
+        rider.blocking_agents
+      );
+      let cost_from_player, path_from_player;
+      if (bfs_result.length === 0 || bfs_result[0].path === -1) {
+        cost_from_player = Infinity;
+        path_from_player = [];
       } else {
-          path_from_player_result = path_from_player[0].path;
-          cost_from_player = path_from_player_result.length - 1;
+        path_from_player = bfs_result[0].path;
+        cost_from_player = path_from_player.length - 1;
       }
 
-        // Compute the cost and path from the parcel to the closest delivery zone
-        start = { x: p.x, y: p.y };
-        let closest = await this.field.getClosestDeliveryZones(start, rider.blocking_agents);
+      // Compute the cost and path from the parcel to the closest delivery zone
+      start = { x: p.x, y: p.y };
+      let closest = await this.field.getClosestDeliveryZones(
+        start,
+        rider.blocking_agents
+      );
 
-        let path_to_zone, cost_to_zone;
-        if (closest.length === 0) {
-            cost_to_zone = Infinity;
-            path_to_zone = [];
-        } else {
-            path_to_zone = closest[0].path;
-            cost_to_zone = closest[0].distance - 1;
-        }
+      let path_to_zone, cost_to_zone;
+      if (closest.length === 0) {
+        cost_to_zone = Infinity;
+        path_to_zone = [];
+      } else {
+        path_to_zone = closest[0].path;
+        cost_to_zone = closest[0].distance - 1;
+      }
 
-        prep_parcels.push({
-            x: p.x,
-            y: p.y,
-            rew: p.reward,
-            in_c: cost_from_player,
-            out_c: cost_to_zone,
-            id: key,
-            path_in: path_from_player,
-            path_out: path_to_zone,
-        });
+      prep_parcels.push({
+        x: p.x,
+        y: p.y,
+        rew: p.reward,
+        in_c: cost_from_player,
+        out_c: cost_to_zone,
+        id: key,
+        path_in: path_from_player,
+        path_out: path_to_zone,
+      });
     }
 
     console.log(`Prepared ${prep_parcels.length} parcels`);
 
     // Initialize costs and paths matrices
-    let costs = Array(prep_parcels.length).fill().map(() => Array(prep_parcels.length).fill(Infinity));
-    let paths = Array(prep_parcels.length).fill().map(() => Array(prep_parcels.length).fill([]));
+    let costs = Array(prep_parcels.length)
+      .fill()
+      .map(() => Array(prep_parcels.length).fill(Infinity));
+    let paths = Array(prep_parcels.length)
+      .fill()
+      .map(() => Array(prep_parcels.length).fill([]));
 
-    for (let i = 0; i < prep_parcels. length; i++) {
+    for (let i = 0; i < prep_parcels.length; i++) {
       costs[i][i] = Infinity;
-      paths [i][i] = [];
+      paths[i][i] = [];
     }
 
     // Create a list of all start-end couples
     let bfsCouples = [];
     for (let i = 0; i < prep_parcels.length; i++) {
-        for (let j = 0; j < prep_parcels.length; j++) {
-            let stTile = this.field.getTile({
-                x: prep_parcels[i].x,
-                y: prep_parcels[i].y,
-            });
-            let endTile = this.field.getTile({
-                x: prep_parcels[j].x,
-                y: prep_parcels[j].y,
-            });
-            bfsCouples.push({
-                start: { x: stTile.position.x, y: stTile.position.y },
-                end: { x: endTile.position.x, y: endTile.position.y },
-                i,
-                j
-            });
-        }
+      for (let j = 0; j < prep_parcels.length; j++) {
+        let stTile = this.field.getTile({
+          x: prep_parcels[i].x,
+          y: prep_parcels[i].y,
+        });
+        let endTile = this.field.getTile({
+          x: prep_parcels[j].x,
+          y: prep_parcels[j].y,
+        });
+        bfsCouples.push({
+          start: stTile.position,
+          end: endTile.position,
+          i,
+          j,
+        });
+      }
     }
 
-    // Handle the case when there's only one parcel
-    if (prep_parcels.length === 1) {
-      console.log("Only one parcel found. Creating self-couple.");
-      const parcel = prep_parcels[0];
-      const tile = this.field.getTile({ x: parcel.x, y: parcel.y });
-      if (tile) {
-          bfsCouples = [{
-              start: tile.position,
-              end: tile.position,
-              i: 0,
-              j: 0
-          }];
-          costs = [[0]];
-          paths = [[[]]]
-      } else {
-          console.error("Invalid tile for single parcel:", parcel);
-      }
-    }  
+    // // Handle the case when there's only one parcel
+    // if (prep_parcels.length === 1) {
+    //   console.log("Only one parcel found. Creating self-couple.");
+    //   const parcel = prep_parcels[0];
+    //   const tile = this.field.getTile({ x: parcel.x, y: parcel.y });
+    //   if (tile) {
+    //     bfsCouples = [
+    //       {
+    //         start: tile.position,
+    //         end: tile.position,
+    //         i: 0,
+    //         j: 0,
+    //       },
+    //     ];
+    //     costs = [[0]];
+    //     paths = [[[]]];
+    //   } else {
+    //     console.error("Invalid tile for single parcel:", parcel);
+    //   }
+    // }
 
     console.log(`Created ${bfsCouples.length} couples for BFS`);
 
     // Call the modified bfsWrapper function
-    let bfsResults;
-    try {
-        bfsResults = await this.field.bfsWrapper(bfsCouples, rider.blocking_agents);
-    } catch (error) {
-        console.error("Error in bfsWrapper:", error);
-        return [costs, paths, prep_parcels]; // Return default values in case of error
-    }
+    let bfsResults = await this.field.bfsWrapper(
+      bfsCouples,
+      rider.blocking_agents
+    );
 
     console.log(`Received ${bfsResults.length} results from bfsWrapper`);
 
     // Process the results
     for (let result of bfsResults) {
-        let {i, j, path} = result;
-        if (path === -1 || path.length === 0) {
-            costs[i][j] = Infinity;
-            paths[i][j] = [];
-        } else {
-            paths[i][j] = path;
-            costs[i][j] = path.length;
-        }
+      let { i, j, path } = result;
+      if (path === -1 || path.length === 0) {
+        costs[i][j] = Infinity;
+        paths[i][j] = [];
+      } else {
+        paths[i][j] = path;
+        costs[i][j] = path.length;
+      }
     }
 
     console.log("Finished building graph");
+
+    this.printMat(costs);
+    console.log("pp: ", prep_parcels);
+    console.log("paths: ", paths);
+    // console.log("path_in: ", prep_parcels[0].path_in);
+    //ddddd = 88;
     return [costs, paths, prep_parcels];
   }
 
-    // ----------------- OLD -----------------
+  // ----------------- OLD -----------------
 
-    // // build graph matrices
-    // for (let i = 0; i < prep_parcels.length; i++) {
-    //     costs[i] = [];
-    //     paths[i] = [];
+  // // build graph matrices
+  // for (let i = 0; i < prep_parcels.length; i++) {
+  //     costs[i] = [];
+  //     paths[i] = [];
 
-    //     for (let j = 0; j < prep_parcels.length; j++) {
-    //         if (i == j) {
-    //             costs[i][j] = Infinity;
-    //             paths[i][j] = [];
-    //         } else {
-    //             let stTile = this.field.getTile({
-    //                 x: prep_parcels[i].x,
-    //                 y: prep_parcels[i].y,
-    //             });
+  //     for (let j = 0; j < prep_parcels.length; j++) {
+  //         if (i == j) {
+  //             costs[i][j] = Infinity;
+  //             paths[i][j] = [];
+  //         } else {
+  //             let stTile = this.field.getTile({
+  //                 x: prep_parcels[i].x,
+  //                 y: prep_parcels[i].y,
+  //             });
 
-    //             let endTile = this.field.getTile({
-    //                 x: prep_parcels[j].x,
-    //                 y: prep_parcels[j].y,
-    //             });
+  //             let endTile = this.field.getTile({
+  //                 x: prep_parcels[j].x,
+  //                 y: prep_parcels[j].y,
+  //             });
 
-    //             let path = await this.field.bfsWrapper(stTile, endTile, rider.blocking_agents);
-    //             if (path == -1 || path.length == 0) {
-    //                 costs[i][j] = Infinity;
-    //                 paths[i][j] = [];
-    //             } else {
-    //                 paths[i][j] = path;
-    //                 costs[i][j] = path.length;
-    //             }
-    //         }
-    //     }
-    // }
+  //             let path = await this.field.bfsWrapper(stTile, endTile, rider.blocking_agents);
+  //             if (path == -1 || path.length == 0) {
+  //                 costs[i][j] = Infinity;
+  //                 paths[i][j] = [];
+  //             } else {
+  //                 paths[i][j] = path;
+  //                 costs[i][j] = path.length;
+  //             }
+  //         }
+  //     }
+  // }
 
-    // return [costs, paths, prep_parcels];
+  // return [costs, paths, prep_parcels];
 
   /**
    * Removes a random number of elements from a list
@@ -760,7 +780,12 @@ export class Genetic {
         target_position = new Position(rider.trg.x, rider.trg.y).moveTo(
           Direction[dir]
         );
-        console.log("⚠️ trying to move ", Direction[dir], " to ", target_position);
+        console.log(
+          "⚠️ trying to move ",
+          Direction[dir],
+          " to ",
+          target_position
+        );
         let target_tile = this.field.getTile(target_position);
 
         if (
@@ -816,13 +841,13 @@ export class Genetic {
       // and reward) of each parcel
       console.log("starting positions: ");
       for (const r of this.riders) {
-          r.log("Rider at: " + r.trg.x + " " + r.trg.y);
-          const [costs, paths, parc] = await this.buildGraphInOut(r);
-          riders_graphs.push({
-              costs: costs,
-              paths: paths,
-              nodes: parc,
-          });
+        r.log("Rider at: " + r.trg.x + " " + r.trg.y);
+        const [costs, paths, parc] = await this.buildGraphInOut(r);
+        riders_graphs.push({
+          costs: costs,
+          paths: paths,
+          nodes: parc,
+        });
       }
 
       // compute the delivery-only fits for each rider and generate the delivery plans
@@ -878,47 +903,75 @@ export class Genetic {
         let plan = [];
 
         if (best_path[r] == "D") {
-            // if plan is to deliver only, assign it
-            plan = delivery_only_plans[r];
+          // if plan is to deliver only, assign it
+          plan = delivery_only_plans[r];
         } else {
-            // if no valid plan was found or fitness is 0 generate a backup plan
-            if (best_path[r].length == 0 || best_fit == 0) {
-                plan = this.backupPlan(this.riders[r]);
+          // if no valid plan was found or fitness is 0 generate a backup plan
+          if (best_path[r].length == 0 || best_fit == 0) {
+            plan = this.backupPlan(this.riders[r]);
 
-                console.log("[BRAIN] Backup plan generated");
-                all_plans.push(plan[0]);
-                continue;
-            }
+            console.log("[BRAIN] Backup plan generated");
+            all_plans.push(plan[0]);
+            continue;
+          }
 
-            // Use the path directly from PDDL solver
-            plan = riders_graphs[r].path;
+          // Use the path directly from PDDL solver
+          plan = riders_graphs[r].path;
 
-            // The path is already a sequence of Action objects, so we don't need to convert it
-            // We just need to add pickup and putdown actions
+          // The path is already a sequence of Action objects, so we don't need to convert it
+          // We just need to add pickup and putdown actions
 
-            if (plan.length > 0) {
-                // Add pickup action at the end of the path
-                let lastMove = plan[plan.length - 1];
-                plan.push(new Action(lastMove.target, lastMove.target, ActionType.PICKUP, null));
+          if (plan.length > 0) {
+            // Add pickup action at the end of the path
+            let lastMove = plan[plan.length - 1];
+            plan.push(
+              new Action(
+                lastMove.target,
+                lastMove.target,
+                ActionType.PICKUP,
+                null
+              )
+            );
 
-                // Find closest delivery zone and add move actions to it
-                let closestDelivery = this.field.getClosestDeliveryZones(lastMove.target, this.riders[r].blocking_agents)[0];
-                if (closestDelivery) {
-                    let deliveryPath = await this.field.bfsWrapper(lastMove.target, closestDelivery, this.riders[r].blocking_agents);
-                    if (Array.isArray(deliveryPath)) {
-                        for (let i = 0; i < deliveryPath.length - 1; i++) {
-                            plan.push(new Action(deliveryPath[i], deliveryPath[i+1], ActionType.MOVE, null));
-                        }
-                    }
-
-                    // Add putdown action at the delivery zone
-                    plan.push(new Action(closestDelivery, closestDelivery, ActionType.PUTDOWN, null));
+            // Find closest delivery zone and add move actions to it
+            let closestDelivery = this.field.getClosestDeliveryZones(
+              lastMove.target,
+              this.riders[r].blocking_agents
+            )[0];
+            if (closestDelivery) {
+              let deliveryPath = await this.field.bfsWrapper(
+                lastMove.target,
+                closestDelivery,
+                this.riders[r].blocking_agents
+              );
+              if (Array.isArray(deliveryPath)) {
+                for (let i = 0; i < deliveryPath.length - 1; i++) {
+                  plan.push(
+                    new Action(
+                      deliveryPath[i],
+                      deliveryPath[i + 1],
+                      ActionType.MOVE,
+                      null
+                    )
+                  );
                 }
+              }
+
+              // Add putdown action at the delivery zone
+              plan.push(
+                new Action(
+                  closestDelivery,
+                  closestDelivery,
+                  ActionType.PUTDOWN,
+                  null
+                )
+              );
             }
+          }
         }
 
         all_plans.push(plan);
-    }
+      }
 
       // print the generated plans
       for (let r = 0; r < this.nriders; r++) {
@@ -929,8 +982,8 @@ export class Genetic {
       }
       return [all_plans, best_fit];
     } catch (error) {
-        console.error("Error in createPlan:", error);
-        return [[], 0];
+      console.error("Error in createPlan:", error);
+      return [[], 0];
     }
   }
 
@@ -941,46 +994,46 @@ export class Genetic {
    */
   async newPlan() {
     if (this.planLock) {
-        console.log("Brain is already planning...");
-        return;
+      console.log("Brain is already planning...");
+      return;
     }
     this.planLock = true;
 
     try {
-        let exp_decay = 0.9;
-        let start = new Date().getTime();
-        const [tmp_plan, best_fit] = await this.createPlan();
-        this.tot_time += new Date().getTime() - start;
-        this.tot_plans += 1;
-        this.plan_time_avg =
-            exp_decay * this.plan_time_avg +
-            (1 - exp_decay) * (this.tot_time / this.tot_plans);
+      let exp_decay = 0.9;
+      let start = new Date().getTime();
+      const [tmp_plan, best_fit] = await this.createPlan();
+      this.tot_time += new Date().getTime() - start;
+      this.tot_plans += 1;
+      this.plan_time_avg =
+        exp_decay * this.plan_time_avg +
+        (1 - exp_decay) * (this.tot_time / this.tot_plans);
 
-        console.log("AVG plan generation ", this.tot_time / this.tot_plans, "ms");
-        console.log("proposed fit ", best_fit, " current fit ", this.plan_fit);
+      console.log("AVG plan generation ", this.tot_time / this.tot_plans, "ms");
+      console.log("proposed fit ", best_fit, " current fit ", this.plan_fit);
 
-        const MINIMUM_GAIN = 1.2;
-        if (best_fit > this.plan_fit * MINIMUM_GAIN || this.plan_fit == 0) {
-            if (tmp_plan && tmp_plan.every(plan => Array.isArray(plan))) {
-                this.plan_fit = best_fit;
+      const MINIMUM_GAIN = 1.2;
+      if (best_fit > this.plan_fit * MINIMUM_GAIN || this.plan_fit == 0) {
+        if (tmp_plan && tmp_plan.every((plan) => Array.isArray(plan))) {
+          this.plan_fit = best_fit;
 
-                for (let i = 0; i < this.nriders; i++) {
-                    this.riders[i].plan = tmp_plan[i];
-                }
+          for (let i = 0; i < this.nriders; i++) {
+            this.riders[i].plan = tmp_plan[i];
+          }
 
-                console.log("New plan accepted ✅");
-            } else {
-                console.log("Invalid plan generated, keeping current plan");
-            }
+          console.log("New plan accepted ✅");
         } else {
-            console.log("New plan rejected ❌");
+          console.log("Invalid plan generated, keeping current plan");
         }
+      } else {
+        console.log("New plan rejected ❌");
+      }
     } catch (error) {
-        console.error("Error in newPlan:", error);
+      console.error("Error in newPlan:", error);
     } finally {
-        this.planLock = false;
+      this.planLock = false;
     }
-}
+  }
   /**
    *  This is a utility function used to print the matrix of costs
    *  representing the graph of the parcels used by the genetic algorithm.
