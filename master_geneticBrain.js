@@ -92,16 +92,24 @@ export class Genetic {
 
         // Compute the cost and path from the player to the parcel
         let start = this.field.getTile({ x: p.x, y: p.y });
+        // console.log(`Start tile: ${start.position.x}, ${start.position.y}`);
         let end = this.field.getTile({ x: rider.trg.x, y: rider.trg.y });
-        let path_from_player_result = await this.field.bfsWrapper([{start, end, i: 0, j: 0}], rider.blocking_agents);
-        let cost_from_player, path_from_player;
-        if (path_from_player_result.length === 0 || path_from_player_result[0].path === -1) {
-            cost_from_player = Infinity;
-            path_from_player = [];
-        } else {
-            path_from_player = path_from_player_result[0].path;
-            cost_from_player = path_from_player.length - 1;
+        // console.log(`End tile: ${end.position.x}, ${end.position.y}`);
+
+        if (!start || !end) {
+          console.log(`⚠️ Invalid start or end tile for parcel ${key}:`, { start, end });
+          continue;
         }
+
+        let path_from_player = await this.field.bfsWrapper([{start, end, i: 0, j: 0}], rider.blocking_agents);
+        let cost_from_player, path_from_player_result;
+        if (path_from_player.length === 0 || path_from_player[0].path === -1) {
+          cost_from_player = Infinity;
+          path_from_player_result = [];
+      } else {
+          path_from_player_result = path_from_player[0].path;
+          cost_from_player = path_from_player_result.length - 1;
+      }
 
         // Compute the cost and path from the parcel to the closest delivery zone
         start = { x: p.x, y: p.y };
@@ -134,28 +142,50 @@ export class Genetic {
     let costs = Array(prep_parcels.length).fill().map(() => Array(prep_parcels.length).fill(Infinity));
     let paths = Array(prep_parcels.length).fill().map(() => Array(prep_parcels.length).fill([]));
 
+    for (let i = 0; i < prep_parcels. length; i++) {
+      costs[i][i] = Infinity;
+      paths [i][i] = [];
+    }
+
     // Create a list of all start-end couples
     let bfsCouples = [];
     for (let i = 0; i < prep_parcels.length; i++) {
         for (let j = 0; j < prep_parcels.length; j++) {
-            if (i !== j) {
-                let stTile = this.field.getTile({
-                    x: prep_parcels[i].x,
-                    y: prep_parcels[i].y,
-                });
-                let endTile = this.field.getTile({
-                    x: prep_parcels[j].x,
-                    y: prep_parcels[j].y,
-                });
-                bfsCouples.push({
-                    start: { x: stTile.position.x, y: stTile.position.y },
-                    end: { x: endTile.position.x, y: endTile.position.y },
-                    i,
-                    j
-                });
-            }
+            let stTile = this.field.getTile({
+                x: prep_parcels[i].x,
+                y: prep_parcels[i].y,
+            });
+            let endTile = this.field.getTile({
+                x: prep_parcels[j].x,
+                y: prep_parcels[j].y,
+            });
+            bfsCouples.push({
+                start: { x: stTile.position.x, y: stTile.position.y },
+                end: { x: endTile.position.x, y: endTile.position.y },
+                i,
+                j
+            });
         }
     }
+
+    // Handle the case when there's only one parcel
+    if (prep_parcels.length === 1) {
+      console.log("Only one parcel found. Creating self-couple.");
+      const parcel = prep_parcels[0];
+      const tile = this.field.getTile({ x: parcel.x, y: parcel.y });
+      if (tile) {
+          bfsCouples = [{
+              start: tile.position,
+              end: tile.position,
+              i: 0,
+              j: 0
+          }];
+          costs = [[0]];
+          paths = [[[]]]
+      } else {
+          console.error("Invalid tile for single parcel:", parcel);
+      }
+    }  
 
     console.log(`Created ${bfsCouples.length} couples for BFS`);
 
@@ -730,7 +760,7 @@ export class Genetic {
         target_position = new Position(rider.trg.x, rider.trg.y).moveTo(
           Direction[dir]
         );
-        console.log("trying to move ", Direction[dir], " to ", target_position);
+        console.log("⚠️ trying to move ", Direction[dir], " to ", target_position);
         let target_tile = this.field.getTile(target_position);
 
         if (

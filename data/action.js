@@ -21,6 +21,8 @@ export class Action {
     this.target = target;
     this.type = type;
     this.action_parcel = action_parcel;
+
+    console.log("Action created: ", source, target);
   }
 
   /**
@@ -83,6 +85,9 @@ export class Action {
    * Prints the action
    */
   printAction() {
+    if(this.source == undefined || this.target == undefined) {
+      console.log("⚠️ undefined action");
+    }
     if (this.action_parcel != null) {
       console.log(
         "\t",

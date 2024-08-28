@@ -121,6 +121,7 @@ riders.forEach((rider, index) => {
     // if memorized parcels in the sensing range are not present
     // anymore, remove them from the parcels list
     for (const [key, value] of parcels.entries()) {
+      console.log("value: ", value)
       let parc_pos = new Position(value.x, value.y);
       let found = false;
       let dist = manhattanDistance(rider.position, parc_pos);
@@ -203,6 +204,7 @@ riders.forEach((rider, index) => {
     for (const a of perceived_agents) {
       if (a.name != "god") {
         if (manhattanDistance(rider.position, a) < BLOCKING_DISTANCE) {
+          console.log("Agent blocking: ", a);
           rider.blocking_agents.set(a.id, a);
           agentsBeliefSet.declare(`agent_t${a.x}_${a.y}`);
         }
@@ -217,6 +219,7 @@ setInterval(() => {
   riders.forEach((rider) => {
     // reduce reward of parcels that are not in the sensing range
     for (const [key, value] of parcels.entries()) {
+      console.log("value2: ", value)
       let parc_pos = new Position(value.x, value.y);
       let dist = manhattanDistance(rider.position, parc_pos);
       if (dist >= rider.config.PARCELS_OBSERVATION_DISTANCE) {
@@ -269,6 +272,7 @@ setInterval(() => {
 
       let blk_agents = [];
       for (const blk of rider.blocking_agents.values()) {
+        console.log("blk: ", blk)
         blk_agents.push(blk.x + "-" + blk.y);
       }   
 
@@ -283,6 +287,7 @@ setInterval(() => {
   });
   let dash_parcels = [];
   for (const [key, p] of parcels.entries()) {
+    console.log("p: ", p)
     dash_parcels.push({ x: p.x, y: p.y, reward: p.reward });
   }
 

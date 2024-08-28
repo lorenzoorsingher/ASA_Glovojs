@@ -133,6 +133,7 @@ export class Field {
    * @returns {Tile} tile at the given position
    */
   getTile(pos) {
+    // console.log("Getting tile at position:", pos);
     if (pos.x < 0 || pos.x >= this.width || pos.y < 0 || pos.y >= this.height) {
       console.log("Tile out of bounds");
       return -1;
@@ -190,13 +191,6 @@ export class Field {
     return neighbors;
   }
 
-  bfs(couples, blocking_agents) {
-    return couples.map(couple => {
-      const path = this.bfsSingle(couple.start, couple.end, blocking_agents);
-      return { i: couple.i, j: couple.j, path: path };
-    });
-  }
-
   /**
    * Computes the shortest path between two positions using
    * the Breadth First Search algorithm
@@ -214,6 +208,9 @@ export class Field {
 
     const CACHE = true;
 
+    let startTile = this.getTile(start);
+    let endTile = this.getTile(end);
+
     let blocking = [];
     for (const a of blocking_agents.values()) {
       blocking.push(a.x + "-" + a.y);
@@ -221,7 +218,7 @@ export class Field {
 
     // creates a unique cache entry for the combination of start, end and blocking agents
     blocking = blocking.sort();
-    let entry = start.id + "_" + end.id + "_" + blocking.join("_");
+    let entry = startTile.id + "_" + endTile.id + "_" + blocking.join("_");
 
     // check if the path is already in the cache
     if (CACHE) {
@@ -235,20 +232,19 @@ export class Field {
 
     // check whether the start or end tile is unreachable
     if (
-      this.isTileUnreachable(start, blocking) ||
-      this.isTileUnreachable(end, blocking)
+      this.isTileUnreachable(startTile, blocking) ||
+      this.isTileUnreachable(endTile, blocking)
     ) {
       return -1;
     }
 
     // BFS
-    distance[start.id] = 0;
-    queue.push(this.getTile(start.position));
+    distance[startTile.id] = 0;
+    queue.push(startTile);
     while (queue.length > 0) {
       const node = queue.shift();
       for (const n of node.getNeighbors()) {
         if (!blocking.includes(n.x + "-" + n.y)) {
-          VERBOSE && console.log(node.getNeighbors());
           const n_tile = this.getTile(n);
           if (distance[n_tile.id] == undefined) {
             par[n_tile.id] = node;
@@ -260,8 +256,8 @@ export class Field {
     }
 
     let path = [];
-    let currentNode = end.id;
-    path.push(end.id);
+    let currentNode = endTile.id;
+    path.push(endTile.id);
     while (par[currentNode] !== undefined) {
       path.push(par[currentNode].id);
       currentNode = par[currentNode].id;
@@ -295,6 +291,7 @@ export class Field {
     let closest = [];
 
     for (let d of this.deliveryZones) {
+      console.log([{start: this.getTile(d), end: this.getTile(pos), i: 0, j: 0}]);
         const bfsResult = this.bfs([{start: this.getTile(d), end: this.getTile(pos), i: 0, j: 0}], blocking_agents);
         if (bfsResult.length > 0 && bfsResult[0].path !== -1) {
             const path = bfsResult[0].path;
@@ -361,6 +358,10 @@ export class Field {
    * @returns {boolean} whether the tile is unreachable
    */
   isTileUnreachable(tile, blocking = []) {
+    if (!tile || !(tile instanceof Tile)) {
+      console.error("⚠️ Invalid tile passed to isTileUnreachable:", tile);
+      return true;
+    }
     if (blocking.includes(tile.id) && blocking.length > 0) {
       return true;
     }
@@ -382,15 +383,12 @@ export class Field {
   async bfsWrapper(couples, blocking_agents) {
     console.log("bfsWrapper called with couples:", JSON.stringify(couples, null, 2));
 
-    // Ensure couples is always an array
-    const couplesArray = Array.isArray(couples) ? couples : [couples];
-
-    if (couplesArray.length === 0) {
+    if (!Array.isArray(couples) || couples.length === 0) {
         console.warn("No valid couples provided to bfsWrapper");
         return [];
     }
 
-    const processedCouples = couplesArray.map((couple, index) => {
+    const processedCouples = couples.map((couple, index) => {
         if (!couple || typeof couple !== 'object') {
             console.warn(`Invalid couple at index ${index}:`, couple);
             return null;
@@ -417,6 +415,12 @@ export class Field {
         return [];
     }
 
+    // Handle single couple case
+    if (processedCouples.length === 1 && processedCouples[0].start.equals(processedCouples[0].end)) {
+        console.log("Single self-couple detected. Returning empty path.");
+        return [{ i: processedCouples[0].i, j: processedCouples[0].j, path: [] }];
+    }
+
     if (this.USE_PDDL) {
         try {
             console.log("Calling bfs_pddl with processed couples:", JSON.stringify(processedCouples, null, 2));
@@ -438,14 +442,18 @@ export class Field {
     }
 }
 
-bfs(couples, blocking_agents) {
-    if (!Array.isArray(couples)) {
-        console.warn("bfs received non-array couples:", couples);
-        return [];
-    }
-    return couples.map(couple => {
-        const path = this.bfsSingle(couple.start, couple.end, blocking_agents);
-        return { i: couple.i, j: couple.j, path: path };
-    });
-}
+
+  bfs(couples, blocking_agents) {
+    console.log("bfs called with couples:", JSON.stringify(couples, null, 2));
+    console.log("blocking_agents:", JSON.stringify(blocking_agents, null, 2));
+      if (!Array.isArray(couples)) {
+          console.warn("bfs received non-array couples:", couples);
+          return [];
+      }
+      return couples.map(couple => {
+          console.log("bfs called from: ", couple.start.position, " to: ", couple.end.position);
+          const path = this.bfsSingle(couple.start.position, couple.end.position, blocking_agents);
+          return { i: couple.i, j: couple.j, path: path };
+      });
+  }
 }
