@@ -915,60 +915,64 @@ export class Genetic {
             continue;
           }
 
-          // Use the path directly from PDDL solver
-          plan = riders_graphs[r].path;
+          // prepare the list of parcels to be picked up
+          for (const idx of best_path[r]) {
+            let par = riders_graphs[r].nodes[idx];
 
-          // The path is already a sequence of Action objects, so we don't need to convert it
-          // We just need to add pickup and putdown actions
+            parcels_path[r].push({
+              pos: new Position(par.x, par.y),
+              parcel: par.id,
+              path_in: par.path_in,
+              path_out: par.path_out,
+              inc: par.in_c,
+            });
+          }
 
-          console.log("plan: ", plan);
-          if (plan.length > 0) {
-            // Add pickup action at the end of the path
-            let lastMove = plan[plan.length - 1];
-            plan.push(
-              new Action(
-                lastMove.target,
-                lastMove.target,
+          let chosen_path = parcels_path[r];
+
+          // insert current rider action as first action in case
+          // the rider is not at the starting position yet
+          let starting_action = new Action(
+            this.riders[r].src,
+            this.riders[r].trg,
+            ActionType.MOVE,
+            null
+          );
+
+          plan.push(starting_action);
+
+          // insert actions for reaching the first parcel
+          let actions = Action.pathToAction(
+            chosen_path[0].path_in,
+            ActionType.PICKUP,
+            chosen_path[0].parcel
+          );
+          plan = plan.concat(actions);
+
+          // insert actions for reaching the rest of the parcels
+          for (let i = 0; i < best_path[r].length; i++) {
+            let curridx = best_path[r][i];
+            if (i + 1 < best_path[r].length) {
+              let nextidx = best_path[r][i + 1];
+              let semi_path = riders_graphs[r].paths[curridx][nextidx];
+
+              actions = Action.pathToAction(
+                semi_path,
                 ActionType.PICKUP,
-                null
-              )
-            );
-
-            // Find closest delivery zone and add move actions to it
-            let closestDelivery = this.field.getClosestDeliveryZones(
-              lastMove.target,
-              this.riders[r].blocking_agents
-            )[0];
-            if (closestDelivery) {
-              let deliveryPath = await this.field.bfsWrapper(
-                lastMove.target,
-                closestDelivery,
-                this.riders[r].blocking_agents
+                chosen_path[i + 1].parcel
               );
-              if (Array.isArray(deliveryPath)) {
-                for (let i = 0; i < deliveryPath.length - 1; i++) {
-                  plan.push(
-                    new Action(
-                      deliveryPath[i],
-                      deliveryPath[i + 1],
-                      ActionType.MOVE,
-                      null
-                    )
-                  );
-                }
-              }
 
-              // Add putdown action at the delivery zone
-              plan.push(
-                new Action(
-                  closestDelivery,
-                  closestDelivery,
-                  ActionType.PUTDOWN,
-                  null
-                )
-              );
+              plan = plan.concat(actions);
             }
           }
+
+          // insert actions for reaching the delivery zone and delivering the parcels
+          actions = Action.pathToAction(
+            chosen_path[chosen_path.length - 1].path_out,
+            ActionType.PUTDOWN,
+            null
+          );
+          plan = plan.concat(actions);
         }
 
         all_plans.push(plan);

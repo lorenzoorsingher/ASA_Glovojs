@@ -48,7 +48,7 @@ class Intention {
   stop;
   reached;
   started;
-  planner = { 'pickup': bfs_pddl }
+  planner = { pickup: bfs_pddl };
   move;
 
   constructor(goal, pickUp = false, deliver = false, type, client) {
@@ -59,9 +59,7 @@ class Intention {
     this.stop = false;
     this.reached = false;
     this.started = false;
-    this.move = {
-
-    }
+    this.move = {};
   }
 }
 
@@ -121,7 +119,7 @@ riders.forEach((rider, index) => {
     // if memorized parcels in the sensing range are not present
     // anymore, remove them from the parcels list
     for (const [key, value] of parcels.entries()) {
-      console.log("value: ", value)
+      // console.log("value: ", value);
       let parc_pos = new Position(value.x, value.y);
       let found = false;
       let dist = manhattanDistance(rider.position, parc_pos);
@@ -199,7 +197,6 @@ riders.forEach((rider, index) => {
       agentsBeliefSet.undeclare(obj);
     });
 
-
     let BLOCKING_DISTANCE = 100;
     for (const a of perceived_agents) {
       if (a.name != "god") {
@@ -212,14 +209,13 @@ riders.forEach((rider, index) => {
     }
   });
 });
-  
 
 // PARCELS CLOCK
 setInterval(() => {
   riders.forEach((rider) => {
     // reduce reward of parcels that are not in the sensing range
     for (const [key, value] of parcels.entries()) {
-      console.log("value2: ", value)
+      // console.log("value2: ", value);
       let parc_pos = new Position(value.x, value.y);
       let dist = manhattanDistance(rider.position, parc_pos);
       if (dist >= rider.config.PARCELS_OBSERVATION_DISTANCE) {
@@ -272,9 +268,9 @@ setInterval(() => {
 
       let blk_agents = [];
       for (const blk of rider.blocking_agents.values()) {
-        console.log("blk: ", blk)
+        console.log("blk: ", blk);
         blk_agents.push(blk.x + "-" + blk.y);
-      }   
+      }
 
       riders_data.push({
         x: rider.position.x,
@@ -287,7 +283,7 @@ setInterval(() => {
   });
   let dash_parcels = [];
   for (const [key, p] of parcels.entries()) {
-    console.log("p: ", p)
+    // console.log("p: ", p)
     dash_parcels.push({ x: p.x, y: p.y, reward: p.reward });
   }
 
@@ -366,13 +362,13 @@ async function loop(rider) {
           await brain.newPlan();
           continue;
         }
-        
+
         // // Use the current position as start and the target as end
         // let start = new Position(Math.round(rider.position.x), Math.round(rider.position.y));
         // let end = new Position(rider.trg.x, rider.trg.y);
-        
+
         // let path = await map.bfsWrapper(start, end, rider.blocking_agents);
-        
+
         // if (path === -1) {
         //     rider.log("No path found. Recalculating plan");
         //     brain.plan_fit = 0;
@@ -421,23 +417,25 @@ async function loop(rider) {
       }
     } else {
       if (rider.putting_down) {
-          rider.log("Empty plan but waiting for delivery to complete");
+        rider.log("Empty plan but waiting for delivery to complete");
       } else {
-          if (Date.now() - rider.plan_cooldown > 1000) {
-              rider.plan_cooldown = Date.now();
-              rider.log("Plan is empty. Recalculating plan");
-              brain.plan_fit = 0;
-              await brain.newPlan();
-          }
+        if (Date.now() - rider.plan_cooldown > 1000) {
+          rider.plan_cooldown = Date.now();
+          rider.log("Plan is empty. Recalculating plan");
+          brain.plan_fit = 0;
+          await brain.newPlan();
+        }
       }
     }
-  await new Promise((res) => setImmediate(res));
+    await new Promise((res) => setImmediate(res));
   }
 }
 
 // start the loop for all riders
 for (let i = 0; i < riders.length; i++) {
-  loop(riders[i]).catch(error => console.error(`Error in loop for rider ${i}:`, error));
+  loop(riders[i]).catch((error) =>
+    console.error(`Error in loop for rider ${i}:`, error)
+  );
 }
 
-export { parcelsBeliefSet, agentsBeliefSet, map }
+export { parcelsBeliefSet, agentsBeliefSet, map };
