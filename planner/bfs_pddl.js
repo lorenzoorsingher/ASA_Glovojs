@@ -5,26 +5,26 @@ import { map } from "../master_agent.js";
 
 const pddlCache = new Map();
 
-function generateCacheKey(couples, obstacles) {
-  const couplesKey = couples.map(c => `${c.start.x},${c.start.y}-${c.end.x},${c.end.y}`).join('|');
-  
-  let obstaclesKey = '';
-  if (Array.isArray(obstacles)) {
-    obstaclesKey = obstacles.map(o => `${o.x},${o.y}`).sort().join('|');
-  } else if (obstacles instanceof Map) {
-    obstaclesKey = Array.from(obstacles.values())
-      .map(o => `${o.x},${o.y}`)
-      .sort()
-      .join('|');
-  } else if (typeof obstacles === 'object' && obstacles !== null) {
-    obstaclesKey = Object.values(obstacles)
-      .map(o => `${o.x},${o.y}`)
-      .sort()
-      .join('|');
-  }
+// function generateCacheKey(couples, obstacles) {
+//   const couplesKey = couples.map(c => `${c.start.x},${c.start.y}-${c.end.x},${c.end.y}`).join('|');
 
-  return `${couplesKey}#${obstaclesKey}`;
-}
+//   let obstaclesKey = '';
+//   if (Array.isArray(obstacles)) {
+//     obstaclesKey = obstacles.map(o => `${o.x},${o.y}`).sort().join('|');
+//   } else if (obstacles instanceof Map) {
+//     obstaclesKey = Array.from(obstacles.values())
+//       .map(o => `${o.x},${o.y}`)
+//       .sort()
+//       .join('|');
+//   } else if (typeof obstacles === 'object' && obstacles !== null) {
+//     obstaclesKey = Object.values(obstacles)
+//       .map(o => `${o.x},${o.y}`)
+//       .sort()
+//       .join('|');
+//   }
+
+//   return `${couplesKey}#${obstaclesKey}`;
+// }
 
 export async function bfs_pddl(couplesInput, blocking_agents) {
   const couples = Array.isArray(couplesInput) ? couplesInput : [couplesInput];
@@ -35,12 +35,12 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
       return [];
     }
 
-    const cacheKey = generateCacheKey(couples, blocking_agents);
-    
-    if (pddlCache.has(cacheKey)) {
-      console.log("Cache hit!");
-      return pddlCache.get(cacheKey);
-    }
+    // const cacheKey = generateCacheKey(couples, blocking_agents);
+
+    // if (pddlCache.has(cacheKey)) {
+    //   console.log("Cache hit!");
+    //   return pddlCache.get(cacheKey);
+    // }
 
     let initialState = [];
     let objectives = [];
@@ -71,8 +71,16 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
     }
 
     for (let agent of blocking_agents.values()) {
-      if (agent && typeof agent.x === "number" && typeof agent.y === "number" && !isNaN(agent.x) && !isNaN(agent.y)) {
-        initialState.push(`(obstacle t_${Math.round(agent.x)}_${Math.round(agent.y)})`);
+      if (
+        agent &&
+        typeof agent.x === "number" &&
+        typeof agent.y === "number" &&
+        !isNaN(agent.x) &&
+        !isNaN(agent.y)
+      ) {
+        initialState.push(
+          `(obstacle t_${Math.round(agent.x)}_${Math.round(agent.y)})`
+        );
       }
     }
 
@@ -119,21 +127,25 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
       let agentName = `agent${index}`;
 
       for (let action of pddlResult) {
-        if (action && action.action === "MOVE" && action.args[0] === agentName) {
+        if (
+          action &&
+          action.action === "MOVE" &&
+          action.args[0] === agentName
+        ) {
           let move = action.args[2];
           move = move.slice(2).replace("_", "-");
           path.push(move);
         }
       }
 
-      return { 
-        i: couple.i, 
-        j: couple.j, 
-        path: path.length > 0 ? path : -1 
+      return {
+        i: couple.i,
+        j: couple.j,
+        path: path.length > 0 ? path : -1,
       };
     });
 
-    pddlCache.set(cacheKey, paths);
+    // pddlCache.set(cacheKey, paths);
 
     return paths;
   } catch (error) {
