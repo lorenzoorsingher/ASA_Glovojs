@@ -71,3 +71,6 @@
 - [ ] fix bfs_pddl not different between different paths
 
 - [ ] also getClosestDeliveryZones must be updated to use the new parallelized
+- [ ] add range to filter parcels in BFS
+- [ ] add range to filter delivery zones in BFS
+- [ ] add range for aagents in the caching system
