@@ -116,7 +116,7 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
 )`;
 
     let pddlResult = await onlineSolver(domainString, problemString);
-
+    // console.log("PDDL result:", pddlResult);
     if (!pddlResult || !Array.isArray(pddlResult) || pddlResult.length === 0) {
       console.log("No valid paths found by PDDL solver");
       return couples.map(() => ({ path: -1 }));
@@ -124,8 +124,9 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
 
     let paths = couples.map((couple, index) => {
       let path = [];
-      let agentName = `agent${index}`;
+      let agentName = `AGENT${index}`;
 
+      //console.log("processing agent", agentName, " ", couple);
       for (let action of pddlResult) {
         if (
           action &&
@@ -146,7 +147,7 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
     });
 
     // pddlCache.set(cacheKey, paths);
-
+    //console.log("PDDL paths:", paths);
     return paths;
   } catch (error) {
     console.error("Error in bfs_pddl:", error);
