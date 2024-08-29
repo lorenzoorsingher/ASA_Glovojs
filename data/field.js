@@ -483,15 +483,18 @@ export class Field {
     // }
 
     let results = [];
-    if (this.USE_PDDL) {
+    if (this.USE_PDDL && processedCouples.length > 0) {
+      // console.log(processedCouples);
       results = await bfs_pddl(processedCouples, blocking_agents);
+      // ddd = 8;
     } else {
       results = this.bfs(processedCouples, blocking_agents);
     }
 
     for (const res of results) {
       let ref = filtered_refs.get(res.i + "-" + res.j);
-
+      // console.log("res", res);
+      // console.log("filtered_refs", filtered_refs);
       this.plansCache.setEntry(ref.start, ref.end, blocking_agents, res.path);
     }
 
