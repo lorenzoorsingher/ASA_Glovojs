@@ -1,6 +1,6 @@
 import { Tile } from "./tile.js";
 import { Position, Direction } from "./position.js";
-import { sortByKey } from "../utils.js";
+import { manhattanDistance, sortByKey } from "../utils.js";
 import { Beliefset } from "@unitn-asa/pddl-client";
 import { bfs_pddl } from "../planner/bfs_pddl.js";
 import { PlansCache } from "../planner/plan_cacher.js";
@@ -21,8 +21,9 @@ const VERBOSE = false;
  * @property {Array} parcelSpawners array of spawnable positions
  */
 export class Field {
-  constructor(usePddl = false) {
+  constructor(usePddl = false, closest_dlv = 2) {
     this.USE_PDDL = usePddl;
+    this.CLOSEST_DLV = closest_dlv;
     this.beliefSet = new Beliefset();
     this.plansCache = new PlansCache();
   }
@@ -267,11 +268,15 @@ export class Field {
    * @returns {Array} array of closest delivery zones
    */
   async getClosestDeliveryZones(pos, blocking_agents) {
-    console.log("Getting closest delivery zones for position:", pos);
-
-    let couples = this.deliveryZones.map((deliveryZone, index) => ({
+    // only consider the 2 closest delivery zones in manhattan distance
+    let zones = this.deliveryZones.map((deliveryZone, index) => ({
+      zone: deliveryZone,
+      dist: manhattanDistance(pos, deliveryZone),
+    }));
+    zones = sortByKey(zones, "dist");
+    let couples = zones.slice(0, this.CLOSEST_DLV).map((entry, index) => ({
       start: pos,
-      end: deliveryZone,
+      end: entry.zone,
       i: index,
       j: 0, // We're using j=0 as we don't need it for this function
     }));
