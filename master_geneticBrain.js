@@ -765,7 +765,7 @@ export class Genetic {
       if (spawnable == -1) {
         rider.log("No spawnable tiles reachable");
       } else {
-        console.log("Spawnable tile found at: ", spawnable[0]);
+        // console.log("Spawnable tile found at: ", spawnable[0]);
         path_to_spawnable = spawnable[0].path;
       }
     }
@@ -778,7 +778,7 @@ export class Genetic {
     } else if (path_to_spawnable != -1) {
       console.log("[BACKUP] A reachable spawnable tile was found!");
 
-      console.log("path to spawnable: ", path_to_spawnable);
+      // console.log("path to spawnable: ", path_to_spawnable);
 
       actions = Action.pathToAction(path_to_spawnable, ActionType.MOVE, null);
       rew = 0;
@@ -786,10 +786,6 @@ export class Genetic {
       console.log("[BACKUP] No reachable valid plans found!");
       console.log("[BACKUP] Returning random reflexive move");
       rew = 0;
-      let blocking = [];
-      for (const a of rider.blocking_agents.values()) {
-        blocking.push(a.x + "-" + a.y);
-      }
 
       let movement = null;
       let target_position = null;
@@ -807,7 +803,7 @@ export class Genetic {
 
         if (
           target_tile != -1 &&
-          !this.field.isTileUnreachable(target_tile, blocking)
+          !this.field.isTileUnreachable(target_tile, blocking_agents)
         ) {
           movement = Direction[dir];
           console.log("found walkable tile");
@@ -1001,6 +997,9 @@ export class Genetic {
         act.printAction();
       }
     }
+
+    this.field.plansCache.printMetrics();
+
     return [all_plans, best_fit];
   }
 
@@ -1011,7 +1010,7 @@ export class Genetic {
    */
   async newPlan() {
     if (this.planLock) {
-      console.log("Brain is already planning...");
+      // console.log("Brain is already planning...");
       return;
     }
     this.planLock = true;
