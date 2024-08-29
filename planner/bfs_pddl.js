@@ -123,6 +123,7 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
     }
 
     let paths = couples.map((couple, index) => {
+      let first_move = true;
       let path = [];
       let agentName = `AGENT${index}`;
 
@@ -133,6 +134,13 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
           action.action === "MOVE" &&
           action.args[0] === agentName
         ) {
+          if (first_move) {
+            first_move = false;
+            let move = action.args[1];
+            move = move.slice(2).replace("_", "-");
+            path.push(move);
+          }
+
           let move = action.args[2];
           move = move.slice(2).replace("_", "-");
           path.push(move);
