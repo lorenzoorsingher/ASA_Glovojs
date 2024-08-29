@@ -183,10 +183,10 @@ async function parsePlan(json) {
 
   var plan = [];
 
-  // console.log( '\tPlan found!' )
+  console.log("\tPlan found!");
 
   for (let /**@type {string}*/ line of lines) {
-    // console.log('- ' + line);
+    console.log("- " + line);
 
     // var number = line.shift()
     var action = line.shift();
