@@ -223,7 +223,7 @@ export class Genetic {
     for (let result of bfsResults) {
       let { i, j, path } = result;
 
-      console.log("result: ", result);
+      // console.log("result: ", result);
       if (path === -1 || path.length === 0) {
         costs[i][j] = Infinity;
         paths[i][j] = [];
@@ -857,7 +857,7 @@ export class Genetic {
     // and reward) of each parcel
     console.log("starting positions: ");
     for (const r of this.riders) {
-      r.log("Rider at: " + r.trg.x + " " + r.trg.y);
+      r.log("Rider at: ", r.trg.x, r.trg.y);
       const [costs, paths, parc] = await this.buildGraphInOut(r);
       riders_graphs.push({
         costs: costs,

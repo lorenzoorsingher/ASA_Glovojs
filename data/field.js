@@ -300,26 +300,28 @@ export class Field {
       start: pos,
       end: deliveryZone,
       i: index,
-      j: 0  // We're using j=0 as we don't need it for this function
+      j: 0, // We're using j=0 as we don't need it for this function
     }));
 
     const bfsResults = await this.bfsWrapper(couples, blocking_agents);
-
-    let closest = bfsResults.map(result => {
-      if (result.path !== -1) {
-        return {
-          x: this.deliveryZones[result.i].x,
-          y: this.deliveryZones[result.i].y,
-          distance: result.path.length - 1,
-          path: result.path
-        };
-      }
-      return null;
-    }).filter(result => result !== null);
+    // console.log("BFS results:", bfsResults);
+    let closest = bfsResults
+      .map((result) => {
+        if (result.path !== -1) {
+          return {
+            x: this.deliveryZones[result.i].x,
+            y: this.deliveryZones[result.i].y,
+            distance: result.path.length - 1,
+            path: result.path,
+          };
+        }
+        return null;
+      })
+      .filter((result) => result !== null);
 
     closest = sortByKey(closest, "distance");
 
-    console.log("Closest delivery zones:", closest);
+    // console.log("Closest delivery zones:", closest);
     return closest;
   }
 
