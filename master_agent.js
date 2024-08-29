@@ -11,8 +11,9 @@ import { manhattanDistance, hasCompletedMovement } from "./utils.js";
 import { bfs_pddl } from "./planner/bfs_pddl.js";
 
 export const VERBOSE = false;
-const LOCAL = true;
 export const USE_PDDL = true;
+
+const BLOCKING_DISTANCE = 5;
 
 let [NRIDERS, POP, GEN, PORT] = process.argv.slice(2);
 if (NRIDERS == undefined) {
@@ -197,7 +198,6 @@ riders.forEach((rider, index) => {
       agentsBeliefSet.undeclare(obj);
     });
 
-    let BLOCKING_DISTANCE = 100;
     for (const a of perceived_agents) {
       if (a.name != "god") {
         if (manhattanDistance(rider.position, a) < BLOCKING_DISTANCE) {
