@@ -3,7 +3,7 @@ import { Position } from "../data/position.js";
 import { Action, ActionType } from "../data/action.js";
 import { map } from "../master_agent.js";
 
-const pddlCache = new Map();
+// const pddlCache = new Map();
 
 // function generateCacheKey(couples, obstacles) {
 //   const couplesKey = couples.map(c => `${c.start.x},${c.start.y}-${c.end.x},${c.end.y}`).join('|');

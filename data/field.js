@@ -3,6 +3,7 @@ import { Position, Direction } from "./position.js";
 import { sortByKey } from "../utils.js";
 import { Beliefset } from "@unitn-asa/pddl-client";
 import { bfs_pddl } from "../planner/bfs_pddl.js";
+import { PlansCache } from "../planner/plan_cacher.js";
 
 const VERBOSE = false;
 
@@ -18,15 +19,12 @@ const VERBOSE = false;
  * @property {number} height height of the field
  * @property {Array} field 2D array of tiles
  * @property {Array} parcelSpawners array of spawnable positions
- * @property {Map} paths_cache cache of paths
- * @property {number} cache_hits number of cache hits
- * @property {number} cache_misses number of cache misses
- * @property {number} hit_rate cache hit rate
  */
 export class Field {
   constructor(usePddl = false) {
     this.USE_PDDL = usePddl;
     this.beliefSet = new Beliefset();
+    this.plansCache = new PlansCache();
   }
 
   init(width, height, tiles) {
@@ -34,10 +32,6 @@ export class Field {
     this.height = height;
     this.field = [];
     this.parcelSpawners = [];
-    this.paths_cache = new Map();
-    this.cache_hits = 0;
-    this.cache_misses = 0;
-    this.hit_rate = 0;
     this.beliefSet = new Beliefset();
 
     // Initialize the field
@@ -212,39 +206,22 @@ export class Field {
     const queue = [];
     const distance = {};
 
-    const CACHE = true;
-
     // console.log("[BFSSINGLE] called from: ", start, " to: ", end);
     let startTile = this.getTile(start);
     let endTile = this.getTile(end);
+
+    // check whether the start or end tile is unreachable
+    if (
+      this.isTileUnreachable(startTile, blocking_agents) ||
+      this.isTileUnreachable(endTile, blocking_agents)
+    ) {
+      return -1;
+    }
 
     let blocking = [];
     for (const a of blocking_agents.values()) {
       blocking.push(a.x + "-" + a.y);
     }
-
-    // creates a unique cache entry for the combination of start, end and blocking agents
-    blocking = blocking.sort();
-    let entry = startTile.id + "_" + endTile.id + "_" + blocking.join("_");
-
-    // check if the path is already in the cache
-    if (CACHE) {
-      if (this.paths_cache.has(entry)) {
-        this.cache_hits += 1;
-        return this.paths_cache.get(entry);
-      } else {
-        this.cache_misses += 1;
-      }
-    }
-
-    // check whether the start or end tile is unreachable
-    if (
-      this.isTileUnreachable(startTile, blocking) ||
-      this.isTileUnreachable(endTile, blocking)
-    ) {
-      return -1;
-    }
-
     // BFS
     distance[startTile.id] = 0;
     queue.push(startTile);
@@ -278,10 +255,6 @@ export class Field {
       }
     }
 
-    // if cache is enabled, store the path in the cache
-    if (CACHE) {
-      this.paths_cache.set(entry, path);
-    }
     return path;
   }
 
@@ -386,7 +359,11 @@ export class Field {
    *
    * @returns {boolean} whether the tile is unreachable
    */
-  isTileUnreachable(tile, blocking = []) {
+  isTileUnreachable(tile, blocking_agents = []) {
+    let blocking = [];
+    for (const a of blocking_agents.values()) {
+      blocking.push(a.x + "-" + a.y);
+    }
     if (!tile || !(tile instanceof Tile)) {
       console.error("⚠️ Invalid tile passed to isTileUnreachable:", tile);
       return true;
@@ -420,7 +397,29 @@ export class Field {
       return [];
     }
 
-    const processedCouples = couples
+    // CACHE FILTERING
+    let filtered_couples = [];
+    let filtered_refs = new Map();
+    let cached_couples = [];
+    for (let k = 0; k < couples.length; k++) {
+      let start = couples[k].start;
+      let end = couples[k].end;
+      let i = couples[k].i;
+      let j = couples[k].j;
+      // console.log("Checking cache for:", start, end, blocking_agents);
+      let entry = this.plansCache.getEntry(start, end, blocking_agents);
+
+      if (entry == -1) {
+        filtered_couples.push(couples[k]);
+        filtered_refs.set(i + "-" + j, { start: start, end: end });
+      } else {
+        cached_couples.push({ i: i, j: j, path: entry });
+      }
+    }
+
+    // console.log(couples);
+    // console.log(filtered_couples);
+    const processedCouples = filtered_couples
       .map((couple, index) => {
         if (couple.start instanceof Tile) {
           console.log("[BFSWRAPPER] Start is a tile");
@@ -478,46 +477,26 @@ export class Field {
       })
       .filter((couple) => couple !== null);
 
-    if (processedCouples.length === 0) {
-      console.warn("No valid couples after processing in bfsWrapper");
-      return [];
-    }
-
-    // // Handle single couple case
-    // if (
-    //   processedCouples.length === 1 &&
-    //   processedCouples[0].start.equals(processedCouples[0].end)
-    // ) {
-    //   console.log("Single self-couple detected. Returning empty path.");
-    //   return [{ i: processedCouples[0].i, j: processedCouples[0].j, path: [] }];
+    // if (processedCouples.length === 0) {
+    //   console.warn("No valid couples after processing in bfsWrapper");
+    //   return [];
     // }
 
+    let results = [];
     if (this.USE_PDDL) {
-      try {
-        // console.log(
-        //   // "Calling bfs_pddl with processed couples:",
-        //   JSON.stringify(processedCouples, null, 2)
-        // );
-        const results = await bfs_pddl(processedCouples, blocking_agents);
-
-        if (results.length === 0) {
-          console.warn(
-            "bfs_pddl returned no results, falling back to standard BFS"
-          );
-
-          crashnow = 44545;
-          return this.bfs(processedCouples, blocking_agents);
-        }
-
-        return results;
-      } catch (error) {
-        console.error("Error in PDDL-based BFS:", error);
-        console.log("Falling back to standard BFS for all");
-        return this.bfs(processedCouples, blocking_agents);
-      }
+      results = await bfs_pddl(processedCouples, blocking_agents);
     } else {
-      return this.bfs(processedCouples, blocking_agents);
+      results = this.bfs(processedCouples, blocking_agents);
     }
+
+    for (const res of results) {
+      let ref = filtered_refs.get(res.i + "-" + res.j);
+
+      this.plansCache.setEntry(ref.start, ref.end, blocking_agents, res.path);
+    }
+
+    let merged_results = cached_couples.concat(results);
+    return merged_results;
   }
 
   bfs(couples, blocking_agents) {
