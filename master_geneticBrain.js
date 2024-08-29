@@ -803,7 +803,7 @@ export class Genetic {
 
         if (
           target_tile != -1 &&
-          !this.field.isTileUnreachable(target_tile, blocking_agents)
+          !this.field.isTileUnreachable(target_tile, rider.blocking_agents)
         ) {
           movement = Direction[dir];
           console.log("found walkable tile");
@@ -1015,40 +1015,36 @@ export class Genetic {
     }
     this.planLock = true;
 
-    try {
-      let exp_decay = 0.9;
-      let start = new Date().getTime();
-      const [tmp_plan, best_fit] = await this.createPlan();
-      this.tot_time += new Date().getTime() - start;
-      this.tot_plans += 1;
-      this.plan_time_avg =
-        exp_decay * this.plan_time_avg +
-        (1 - exp_decay) * (this.tot_time / this.tot_plans);
+    let exp_decay = 0.9;
+    let start = new Date().getTime();
+    const [tmp_plan, best_fit] = await this.createPlan();
+    this.tot_time += new Date().getTime() - start;
+    this.tot_plans += 1;
+    this.plan_time_avg =
+      exp_decay * this.plan_time_avg +
+      (1 - exp_decay) * (this.tot_time / this.tot_plans);
 
-      console.log("AVG plan generation ", this.tot_time / this.tot_plans, "ms");
-      console.log("proposed fit ", best_fit, " current fit ", this.plan_fit);
+    console.log("AVG plan generation ", this.tot_time / this.tot_plans, "ms");
+    console.log("proposed fit ", best_fit, " current fit ", this.plan_fit);
 
-      const MINIMUM_GAIN = 1.2;
-      if (best_fit > this.plan_fit * MINIMUM_GAIN || this.plan_fit == 0) {
-        if (tmp_plan && tmp_plan.every((plan) => Array.isArray(plan))) {
-          this.plan_fit = best_fit;
+    const MINIMUM_GAIN = 1.2;
+    if (best_fit > this.plan_fit * MINIMUM_GAIN || this.plan_fit == 0) {
+      if (tmp_plan && tmp_plan.every((plan) => Array.isArray(plan))) {
+        this.plan_fit = best_fit;
 
-          for (let i = 0; i < this.nriders; i++) {
-            this.riders[i].plan = tmp_plan[i];
-          }
-
-          console.log("New plan accepted ✅");
-        } else {
-          console.log("Invalid plan generated, keeping current plan");
+        for (let i = 0; i < this.nriders; i++) {
+          this.riders[i].plan = tmp_plan[i];
         }
+
+        console.log("New plan accepted ✅");
       } else {
-        console.log("New plan rejected ❌");
+        console.log("Invalid plan generated, keeping current plan");
       }
-    } catch (error) {
-      console.error("Error in newPlan:", error);
-    } finally {
-      this.planLock = false;
+    } else {
+      console.log("New plan rejected ❌");
     }
+
+    this.planLock = false;
   }
   /**
    *  This is a utility function used to print the matrix of costs
