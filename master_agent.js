@@ -321,10 +321,6 @@ async function loop(rider) {
     if (rider.plan.length > 0) {
       // if the agent has completed the movement and brain has completed the plan
       if (hasCompletedMovement(rider.position) && !brain.planLock) {
-        console.log("[MASTER] Rider position: ", rider.position);
-        console.log("[MASTER] Rider plan src: ", rider.plan[0].source);
-
-        //let nextAction = rider.plan[0];
         // pick action from plan (depending on when planning was started
         // agent might at the first or second step)
         if (rider.position.equals(rider.plan[0].source)) {
@@ -365,19 +361,6 @@ async function loop(rider) {
           await brain.newPlan();
           continue;
         }
-
-        // // Use the current position as start and the target as end
-        // let start = new Position(Math.round(rider.position.x), Math.round(rider.position.y));
-        // let end = new Position(rider.trg.x, rider.trg.y);
-
-        // let path = await map.bfsWrapper(start, end, rider.blocking_agents);
-
-        // if (path === -1) {
-        //     rider.log("No path found. Recalculating plan");
-        //     brain.plan_fit = 0;
-        //     await brain.newPlan();
-        //     continue;
-        // }
 
         //avoid server spam
         while (Date.now() - start < rider.config.MOVEMENT_DURATION / 2) {

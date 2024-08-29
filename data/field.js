@@ -521,15 +521,11 @@ export class Field {
   }
 
   bfs(couples, blocking_agents) {
-    // console.log("bfs called with couples:", JSON.stringify(couples, null, 2));
-    // console.log("blocking_agents:", JSON.stringify(blocking_agents, null, 2));
     if (!Array.isArray(couples)) {
       console.warn("bfs received non-array couples:", couples);
       return [];
     }
     return couples.map((couple) => {
-      // console.log("[BFS] processing couple ", couple);
-      // console.log("bfs called from: ", couple.start, " to: ", couple.end);
       const path = this.bfsSingle(couple.start, couple.end, blocking_agents);
       return { i: couple.i, j: couple.j, path: path };
     });
