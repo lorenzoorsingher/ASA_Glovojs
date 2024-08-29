@@ -303,6 +303,7 @@ export class Field {
       j: 0, // We're using j=0 as we don't need it for this function
     }));
 
+    console.log("CDLVZ calling bfs");
     const bfsResults = await this.bfsWrapper(couples, blocking_agents);
     // console.log("BFS results:", bfsResults);
     let closest = bfsResults
@@ -355,6 +356,8 @@ export class Field {
     const randomOrder = this.parcelSpawners.sort(() => Math.random() - 0.5);
     for (const spawner of randomOrder) {
       //const tile = this.getTile(spawner);
+
+      console.log("TOSPWN calling bfs");
       let to_spawner = await this.bfsWrapper(
         [
           {
@@ -410,6 +413,7 @@ export class Field {
   }
 
   async bfsWrapper(couples, blocking_agents) {
+    console.log("[BFSWRAPPER] called");
     // console.log(
     //   "bfsWrapper called with couples:",
     //   JSON.stringify(couples, null, 2)
@@ -498,7 +502,13 @@ export class Field {
         //   // "Calling bfs_pddl with processed couples:",
         //   JSON.stringify(processedCouples, null, 2)
         // );
+
+        let start = new Date().getTime();
+
         const results = await bfs_pddl(processedCouples, blocking_agents);
+        let pddl_time = new Date().getTime() - start;
+
+        console.log("[PDDL] compute time:", pddl_time);
 
         if (results.length === 0) {
           console.warn(

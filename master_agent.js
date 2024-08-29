@@ -407,7 +407,7 @@ async function loop(rider) {
       } else {
         if (Date.now() - rider.plan_cooldown > 1000) {
           rider.plan_cooldown = Date.now();
-          rider.log("Plan is empty. Recalculating plan");
+          // rider.log("Plan is empty. Recalculating plan");
           brain.plan_fit = 0;
           await brain.newPlan();
         }

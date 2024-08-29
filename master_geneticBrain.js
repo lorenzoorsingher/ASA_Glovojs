@@ -86,26 +86,60 @@ export class Genetic {
     console.log("Building graph for rider:", rider.id);
     let prep_parcels = [];
 
+    // run all BFSs
+    let parc_idx = 0;
+    let toparc_couples = [];
+    let fromparc_couples = [];
+
+    // build couples for all player - parcels
+    for (const [key, p] of this.parcels.entries()) {
+      let start = rider.trg;
+      let end = new Position(p.x, p.y);
+
+      toparc_couples.push({ start, end, i: parc_idx, j: -1 });
+
+      let todel_couples = this.field.deliveryZones.map(
+        (deliveryZone, index) => ({
+          start: new Position(p.x, p.y),
+          end: deliveryZone,
+          i: parc_idx,
+          j: index,
+        })
+      );
+      fromparc_couples = fromparc_couples.concat(todel_couples);
+
+      parc_idx++;
+    }
+
+    let toparc_result = await this.field.bfsWrapper(
+      toparc_couples,
+      rider.blocking_agents
+    );
+
+    for (let i = 0; i < fromparc_couples.length; i++) {
+      let sliced = fromparc_couples.slice(0, i + 1);
+      console.log(sliced.length, " problems");
+      let res = await this.field.bfsWrapper(sliced, rider.blocking_agents);
+    }
+
+    fafdf = 11;
+    // console.log("TOPARC len: ", toparc_result);
+    // console.log("FROMPARC len: ", fromparc_result);
+
+    // let fromparc_result = await this.field.bfsWrapper(
+    //   fromparc_couples,
+    //   rider.blocking_agents
+    // );
+
+    // console.log("TOPARC result: ", toparc_result);
+    // console.log("FROMPARC result: ", fromparc_result);
+
     // Prepare each parcel for the graph
     for (const [key, p] of this.parcels.entries()) {
-      // console.log(`Processing parcel ${key} at (${p.x}, ${p.y})`);
-
-      // console.log("Parcel:", p);
-      // Compute the cost and path from the player to the parcel
-      // let start = this.field.getTile({ x: p.x, y: p.y });
       let start = rider.trg;
-      // console.log(`Start tile: ${start.position.x}, ${start.position.y}`);
       let end = new Position(p.x, p.y);
-      // console.log(`End tile: ${end.position.x}, ${end.position.y}`);
 
-      // if (!start || !end) {
-      //   console.log(`⚠️ Invalid start or end tile for parcel ${key}:`, {
-      //     start,
-      //     end,
-      //   });
-      //   continue;
-      // }
-
+      console.log("TOPRCL called bfs");
       let bfs_result = await this.field.bfsWrapper(
         [{ start, end, i: 0, j: 0 }],
         rider.blocking_agents
@@ -242,40 +276,6 @@ export class Genetic {
     //ddddd = 88;
     return [costs, paths, prep_parcels];
   }
-
-  // ----------------- OLD -----------------
-
-  // // build graph matrices
-  // for (let i = 0; i < prep_parcels.length; i++) {
-  //     costs[i] = [];
-  //     paths[i] = [];
-
-  //     for (let j = 0; j < prep_parcels.length; j++) {
-  //         if (i == j) {
-  //             costs[i][j] = Infinity;
-  //             paths[i][j] = [];
-  //         } else {
-  //             let stTile = this.field.getTile({
-  //                 x: prep_parcels[i].x,
-  //                 y: prep_parcels[i].y,
-  //             });
-
-  //             let endTile = this.field.getTile({
-  //                 x: prep_parcels[j].x,
-  //                 y: prep_parcels[j].y,
-  //             });
-
-  //             let path = await this.field.bfsWrapper(stTile, endTile, rider.blocking_agents);
-  //             if (path == -1 || path.length == 0) {
-  //                 costs[i][j] = Infinity;
-  //                 paths[i][j] = [];
-  //             } else {
-  //                 paths[i][j] = path;
-  //                 costs[i][j] = path.length;
-  //             }
-  //         }
-  //     }
-  // }
 
   // return [costs, paths, prep_parcels];
 
@@ -1011,7 +1011,7 @@ export class Genetic {
    */
   async newPlan() {
     if (this.planLock) {
-      console.log("Brain is already planning...");
+      // console.log("Brain is already planning...");
       return;
     }
     this.planLock = true;
