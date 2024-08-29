@@ -119,7 +119,7 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
     // console.log("PDDL result:", pddlResult);
     if (!pddlResult || !Array.isArray(pddlResult) || pddlResult.length === 0) {
       console.log("No valid paths found by PDDL solver");
-      return couples.map(() => ({ path: -1 }));
+      return [];
     }
 
     let paths = couples.map((couple, index) => {
