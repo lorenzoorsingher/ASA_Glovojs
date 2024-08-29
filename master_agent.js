@@ -321,7 +321,10 @@ async function loop(rider) {
     if (rider.plan.length > 0) {
       // if the agent has completed the movement and brain has completed the plan
       if (hasCompletedMovement(rider.position) && !brain.planLock) {
-        let nextAction = rider.plan[0];
+        console.log("[MASTER] Rider position: ", rider.position);
+        console.log("[MASTER] Rider plan src: ", rider.plan[0].source);
+
+        //let nextAction = rider.plan[0];
         // pick action from plan (depending on when planning was started
         // agent might at the first or second step)
         if (rider.position.equals(rider.plan[0].source)) {
