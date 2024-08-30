@@ -92,7 +92,7 @@ export class Genetic {
     let del_couples = [];
     let parc_idx = 0;
 
-    console.log("parc list ebf: ", parcels_map.entries());
+    // console.log("parc list ebf: ", parcels_map.entries());
     for (const [key, p] of parcels_map) {
       let start = rider.trg;
       let end = new Position(p.x, p.y);
@@ -101,7 +101,7 @@ export class Genetic {
 
       start = new Position(p.x, p.y);
 
-      console.log("[BRAIN] Getting closest delivery PARCELS");
+      // console.log("[BRAIN] Getting closest delivery PARCELS");
 
       let zones_cop = this.field.getDeliveryZonesCouples(start);
 
@@ -753,7 +753,7 @@ export class Genetic {
       rew += rider.carrying;
       console.log("Agent is packing, going to closest delivery zone");
 
-      console.log("[BRAIN] Getting closest delivery BKP");
+      // console.log("[BRAIN] Getting closest delivery BKP");
       let closest = await this.field.getClosestDeliveryZones(
         rider.trg,
         rider.blocking_agents
@@ -839,7 +839,7 @@ export class Genetic {
       ];
     }
 
-    console.log("[BRAIN] Generated BACKUP plan with rew ", rew);
+    // console.log("[BRAIN] Generated BACKUP plan with rew ", rew);
     return [actions, rew];
   }
 
@@ -891,9 +891,9 @@ export class Genetic {
 
     let closestMap = new Map([...closest.entries()].slice(0, this.CLS_PAR));
 
-    console.log("parcels: ", parcels_map);
-    console.log("closest: ", closest);
-    console.log("closestMap: ", closestMap);
+    // console.log("parcels: ", parcels_map);
+    // console.log("closest: ", closest);
+    // console.log("closestMap: ", closestMap);
 
     for (const r of this.riders) {
       r.log("Rider ", r.name);
@@ -917,7 +917,7 @@ export class Genetic {
     let delivery_only_plans = [];
     for (let rid = 0; rid < this.nriders; rid++) {
       let agent = this.riders[rid];
-      console.log("[BRAIN] Getting closest delivery DLV_ONLY");
+      // console.log("[BRAIN] Getting closest delivery DLV_ONLY");
       let closest = await this.field.getClosestDeliveryZones(
         agent.trg,
         agent.blocking_agents

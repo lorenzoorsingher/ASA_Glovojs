@@ -104,7 +104,7 @@ export class Position {
    * @returns {Position} position
    */
   static deserialize(str) {
-    console.log("str", str);
+    // console.log("str", str);
     const [x, y] = str.split("-");
     return new Position(Number(x), Number(y));
   }
