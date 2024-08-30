@@ -2,7 +2,7 @@ import { Position, Direction } from "./data/position.js";
 import { Action, ActionType } from "./data/action.js";
 import { Field } from "./data/field.js";
 import { Rider } from "./master_rider.js";
-import { sortByKey } from "./utils.js";
+import { manhattanDistance, sortByKey } from "./utils.js";
 
 /**
  * @class Genetic
@@ -126,7 +126,7 @@ export class Genetic {
       let cost_from_player, path_from_player;
       for (let result of parcResults) {
         let { i, j, path } = result;
-        console.log("analyzing result: ", result);
+        // console.log("analyzing result: ", result);
         if (parc_idx == j) {
           if (i == -1) {
             if (path === -1) {
@@ -864,19 +864,49 @@ export class Genetic {
     console.log("starting positions: ");
 
     let parcels_map = new Map(this.parcels);
+    let closest = new Map();
+
+    for (const r of this.riders) {
+      let rpos = r.position;
+      for (let [key, p] of parcels_map) {
+        let dist = manhattanDistance(rpos, new Position(p.x, p.y));
+
+        if (closest.has(key)) {
+          if (closest.get(key).dist > dist) {
+            let cls = closest.get(key);
+            cls.dist = dist;
+            closest.set(key, cls);
+          }
+        } else {
+          p["dist"] = dist;
+          closest.set(key, p);
+        }
+      }
+    }
+
+    closest = new Map(
+      [...closest.entries()].sort((a, b) => a[1].dist - b[1].dist)
+    );
+
+    let closestMap = new Map([...closest.entries()].slice(0, 3));
+
+    console.log("parcels: ", parcels_map);
+    console.log("closest: ", closest);
+    console.log("closestMap: ", closestMap);
+
     for (const r of this.riders) {
       r.log("Rider ", r.name);
       r.log("Rider at: ", r.trg.x, r.trg.y);
-      const [costs, paths, parc] = await this.buildGraphInOut(r, parcels_map);
+      const [costs, paths, parc] = await this.buildGraphInOut(r, closestMap);
       riders_graphs.push({
         costs: costs,
         paths: paths,
         nodes: parc,
       });
 
-      for (const nod of parc) {
-        console.log("ND: ", nod);
-      }
+      // for (const nod of parc) {
+      //   console.log("ND: ", nod);
+      // }
     }
 
     // compute the delivery-only fits for each rider and generate the delivery plans
