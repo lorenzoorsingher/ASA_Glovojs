@@ -51,11 +51,16 @@ export class PlansCache {
     if (this.paths_cache.has(entry_inv)) {
       this.cache_hits += 1;
       this.cache_hits_inv += 1;
-      return this.paths_cache.get(entry_inv).slice().reverse();
+
+      let inv_path = this.paths_cache.get(entry_inv);
+      if (inv_path == -1) {
+        return -1;
+      }
+      return inv_path.slice().reverse();
     }
 
     this.cache_misses += 1;
-    return -1;
+    return false;
   }
 
   setEntry(startTile, endTile, blocking_agents, path) {
