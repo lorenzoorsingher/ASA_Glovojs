@@ -112,6 +112,26 @@ function couple_to_paths(couples, pddlResult) {
   return paths;
 }
 
+function is_pddl_valid(pddlResult) {
+  if (!pddlResult || !Array.isArray(pddlResult) || pddlResult.length === 0) {
+    console.log("No valid paths found by PDDL solver");
+    return false;
+  } else {
+    return true;
+  }
+}
+
+function build_failed_path(single_couple) {
+  let couple = single_couple[0];
+  return [
+    {
+      i: couple.i,
+      j: couple.j,
+      path: -1,
+    },
+  ];
+}
+
 export async function bfs_pddl(couplesInput, blocking_agents) {
   const couples = Array.isArray(couplesInput) ? couplesInput : [couplesInput];
 
@@ -123,12 +143,29 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
   let [domainString, problemString] = buildPDDL(couples, blocking_agents);
 
   let pddlResult = await onlineSolver(domainString, problemString);
-  // console.log("PDDL result:", pddlResult);
-  if (!pddlResult || !Array.isArray(pddlResult) || pddlResult.length === 0) {
-    console.log("No valid paths found by PDDL solver");
-    return [];
+
+  let paths = [];
+
+  if (is_pddl_valid(pddlResult)) {
+    console.log("[PDDL] Parallelization successful");
+    paths = couple_to_paths(couples, pddlResult);
+  } else {
+    console.error("[PDDL] Parallelization failed, going to sequential");
+
+    for (const couple of couples) {
+      let single_couple = [couple];
+
+      [domainString, problemString] = buildPDDL(single_couple, blocking_agents);
+      pddlResult = await onlineSolver(domainString, problemString);
+      if (is_pddl_valid(pddlResult)) {
+        console.log("[PDDL] Single solve successful");
+        paths.concat(couple_to_paths(single_couple, pddlResult));
+      } else {
+        console.error("[PDDL] Single solve failed");
+        paths.concat(build_failed_path(single_couple));
+      }
+    }
   }
 
-  let paths = couple_to_paths(couples, pddlResult);
   return paths;
 }
