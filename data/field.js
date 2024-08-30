@@ -289,16 +289,7 @@ export class Field {
     return path;
   }
 
-  /**
-   * Returns the closest delivery zones to a given position
-   *
-   * @param {Position} pos starting position
-   * @param {Array} blocking_agents list of blocking agents (tiles to be avoided)
-   *
-   * @returns {Array} array of closest delivery zones
-   */
-  async getClosestDeliveryZones(pos, blocking_agents) {
-    // only consider the 2 closest delivery zones in manhattan distance
+  getDeliveryZonesCouples(pos) {
     let zones = this.deliveryZones.map((deliveryZone, index) => ({
       zone: deliveryZone,
       dist: manhattanDistance(pos, deliveryZone),
@@ -310,6 +301,22 @@ export class Field {
       i: index,
       j: 0, // We're using j=0 as we don't need it for this function
     }));
+
+    return couples;
+  }
+
+  /**
+   * Returns the closest delivery zones to a given position
+   *
+   * @param {Position} pos starting position
+   * @param {Array} blocking_agents list of blocking agents (tiles to be avoided)
+   *
+   * @returns {Array} array of closest delivery zones
+   */
+  async getClosestDeliveryZones(pos, blocking_agents) {
+    // only consider the 2 closest delivery zones in manhattan distance
+
+    let couples = this.getDeliveryZonesCouples(pos);
 
     const bfsResults = await this.bfsWrapper(couples, blocking_agents);
     // console.log("BFS results:", bfsResults);
@@ -444,7 +451,7 @@ export class Field {
       // console.log("Checking cache for:", start, end, blocking_agents);
       let entry = this.plansCache.getEntry(start, end, blocking_agents);
 
-      if (entry == -1) {
+      if (entry == false) {
         filtered_couples.push(couples[k]);
         filtered_refs.set(i + "-" + j, { start: start, end: end });
       } else {

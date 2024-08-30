@@ -87,25 +87,13 @@ export class Genetic {
     let prep_parcels = [];
 
     // Prepare each parcel for the graph
+    let del_couples = [];
+    let parc_idx = 0;
     for (const [key, p] of this.parcels.entries()) {
-      // console.log(`Processing parcel ${key} at (${p.x}, ${p.y})`);
-
-      // console.log("Parcel:", p);
-      // Compute the cost and path from the player to the parcel
-      // let start = this.field.getTile({ x: p.x, y: p.y });
       let start = rider.trg;
-      // console.log(`Start tile: ${start.position.x}, ${start.position.y}`);
       let end = new Position(p.x, p.y);
-      // console.log(`End tile: ${end.position.x}, ${end.position.y}`);
 
-      // if (!start || !end) {
-      //   console.log(`⚠️ Invalid start or end tile for parcel ${key}:`, {
-      //     start,
-      //     end,
-      //   });
-      //   continue;
-      // }
-
+      del_couples.concat([{ start, end, i: 0, j: 0 }]);
       let bfs_result = await this.field.bfsWrapper(
         [{ start, end, i: 0, j: 0 }],
         rider.blocking_agents
