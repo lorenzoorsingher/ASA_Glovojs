@@ -839,8 +839,11 @@ export class Genetic {
     // build the parcels graph for each rider with the costs and paths to move
     // from one parcel to another as well as the information (cost to reach, cost to deliver
     // and reward) of each parcel
+
+    // console.log("Riders ", this.riders);
     console.log("starting positions: ");
     for (const r of this.riders) {
+      r.log("Rider ", r.name);
       r.log("Rider at: ", r.trg.x, r.trg.y);
       const [costs, paths, parc] = await this.buildGraphInOut(r);
       riders_graphs.push({
@@ -881,7 +884,7 @@ export class Genetic {
         }
       }
     }
-    console.log("delivery_only_fits: ", delivery_only_fits);
+    // console.log("delivery_only_fits: ", delivery_only_fits);
 
     // generate the plan using the genetic algorithm
     const [best_path, best_fit] = this.geneticTSP(

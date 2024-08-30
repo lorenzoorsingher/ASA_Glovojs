@@ -125,7 +125,7 @@ function couple_to_paths(couples, pddlResult) {
 
 function is_pddl_valid(pddlResult) {
   if (!pddlResult || !Array.isArray(pddlResult) || pddlResult.length === 0) {
-    console.log("No valid paths found by PDDL solver");
+    // console.log("No valid paths found by PDDL solver");
     return false;
   } else {
     return true;
@@ -171,10 +171,10 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
       [domainString, problemString] = buildPDDL(single_couple, blocking_agents);
       pddlResult = await onlineSolver(domainString, problemString);
       if (is_pddl_valid(pddlResult)) {
-        console.log("[PDDL] Single solve successful");
+        // console.log("[PDDL] Single solve successful");
         paths.concat(couple_to_paths(single_couple, pddlResult));
       } else {
-        console.error("[PDDL] Single solve failed");
+        // console.error("[PDDL] Single solve failed");
         paths.concat(build_failed_path(single_couple));
       }
     }

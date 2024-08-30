@@ -37,6 +37,7 @@ console.log("Generations: ", GEN);
 const dashboard = new MyServer(PORT);
 
 let map_init = false;
+let all_players_ready = false;
 const map = new Field(USE_PDDL, CLS_DLV, BOOST); // contains the game map
 const parcels = new Map(); // contains all non-carried parcels
 
@@ -86,6 +87,15 @@ riders.forEach((rider, index) => {
       rider.init(id, name, new Position(x, y), brain);
       rider.player_init = true;
       rider.trg.set(rider.position);
+
+      let all_ready = true;
+      for (const r of riders) {
+        if (!r.player_init) {
+          all_ready = false;
+          break;
+        }
+      }
+      all_players_ready = all_ready;
     }
     rider.updatePosition(x, y);
   });
@@ -141,7 +151,7 @@ riders.forEach((rider, index) => {
 
         rider.log("Delivered, asking for new plan");
         brain.plan_fit = 0;
-        brain.newPlan();
+        await brain.newPlan();
         rider.putting_down = false;
       }
     } else {
@@ -155,7 +165,7 @@ riders.forEach((rider, index) => {
     let changed = JSON.stringify(parc_before) != JSON.stringify(parc_after);
     if (changed) {
       console.log("Parcels changed. Recalculating plan");
-      brain.newPlan();
+      await brain.newPlan();
     }
   });
 
@@ -286,7 +296,7 @@ async function loop(rider) {
   // main loop
   while (true) {
     // wait for map and player to be loaded
-    if (!rider.player_init) {
+    if (!all_players_ready) {
       await new Promise((res) => setTimeout(res, 300));
       continue;
     }
@@ -387,6 +397,7 @@ async function loop(rider) {
           rider.plan_cooldown = Date.now();
           // rider.log("Plan is empty. Recalculating plan");
           brain.plan_fit = 0;
+          rider.log("Asking for new plan");
           await brain.newPlan();
         }
       }

@@ -50,7 +50,7 @@ export class Rider {
       ""
     );
 
-    console.log("Rider created");
+    console.log("Rider created with name: ", this.uname);
   }
 
   /**
@@ -71,6 +71,8 @@ export class Rider {
     this.trg = new Position(position.x, position.y);
     this.nextAction = null;
     this.plan = [];
+
+    this.log("Rider initialized");
   }
 
   /**
