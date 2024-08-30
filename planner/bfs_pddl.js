@@ -86,19 +86,30 @@ function couple_to_paths(couples, pddlResult) {
     let path = [];
     let agentName = `AGENT${index}`;
 
-    //console.log("processing agent", agentName, " ", couple);
-    for (let action of pddlResult) {
-      if (action && action.action === "MOVE" && action.args[0] === agentName) {
-        if (first_move) {
-          first_move = false;
-          let move = action.args[1];
+    if (couple.start.equals(couple.end)) {
+      path.push({
+        i: couple.i,
+        j: couple.j,
+        path: Position.serialize(couple.start),
+      });
+    } else {
+      for (let action of pddlResult) {
+        if (
+          action &&
+          action.action === "MOVE" &&
+          action.args[0] === agentName
+        ) {
+          if (first_move) {
+            first_move = false;
+            let move = action.args[1];
+            move = move.slice(2).replace("_", "-");
+            path.push(move);
+          }
+
+          let move = action.args[2];
           move = move.slice(2).replace("_", "-");
           path.push(move);
         }
-
-        let move = action.args[2];
-        move = move.slice(2).replace("_", "-");
-        path.push(move);
       }
     }
 
@@ -149,6 +160,8 @@ export async function bfs_pddl(couplesInput, blocking_agents) {
   if (is_pddl_valid(pddlResult)) {
     console.log("[PDDL] Parallelization successful");
     paths = couple_to_paths(couples, pddlResult);
+    // console.log("[PDDL] PDDL result:", pddlResult);
+    // console.log("[PDDL] Paths found:", paths);
   } else {
     console.error("[PDDL] Parallelization failed, going to sequential");
 
