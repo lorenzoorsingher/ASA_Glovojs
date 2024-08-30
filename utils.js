@@ -34,3 +34,15 @@ export function manhattanDistance(a, b) {
 export function hasCompletedMovement(pos) {
   return pos.x % 1 === 0.0 && pos.y % 1 === 0.0;
 }
+
+export function mergeMaps(maps) {
+  const mergedMap = new Map();
+  for (const map of maps) {
+    for (const [key, value] of map) {
+      if (!mergedMap.has(key)) {
+        mergedMap.set(key, value);
+      }
+    }
+  }
+  return mergedMap;
+}

@@ -88,6 +88,7 @@ export class Genetic {
 
     // Prepare each parcel for the graph
     let parcels_map = new Map(this.parcels);
+
     let del_couples = [];
     let parc_idx = 0;
 
@@ -97,19 +98,6 @@ export class Genetic {
       let end = new Position(p.x, p.y);
 
       del_couples = del_couples.concat([{ start, end, i: -1, j: parc_idx }]);
-
-      // let bfs_result = await this.field.bfsWrapper(
-      //   [{ start, end, i: 0, j: 0 }],
-      //   rider.blocking_agents
-      // );
-      // let cost_from_player, path_from_player;
-      // if (bfs_result.length === 0 || bfs_result[0].path === -1) {
-      //   cost_from_player = Infinity;
-      //   path_from_player = [];
-      // } else {
-      //   path_from_player = bfs_result[0].path;
-      //   cost_from_player = path_from_player.length - 1;
-      // }
 
       start = new Position(p.x, p.y);
 
@@ -123,52 +111,23 @@ export class Genetic {
 
       del_couples = del_couples.concat(zones_cop);
 
-      // let closest = await this.field.getClosestDeliveryZones(
-      //   start,
-      //   rider.blocking_agents
-      // );
-
-      // let path_to_zone, cost_to_zone;
-      // if (closest.length === 0) {
-      //   cost_to_zone = Infinity;
-      //   path_to_zone = [];
-      // } else {
-      //   path_to_zone = closest[0].path;
-      //   cost_to_zone = closest[0].distance - 1;
-      // }
-
-      // prep_parcels.push({
-      //   x: p.x,
-      //   y: p.y,
-      //   rew: p.reward,
-      //   in_c: cost_from_player,
-      //   out_c: cost_to_zone,
-      //   id: key,
-      //   path_in: path_from_player,
-      //   path_out: path_to_zone,
-      // });
-
       parc_idx++;
     }
-    console.log("BCOPLES: ", del_couples);
-    console.log(`Prepared ${prep_parcels.length} parcels`);
 
     let parcResults = await this.field.bfsWrapper(
       del_couples,
       rider.blocking_agents
     );
 
-    console.log("Received results from bfsWrapper ", parcResults);
     parc_idx = 0;
-    console.log("Parcels list: ", parcels_map.entries());
     for (const [key, p] of parcels_map.entries()) {
-      console.log("Analyzing parcel: ", key);
+      // console.log("Analyzing parcel: ", key);
       let cost_to_zone = Infinity;
       let path_to_zone = [];
       let cost_from_player, path_from_player;
       for (let result of parcResults) {
         let { i, j, path } = result;
-        console.log("analyzing result: ", result);
+        // console.log("analyzing result: ", result);
         if (parc_idx == j) {
           if (i == -1) {
             if (path === -1) {
@@ -200,7 +159,7 @@ export class Genetic {
       });
       parc_idx++;
     }
-    console.log("Prepared parcels: ", prep_parcels);
+    // console.log("Prepared parcels: ", prep_parcels);
     // Initialize costs and paths matrices
     let costs = Array(prep_parcels.length)
       .fill()
@@ -213,8 +172,6 @@ export class Genetic {
       costs[i][i] = Infinity;
       paths[i][i] = [];
     }
-
-    //TODO: BFS returns steps in reverse order so stTile and endTile are swapped here. Gotta fix this
 
     // Create a list of all start-end couples
     let bfsCouples = [];
