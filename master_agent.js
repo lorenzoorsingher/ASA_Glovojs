@@ -15,6 +15,7 @@ export const USE_PDDL = true;
 const BLOCKING_DISTANCE = 3;
 const BOOST = false;
 const CLS_DLV = 2;
+const CLS_PAR = 3;
 let [NRIDERS, POP, GEN, PORT] = process.argv.slice(2);
 if (NRIDERS == undefined) {
   NRIDERS = 1;
@@ -52,7 +53,7 @@ for (let i = 0; i < NRIDERS; i++) {
 }
 
 //create brain with associated riders
-let brain = new Genetic(riders, map, parcels, POP, GEN);
+let brain = new Genetic(riders, map, parcels, POP, GEN, CLS_PAR);
 let agentsBeliefSet;
 let parcelsBeliefSet;
 

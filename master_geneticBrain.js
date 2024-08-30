@@ -26,7 +26,7 @@ import { manhattanDistance, sortByKey } from "./utils.js";
  * @property {number} tot_plans - The total number of plans generated [metrics]
  */
 export class Genetic {
-  constructor(riders, field, parcels, pop, gen) {
+  constructor(riders, field, parcels, pop, gen, cls_par = 3) {
     //riders
     this.riders = riders;
     this.nriders = riders.length;
@@ -37,6 +37,7 @@ export class Genetic {
     this.plan_fit = 0;
     this.planLock = false;
     this.config = {};
+    this.CLS_PAR = cls_par;
 
     //Genetic params
     this.pop = pop;
@@ -888,7 +889,7 @@ export class Genetic {
       [...closest.entries()].sort((a, b) => a[1].dist - b[1].dist)
     );
 
-    let closestMap = new Map([...closest.entries()].slice(0, 3));
+    let closestMap = new Map([...closest.entries()].slice(0, this.CLS_PAR));
 
     console.log("parcels: ", parcels_map);
     console.log("closest: ", closest);
