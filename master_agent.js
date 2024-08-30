@@ -13,7 +13,7 @@ import { bfs_pddl } from "./planner/bfs_pddl.js";
 export const VERBOSE = false;
 export const USE_PDDL = true;
 
-const BLOCKING_DISTANCE = 5;
+const BLOCKING_DISTANCE = 2;
 const BOOST = true;
 const CLS_DLV = 2;
 let [NRIDERS, POP, GEN, PORT] = process.argv.slice(2);
