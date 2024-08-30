@@ -72,11 +72,11 @@ export class PlansCache {
 
     this.paths_cache.set(entry, path);
 
-    let inv_path = -1;
-    if (path != -1) {
-      inv_path = path.slice().reverse();
-    }
-    this.paths_cache.set(inv_path);
+    // let inv_path = -1;
+    // if (path != -1) {
+    //   inv_path = path.slice().reverse();
+    // }
+    // this.paths_cache.set(inv_path);
   }
 
   printMetrics() {
