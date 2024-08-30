@@ -197,7 +197,7 @@ export class Genetic {
     //   }
     // }
 
-    console.log(`Created ${bfsCouples.length} couples for BFS`);
+    // console.log(`Created ${bfsCouples.length} couples for BFS`);
 
     // Call the modified bfsWrapper function
     let bfsResults = await this.field.bfsWrapper(
@@ -205,7 +205,7 @@ export class Genetic {
       rider.blocking_agents
     );
 
-    console.log(`Received ${bfsResults.length} results from bfsWrapper`);
+    // console.log(`Received ${bfsResults.length} results from bfsWrapper`);
 
     // Process the results
     for (let result of bfsResults) {
