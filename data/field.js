@@ -2,7 +2,7 @@ import { Tile } from "./tile.js";
 import { Position, Direction } from "./position.js";
 import { manhattanDistance, sortByKey } from "../utils.js";
 import { Beliefset } from "@unitn-asa/pddl-client";
-import { bfs_pddl } from "../planner/bfs_pddl.js";
+import { parellel_pddl } from "../planner/bfs_pddl.js";
 import { PlansCache } from "../planner/plan_cacher.js";
 
 const VERBOSE = false;
@@ -527,7 +527,7 @@ export class Field {
     let results = [];
     if (this.USE_PDDL && processedCouples.length > 0 && !turbo) {
       // console.log(processedCouples);
-      results = await bfs_pddl(processedCouples, blocking_agents);
+      results = await parellel_pddl(processedCouples, blocking_agents);
       // ddd = 8;
     } else {
       results = this.bfs(processedCouples, blocking_agents);

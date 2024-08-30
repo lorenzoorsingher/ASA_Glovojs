@@ -143,7 +143,24 @@ function build_failed_path(single_couple) {
   ];
 }
 
-export async function bfs_pddl(couplesInput, blocking_agents) {
+export async function parellel_pddl(couplesInput, blocking_agents) {
+  const CHUNK_SIZE = 7;
+  console.log("[PDDL] Executing plan of length", couplesInput.length);
+  let chunks = [];
+  let paths = [];
+  for (let i = 0; i < couplesInput.length; i += CHUNK_SIZE) {
+    chunks.push(couplesInput.slice(i, i + CHUNK_SIZE));
+  }
+
+  for (let chunk of chunks) {
+    paths = paths.concat(await bfs_pddl(chunk, blocking_agents));
+  }
+
+  //return await bfs_pddl(couplesInput, blocking_agents);
+  return paths;
+}
+
+async function bfs_pddl(couplesInput, blocking_agents) {
   const couples = Array.isArray(couplesInput) ? couplesInput : [couplesInput];
 
   if (couples.length === 0) {
