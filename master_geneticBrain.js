@@ -82,12 +82,11 @@ export class Genetic {
    * each element contains the coordinates and reward of the parcel and  costs and paths both to get
    * there form the player position and to get to the closest delivery zone.
    */
-  async buildGraphInOut(rider) {
+  async buildGraphInOut(rider, parcels_map) {
     console.log("Building graph for rider:", rider.id);
     let prep_parcels = [];
 
     // Prepare each parcel for the graph
-    let parcels_map = new Map(this.parcels);
 
     let del_couples = [];
     let parc_idx = 0;
@@ -127,7 +126,7 @@ export class Genetic {
       let cost_from_player, path_from_player;
       for (let result of parcResults) {
         let { i, j, path } = result;
-        // console.log("analyzing result: ", result);
+        console.log("analyzing result: ", result);
         if (parc_idx == j) {
           if (i == -1) {
             if (path === -1) {
@@ -597,7 +596,7 @@ export class Genetic {
     // prepare the genes for the genetic algorithm
     for (let rid = 0; rid < this.nriders; rid++) {
       const r = riders_graphs[rid];
-
+      // console.log("Rider ", rid, " nodes: ", r.paths);
       genes = Array.from(Array(r.nodes.length).keys());
 
       if (genes.length == 0) {
@@ -863,15 +862,21 @@ export class Genetic {
 
     // console.log("Riders ", this.riders);
     console.log("starting positions: ");
+
+    let parcels_map = new Map(this.parcels);
     for (const r of this.riders) {
       r.log("Rider ", r.name);
       r.log("Rider at: ", r.trg.x, r.trg.y);
-      const [costs, paths, parc] = await this.buildGraphInOut(r);
+      const [costs, paths, parc] = await this.buildGraphInOut(r, parcels_map);
       riders_graphs.push({
         costs: costs,
         paths: paths,
         nodes: parc,
       });
+
+      for (const nod of parc) {
+        console.log("ND: ", nod);
+      }
     }
 
     // compute the delivery-only fits for each rider and generate the delivery plans

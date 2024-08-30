@@ -87,11 +87,7 @@ function couple_to_paths(couples, pddlResult) {
     let agentName = `AGENT${index}`;
 
     if (couple.start.equals(couple.end)) {
-      path.push({
-        i: couple.i,
-        j: couple.j,
-        path: Position.serialize(couple.start),
-      });
+      path.push(Position.serialize(couple.start));
     } else {
       for (let action of pddlResult) {
         if (
@@ -155,7 +151,11 @@ export async function parellel_pddl(couplesInput, blocking_agents) {
   for (let chunk of chunks) {
     paths = paths.concat(await bfs_pddl(chunk, blocking_agents));
   }
+  // console.log("[PDDL] Paths found:", paths);
 
+  for (let path of paths) {
+    // console.log("[PDDL] Path found:", path);
+  }
   //return await bfs_pddl(couplesInput, blocking_agents);
   return paths;
 }

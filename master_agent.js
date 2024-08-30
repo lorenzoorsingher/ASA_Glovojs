@@ -8,7 +8,6 @@ import { Genetic } from "./master_geneticBrain.js";
 import { Beliefset } from "@unitn-asa/pddl-client";
 
 import { manhattanDistance, hasCompletedMovement } from "./utils.js";
-import { bfs_pddl } from "./planner/bfs_pddl.js";
 
 export const VERBOSE = false;
 export const USE_PDDL = true;
