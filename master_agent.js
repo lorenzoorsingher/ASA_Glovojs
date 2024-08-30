@@ -14,7 +14,7 @@ export const VERBOSE = false;
 export const USE_PDDL = true;
 
 const BLOCKING_DISTANCE = 3;
-const BOOST = true;
+const BOOST = false;
 const CLS_DLV = 2;
 let [NRIDERS, POP, GEN, PORT] = process.argv.slice(2);
 if (NRIDERS == undefined) {

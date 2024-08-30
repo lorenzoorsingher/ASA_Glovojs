@@ -87,43 +87,107 @@ export class Genetic {
     let prep_parcels = [];
 
     // Prepare each parcel for the graph
+    let parcels_map = new Map(this.parcels);
     let del_couples = [];
     let parc_idx = 0;
-    for (const [key, p] of this.parcels.entries()) {
+
+    console.log("parc list ebf: ", parcels_map.entries());
+    for (const [key, p] of parcels_map) {
       let start = rider.trg;
       let end = new Position(p.x, p.y);
 
-      del_couples.concat([{ start, end, i: 0, j: 0 }]);
-      let bfs_result = await this.field.bfsWrapper(
-        [{ start, end, i: 0, j: 0 }],
-        rider.blocking_agents
-      );
-      let cost_from_player, path_from_player;
-      if (bfs_result.length === 0 || bfs_result[0].path === -1) {
-        cost_from_player = Infinity;
-        path_from_player = [];
-      } else {
-        path_from_player = bfs_result[0].path;
-        cost_from_player = path_from_player.length - 1;
-      }
+      del_couples = del_couples.concat([{ start, end, i: -1, j: parc_idx }]);
 
-      // Compute the cost and path from the parcel to the closest delivery zone
-      //start = { x: p.x, y: p.y };
+      // let bfs_result = await this.field.bfsWrapper(
+      //   [{ start, end, i: 0, j: 0 }],
+      //   rider.blocking_agents
+      // );
+      // let cost_from_player, path_from_player;
+      // if (bfs_result.length === 0 || bfs_result[0].path === -1) {
+      //   cost_from_player = Infinity;
+      //   path_from_player = [];
+      // } else {
+      //   path_from_player = bfs_result[0].path;
+      //   cost_from_player = path_from_player.length - 1;
+      // }
+
       start = new Position(p.x, p.y);
-      let closest = await this.field.getClosestDeliveryZones(
-        start,
-        rider.blocking_agents
-      );
 
-      let path_to_zone, cost_to_zone;
-      if (closest.length === 0) {
-        cost_to_zone = Infinity;
-        path_to_zone = [];
-      } else {
-        path_to_zone = closest[0].path;
-        cost_to_zone = closest[0].distance - 1;
+      console.log("[BRAIN] Getting closest delivery PARCELS");
+
+      let zones_cop = this.field.getDeliveryZonesCouples(start);
+
+      for (let k = 0; k < zones_cop.length; k++) {
+        zones_cop[k].j = parc_idx;
       }
 
+      del_couples = del_couples.concat(zones_cop);
+
+      // let closest = await this.field.getClosestDeliveryZones(
+      //   start,
+      //   rider.blocking_agents
+      // );
+
+      // let path_to_zone, cost_to_zone;
+      // if (closest.length === 0) {
+      //   cost_to_zone = Infinity;
+      //   path_to_zone = [];
+      // } else {
+      //   path_to_zone = closest[0].path;
+      //   cost_to_zone = closest[0].distance - 1;
+      // }
+
+      // prep_parcels.push({
+      //   x: p.x,
+      //   y: p.y,
+      //   rew: p.reward,
+      //   in_c: cost_from_player,
+      //   out_c: cost_to_zone,
+      //   id: key,
+      //   path_in: path_from_player,
+      //   path_out: path_to_zone,
+      // });
+
+      parc_idx++;
+    }
+    console.log("BCOPLES: ", del_couples);
+    console.log(`Prepared ${prep_parcels.length} parcels`);
+
+    let parcResults = await this.field.bfsWrapper(
+      del_couples,
+      rider.blocking_agents
+    );
+
+    console.log("Received results from bfsWrapper ", parcResults);
+    parc_idx = 0;
+    console.log("Parcels list: ", parcels_map.entries());
+    for (const [key, p] of parcels_map.entries()) {
+      console.log("Analyzing parcel: ", key);
+      let cost_to_zone = Infinity;
+      let path_to_zone = [];
+      let cost_from_player, path_from_player;
+      for (let result of parcResults) {
+        let { i, j, path } = result;
+        console.log("analyzing result: ", result);
+        if (parc_idx == j) {
+          if (i == -1) {
+            if (path === -1) {
+              cost_from_player = Infinity;
+              path_from_player = [];
+            } else {
+              path_from_player = path;
+              cost_from_player = path_from_player.length - 1;
+            }
+          } else {
+            if (path != -1) {
+              if (path.length - 1 < cost_to_zone) {
+                path_to_zone = path;
+                cost_to_zone = path.length - 1;
+              }
+            }
+          }
+        }
+      }
       prep_parcels.push({
         x: p.x,
         y: p.y,
@@ -134,10 +198,9 @@ export class Genetic {
         path_in: path_from_player,
         path_out: path_to_zone,
       });
+      parc_idx++;
     }
-
-    console.log(`Prepared ${prep_parcels.length} parcels`);
-
+    console.log("Prepared parcels: ", prep_parcels);
     // Initialize costs and paths matrices
     let costs = Array(prep_parcels.length)
       .fill()
@@ -733,6 +796,7 @@ export class Genetic {
       rew += rider.carrying;
       console.log("Agent is packing, going to closest delivery zone");
 
+      console.log("[BRAIN] Getting closest delivery BKP");
       let closest = await this.field.getClosestDeliveryZones(
         rider.trg,
         rider.blocking_agents
@@ -860,6 +924,7 @@ export class Genetic {
     let delivery_only_plans = [];
     for (let rid = 0; rid < this.nriders; rid++) {
       let agent = this.riders[rid];
+      console.log("[BRAIN] Getting closest delivery DLV_ONLY");
       let closest = await this.field.getClosestDeliveryZones(
         agent.trg,
         agent.blocking_agents
