@@ -85,4 +85,10 @@ export class PlansCache {
       ) + "%"
     );
   }
+
+  resetMetrics() {
+    this.cache_hits = 0;
+    this.cache_hits_inv = 0;
+    this.cache_misses = 0;
+  }
 }

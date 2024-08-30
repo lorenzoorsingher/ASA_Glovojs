@@ -21,9 +21,10 @@ const VERBOSE = false;
  * @property {Array} parcelSpawners array of spawnable positions
  */
 export class Field {
-  constructor(usePddl = false, closest_dlv = 2) {
+  constructor(usePddl = false, closest_dlv = 2, boost = false) {
     this.USE_PDDL = usePddl;
     this.CLOSEST_DLV = closest_dlv;
+    this.BOOST = boost;
     this.beliefSet = new Beliefset();
     this.plansCache = new PlansCache();
   }
@@ -93,6 +94,35 @@ export class Field {
 
       //load delivery zones
       this.deliveryZones = this.getDeliveryZones();
+    }
+
+    if (this.BOOST) {
+      console.log("[TURBO] Boosting search");
+      for (let i = 0; i < height; i++) {
+        for (let j = 0; j < width; j++) {
+          let startPos = new Position(j, i);
+          let startTile = this.getTile(startPos);
+          if (startTile.walkable) {
+            for (let k = 0; k < height; k++) {
+              for (let l = 0; l < width; l++) {
+                let endPos = new Position(l, k);
+                let endTile = this.getTile(endPos);
+                if (endTile.walkable) {
+                  let couple = {
+                    start: startPos,
+                    end: endPos,
+                    i: 0,
+                    j: 0,
+                  };
+                  this.bfsWrapper([couple], [], true);
+                }
+              }
+            }
+          }
+        }
+      }
+      this.plansCache.resetMetrics();
+      console.log("[TURBO] Boost finished");
     }
   }
 
@@ -391,7 +421,7 @@ export class Field {
     return true;
   }
 
-  async bfsWrapper(couples, blocking_agents) {
+  async bfsWrapper(couples, blocking_agents, turbo = false) {
     // console.log(
     //   "bfsWrapper called with couples:",
     //   JSON.stringify(couples, null, 2)
@@ -488,7 +518,7 @@ export class Field {
     // }
 
     let results = [];
-    if (this.USE_PDDL && processedCouples.length > 0) {
+    if (this.USE_PDDL && processedCouples.length > 0 && !turbo) {
       // console.log(processedCouples);
       results = await bfs_pddl(processedCouples, blocking_agents);
       // ddd = 8;

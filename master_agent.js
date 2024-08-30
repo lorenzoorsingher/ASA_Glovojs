@@ -14,7 +14,8 @@ export const VERBOSE = false;
 export const USE_PDDL = true;
 
 const BLOCKING_DISTANCE = 5;
-
+const BOOST = true;
+const CLS_DLV = 2;
 let [NRIDERS, POP, GEN, PORT] = process.argv.slice(2);
 if (NRIDERS == undefined) {
   NRIDERS = 1;
@@ -36,33 +37,10 @@ console.log("Generations: ", GEN);
 const dashboard = new MyServer(PORT);
 
 let map_init = false;
-const map = new Field(USE_PDDL); // contains the game map
+const map = new Field(USE_PDDL, CLS_DLV, BOOST); // contains the game map
 const parcels = new Map(); // contains all non-carried parcels
 
 let PARCEL_DECAY = 1000;
-
-class Intention {
-  goal;
-  type;
-  pickUp;
-  deliver;
-  stop;
-  reached;
-  started;
-  planner = { pickup: bfs_pddl };
-  move;
-
-  constructor(goal, pickUp = false, deliver = false, type, client) {
-    this.goal = goal;
-    this.pickUp = pickUp;
-    this.deliver = deliver;
-    this.type = type;
-    this.stop = false;
-    this.reached = false;
-    this.started = false;
-    this.move = {};
-  }
-}
 
 // create riders
 let riders = [];
