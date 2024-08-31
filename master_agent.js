@@ -1,7 +1,7 @@
 console.log("Starting...");
 import { Field } from "./data/field.js";
 import { Position } from "./data/position.js";
-import { MyServer } from "./server.js";
+import { MyServer } from "./dashboard/server.js";
 import { Action, ActionType } from "./data/action.js";
 import { Rider } from "./master_rider.js";
 import { Genetic } from "./master_geneticBrain.js";
@@ -11,9 +11,9 @@ import { manhattanDistance, hasCompletedMovement } from "./utils.js";
 
 export const VERBOSE = false;
 
-const USE_PDDL = true;
+const USE_PDDL = false;
 const BLOCKING_DISTANCE = 3;
-const BOOST = true;
+const BOOST = false;
 const CLS_DLV = 2;
 const CLS_PAR = 3;
 
