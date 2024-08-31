@@ -145,11 +145,15 @@ riders.forEach((rider, index) => {
     let carried_parcels = new Map();
     let carrying = 0;
     for (const p of perceived_parcels) {
-      if (p.carriedBy == null) {
-        parcels.set(p.id, p);
-      } else if (p.carriedBy == rider.id) {
-        carried_parcels.set(p.id, p.reward);
-        carrying += p.reward;
+      let parc_pos = new Position(p.x, p.y);
+      let dist = manhattanDistance(rider.position, parc_pos);
+      if (dist < PRC_OBS) {
+        if (p.carriedBy == null) {
+          parcels.set(p.id, p);
+        } else if (p.carriedBy == rider.id) {
+          carried_parcels.set(p.id, p.reward);
+          carrying += p.reward;
+        }
       }
     }
 
@@ -218,7 +222,10 @@ setInterval(() => {
       // console.log("value2: ", value);
       let parc_pos = new Position(value.x, value.y);
       let dist = manhattanDistance(rider.position, parc_pos);
-      if (dist >= rider.config.PARCELS_OBSERVATION_DISTANCE) {
+      if (
+        dist >= rider.config.PARCELS_OBSERVATION_DISTANCE ||
+        dist >= PRC_OBS
+      ) {
         value.reward--;
         if (value.reward <= 0) {
           parcels.delete(key);
