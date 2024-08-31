@@ -7,7 +7,7 @@
   "module": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node master_agent.js"
+    "start": "node agent.js"
   },
   "author": "",
   "license": "ISC",

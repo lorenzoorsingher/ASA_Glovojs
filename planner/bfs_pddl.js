@@ -1,7 +1,7 @@
 import { onlineSolver } from "@unitn-asa/pddl-client";
 import { Position } from "../data/position.js";
 import { Action, ActionType } from "../data/action.js";
-import { map } from "../master_agent.js";
+import { map } from "../agent.js";
 
 function buildPDDL(couples, blocking_agents) {
   let initialState = [];

@@ -1,7 +1,7 @@
 import { Position, Direction } from "./data/position.js";
 import { Action, ActionType } from "./data/action.js";
 import { Field } from "./data/field.js";
-import { Rider } from "./master_rider.js";
+import { Rider } from "./rider.js";
 import { manhattanDistance, sortByKey } from "./utils.js";
 
 /**
