@@ -1,0 +1,13 @@
+{
+  "USE_PDDL": false,
+  "BOOST": false,
+  "BLOCKING_DISTANCE": 3,
+  "CLS_DLV": 2,
+  "CLS_PAR": 3,
+  "NRIDERS": 1,
+  "POP": 100,
+  "GEN": 30,
+  "PORT": 3001,
+  "PREFIX": "ALLBFS",
+  "PRC_OBS": 1000
+}

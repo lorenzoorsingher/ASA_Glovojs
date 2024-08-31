@@ -1,3 +1,5 @@
+import fs from "fs";
+
 /**
  * Sorts an array of objects by a key
  *
@@ -45,4 +47,82 @@ export function mergeMaps(maps) {
     }
   }
   return mergedMap;
+}
+
+export function parseArgs(args) {
+  let params = {
+    USE_PDDL: false,
+    BLOCKING_DISTANCE: 3,
+    BOOST: false,
+    CLS_DLV: 2,
+    CLS_PAR: 3,
+    NRIDERS: 1,
+    POP: 100,
+    GEN: 30,
+    PORT: 3000,
+    PREFIX: "",
+    PRC_OBS: 1000,
+  };
+
+  args = process.argv.slice(2);
+  console.log(args);
+  if (args.length == 1) {
+    const data = fs.readFileSync(args[0], "utf8");
+    const jsonData = JSON.parse(data);
+    console.log(jsonData);
+    params = jsonData;
+  } else {
+    for (let i = 0; i < args.length; i += 2) {
+      switch (args[i]) {
+        case "pddl":
+          params.USE_PDDL = args[i + 1] === "true";
+          break;
+
+        case "boost":
+          params.BOOST = args[i + 1] === "true";
+          break;
+        case "blk":
+          params.BLOCKING_DISTANCE = Number(args[i + 1]);
+          break;
+        case "cls_dlv":
+          params.CLS_DLV = Number(args[i + 1]);
+          break;
+        case "cls_par":
+          params.CLS_PAR = Number(args[i + 1]);
+          break;
+        case "nriders":
+          params.NRIDERS = Number(args[i + 1]);
+          break;
+        case "pop":
+          params.POP = Number(args[i + 1]);
+          break;
+        case "gen":
+          GEN = Number(args[i + 1]);
+          break;
+        case "port":
+          PORT = Number(args[i + 1]);
+          break;
+        case "prefix":
+          PREFIX = args[i + 1];
+          break;
+        case "prc_obs":
+          PRC_OBS = Number(args[i + 1]);
+          break;
+      }
+    }
+  }
+
+  return [
+    params.USE_PDDL,
+    params.BLOCKING_DISTANCE,
+    params.BOOST,
+    params.CLS_DLV,
+    params.CLS_PAR,
+    params.NRIDERS,
+    params.POP,
+    params.GEN,
+    params.PORT,
+    params.PREFIX,
+    params.PRC_OBS,
+  ];
 }

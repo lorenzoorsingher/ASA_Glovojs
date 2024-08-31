@@ -174,6 +174,7 @@ async function bfs_pddl(couplesInput, blocking_agents) {
 
   let paths = [];
 
+  // console.log("[PDDL] PDDL result:", pddlResult);
   if (is_pddl_valid(pddlResult)) {
     console.log("[PDDL] Parallelization successful");
     paths = couple_to_paths(couples, pddlResult);

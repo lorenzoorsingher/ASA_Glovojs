@@ -6,34 +6,35 @@ import { Action, ActionType } from "./data/action.js";
 import { Rider } from "./rider.js";
 import { Genetic } from "./geneticBrain.js";
 import { Beliefset } from "@unitn-asa/pddl-client";
-
-import { manhattanDistance, hasCompletedMovement } from "./utils.js";
+import { manhattanDistance, hasCompletedMovement, parseArgs } from "./utils.js";
 
 export const VERBOSE = false;
 
-const USE_PDDL = false;
-const BLOCKING_DISTANCE = 3;
-const BOOST = false;
-const CLS_DLV = 2;
-const CLS_PAR = 3;
+const [
+  USE_PDDL,
+  BLOCKING_DISTANCE,
+  BOOST,
+  CLS_DLV,
+  CLS_PAR,
+  NRIDERS,
+  POP,
+  GEN,
+  PORT,
+  PREFIX,
+  PRC_OBS,
+] = parseArgs(process.argv);
 
-let [NRIDERS, POP, GEN, PORT] = process.argv.slice(2);
-if (NRIDERS == undefined) {
-  NRIDERS = 1;
-}
-if (POP == undefined) {
-  POP = 100;
-}
-if (GEN == undefined) {
-  GEN = 30;
-}
-
-if (PORT == undefined) {
-  PORT = 3000;
-}
-
+console.log("Use PDDL: ", USE_PDDL);
+console.log("Blocking Distance: ", BLOCKING_DISTANCE);
+console.log("Boost: ", BOOST);
+console.log("DLV Classes: ", CLS_DLV);
+console.log("PAR Classes: ", CLS_PAR);
+console.log("Number of Riders: ", NRIDERS);
+console.log("Port: ", PORT);
 console.log("Population: ", POP);
 console.log("Generations: ", GEN);
+console.log("Prefix: ", PREFIX);
+console.log("Parcel Observation Distance: ", PRC_OBS);
 
 const dashboard = new MyServer(PORT);
 
@@ -49,7 +50,7 @@ let riders = [];
 let names = ["BLUE", "PINK", "GREY", "GREEN", "BLACK", "WHITE"];
 for (let i = 0; i < NRIDERS; i++) {
   //let uname = Math.random().toString(36).substring(5) + "_" + pop + "_" + gen;
-  let uname = names[i] + "_" + POP + "_" + GEN;
+  let uname = PREFIX + "_" + names[i] + "_" + POP + "_" + GEN;
   riders.push(new Rider(uname));
 }
 
@@ -114,7 +115,8 @@ riders.forEach((rider, index) => {
       let found = false;
       let dist = manhattanDistance(rider.position, parc_pos);
 
-      if (dist < rider.config.PARCELS_OBSERVATION_DISTANCE) {
+      //if (dist < rider.config.PARCELS_OBSERVATION_DISTANCE) {
+      if (dist < rider.config.PARCELS_OBSERVATION_DISTANCE && dist < PRC_OBS) {
         for (const p of perceived_parcels) {
           if (p.id == key && p.carriedBy == null) {
             parcelsBeliefSet.declare(`parcel_t${p.x}_${p.y}`);
@@ -125,6 +127,15 @@ riders.forEach((rider, index) => {
         if (!found) {
           parcelsBeliefSet.undeclare(`parcel_t${value.x}_${value.y}`);
           parcels.delete(key);
+
+          for (let act of rider.plan) {
+            if (act.action_parcel == key) {
+              rider.log("Parcel STOLEN");
+              brain.plan_fit = 0;
+              await brain.newPlan();
+              break;
+            }
+          }
         }
       }
     }

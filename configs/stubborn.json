@@ -1,0 +1,13 @@
+{
+  "USE_PDDL": true,
+  "BOOST": false,
+  "BLOCKING_DISTANCE": 0,
+  "CLS_DLV": 2,
+  "CLS_PAR": 3,
+  "NRIDERS": 1,
+  "POP": 100,
+  "GEN": 30,
+  "PORT": 3006,
+  "PREFIX": "STUBBORN",
+  "PRC_OBS": 5
+}
