@@ -10,12 +10,13 @@ import { Beliefset } from "@unitn-asa/pddl-client";
 import { manhattanDistance, hasCompletedMovement } from "./utils.js";
 
 export const VERBOSE = false;
-export const USE_PDDL = true;
 
+const USE_PDDL = true;
 const BLOCKING_DISTANCE = 3;
-const BOOST = false;
+const BOOST = true;
 const CLS_DLV = 2;
 const CLS_PAR = 3;
+
 let [NRIDERS, POP, GEN, PORT] = process.argv.slice(2);
 if (NRIDERS == undefined) {
   NRIDERS = 1;
@@ -164,7 +165,7 @@ riders.forEach((rider, index) => {
     // if parcels have changed during the sensing, recalculate plan
     let changed = JSON.stringify(parc_before) != JSON.stringify(parc_after);
     if (changed) {
-      console.log("Parcels changed. Recalculating plan");
+      console.log("[SENSING] Parcels changed. Recalculating plan");
       await brain.newPlan();
     }
   });
@@ -391,7 +392,7 @@ async function loop(rider) {
       }
     } else {
       if (rider.putting_down) {
-        rider.log("Empty plan but waiting for delivery to complete");
+        // rider.log("Empty plan but waiting for delivery to complete");
       } else {
         if (Date.now() - rider.plan_cooldown > 1000) {
           rider.plan_cooldown = Date.now();

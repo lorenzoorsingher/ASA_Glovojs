@@ -80,11 +80,11 @@ export class PlansCache {
   }
 
   printMetrics() {
-    console.log("[Cache]hits: ", this.cache_hits);
-    console.log("[Cache]hits_inv: ", this.cache_hits_inv);
-    console.log("[Cache] size: ", this.paths_cache.size);
+    console.log("[CACHE] hits: ", this.cache_hits);
+    console.log("[CACHE] hits_inv: ", this.cache_hits_inv);
+    console.log("[CACHE] size: ", this.paths_cache.size);
     console.log(
-      "[Cache] hit rate: ",
+      "[CACHE] hit rate: ",
       ((this.cache_hits / (this.cache_hits + this.cache_misses)) * 100).toFixed(
         2
       ) + "%"

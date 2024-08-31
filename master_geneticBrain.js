@@ -84,7 +84,7 @@ export class Genetic {
    * there form the player position and to get to the closest delivery zone.
    */
   async buildGraphInOut(rider, parcels_map) {
-    console.log("Building graph for rider:", rider.id);
+    rider.log("Building graph");
     let prep_parcels = [];
 
     // Prepare each parcel for the graph
@@ -1073,8 +1073,17 @@ export class Genetic {
       exp_decay * this.plan_time_avg +
       (1 - exp_decay) * (this.tot_time / this.tot_plans);
 
-    console.log("AVG plan generation ", this.tot_time / this.tot_plans, "ms");
-    console.log("proposed fit ", best_fit, " current fit ", this.plan_fit);
+    console.log(
+      "[PLANNER] avg plan generation ",
+      Math.round(this.tot_time / this.tot_plans),
+      "ms"
+    );
+    console.log(
+      "[PLANNER] proposed fit ",
+      Math.round(best_fit),
+      " current fit ",
+      Math.round(this.plan_fit)
+    );
 
     const MINIMUM_GAIN = 1.2;
     if (best_fit > this.plan_fit * MINIMUM_GAIN || this.plan_fit == 0) {
@@ -1085,12 +1094,12 @@ export class Genetic {
           this.riders[i].plan = tmp_plan[i];
         }
 
-        console.log("New plan accepted ✅");
+        console.log("[PLANNER] New plan accepted ✅");
       } else {
-        console.log("Invalid plan generated, keeping current plan");
+        console.log("[PLANNER] Invalid plan generated, keeping current plan");
       }
     } else {
-      console.log("New plan rejected ❌");
+      console.log("[PLANNER] New plan rejected ❌");
     }
 
     this.planLock = false;
