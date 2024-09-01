@@ -204,7 +204,10 @@ riders.forEach((rider, index) => {
 
     for (const a of perceived_agents) {
       if (a.name != "god") {
-        if (manhattanDistance(rider.position, a) < BLOCKING_DISTANCE) {
+        if (
+          manhattanDistance(rider.position, a) < BLOCKING_DISTANCE ||
+          rider.trg.equals(a)
+        ) {
           // console.log("Agent blocking: ", a);
           rider.blocking_agents.set(a.id, a);
           agentsBeliefSet.declare(`agent_t${a.x}_${a.y}`);
