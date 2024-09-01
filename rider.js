@@ -43,6 +43,7 @@ export class Rider {
     this.plan_cooldown = 0;
     this.player_parcels = new Map();
     this.blocking_agents = new Map();
+    this.rider_timer = Date.now();
 
     //this.brain = new Genetic(this.blocking_agents);
     this.client = new DeliverooApi(

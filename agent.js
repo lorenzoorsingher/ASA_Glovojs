@@ -307,8 +307,6 @@ setInterval(() => {
   dashboard.emitMessage("map", dash_data);
 }, 100);
 
-let start = Date.now();
-
 /**
  * Main loop for the agents
  *
@@ -373,11 +371,13 @@ async function loop(rider) {
         }
 
         //avoid server spam
-        while (Date.now() - start < rider.config.MOVEMENT_DURATION / 2) {
+        while (
+          Date.now() - rider.rider_timer <
+          rider.config.MOVEMENT_DURATION / 2
+        ) {
           await new Promise((res) => setImmediate(res));
         }
-        start = Date.now();
-
+        rider.rider_timer = Date.now();
         //execute action
         switch (rider.nextAction.type) {
           case ActionType.MOVE:
@@ -409,6 +409,7 @@ async function loop(rider) {
               rider.putting_down = true;
             }
             break;
+          default:
         }
       }
     } else {
@@ -424,15 +425,14 @@ async function loop(rider) {
         }
       }
     }
+
     await new Promise((res) => setImmediate(res));
   }
 }
 
 // start the loop for all riders
 for (let i = 0; i < riders.length; i++) {
-  loop(riders[i]).catch((error) =>
-    console.error(`Error in loop for rider ${i}:`, error)
-  );
+  loop(riders[i]);
 }
 
 export { parcelsBeliefSet, agentsBeliefSet, map };

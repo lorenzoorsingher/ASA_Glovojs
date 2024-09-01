@@ -1,7 +1,7 @@
 {
   "USE_PDDL": true,
   "BOOST": false,
-  "BLOCKING_DISTANCE": 0,
+  "BLOCKING_DISTANCE": 1,
   "CLS_DLV": 2,
   "CLS_PAR": 3,
   "NRIDERS": 1,

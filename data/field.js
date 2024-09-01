@@ -96,6 +96,8 @@ export class Field {
       this.deliveryZones = this.getDeliveryZones();
     }
 
+    let boostmax = 80000;
+
     if (this.BOOST) {
       console.log("[TURBO] Boosting search");
       for (let i = 0; i < height; i++) {
@@ -115,6 +117,14 @@ export class Field {
                     j: 0,
                   };
                   this.bfsWrapper([couple], [], true);
+                }
+
+                if (this.plansCache.paths_cache.size >= boostmax) {
+                  console.log("[TURBO] Boost finished");
+                  i = height;
+                  j = width;
+                  k = height;
+                  l = width;
                 }
               }
             }
