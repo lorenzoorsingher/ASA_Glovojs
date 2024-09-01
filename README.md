@@ -4,8 +4,6 @@
 <img src="images/logojs.png" style="display:block;float:none;margin-left:auto;margin-right:auto;width:40%"/>
 </p>
 
----
-
 ## Authors
 
 - [@lorenzoorsingher](https://github.com/lorenzoorsingher)
@@ -16,7 +14,7 @@
 
 [Deliveroo.js](https://github.com/unitn-ASA/Deliveroo.js) is an educational game developed for the course of Automonous Software Agents at the University of Trento. The game is a simplified version of Deliveroo's delivery system where agents must pick up parcels and deliver them to the correct delivery zones. The game is played on a grid where agents can move in the four cardinal directions and pick up and carry multiple parcels.
 
-**GlovoJS** is a system that allows to run simultaneously multiple agents with an optimized algorithm that creates the best delivery strategy to maximize the number of delivered parcels, even in the presence of antagonistic agents.
+**GlovoJS** is a system that allows to run simultaneously multiple agents with an optimized algorithm that creates the best delivery strategy to maximize the number of delivered parcels, even in the presence of antagonistic agents. For more detailed information about the system you can check the report below.
 
 | <a href="https://github.com/lorenzoorsingher/ASA_Glovojs/blob/main/ASA_2024___Glovo_JS.pdf"><img src="images/report_front.png" width="300"/></a> |
 | :----------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -112,13 +110,33 @@ You can run the system with the default parameters or you can change them to tes
 npm start NRIDERS 3 POP 100 GEN 50
 ```
 
-Alternatively you can run the system with a predefined configuration by using the configuration files in the `configs` folder or a custom one:
+Alternatively you can run the system with a predefined configuration by using the configuration files in the `configs` folder or you can make a custom one:
+
+```json
+{
+  "USE_PDDL": false,
+  "BOOST": false,
+  "BLOCKING_DISTANCE": 3,
+  "CLS_DLV": 10000,
+  "CLS_PAR": 10000,
+  "NRIDERS": 1,
+  "POP": 100,
+  "GEN": 30,
+  "PORT": 3004,
+  "PREFIX": "SUPERBFS",
+  "PRC_OBS": 1000
+}
+```
 
 ```bash
 npm start configs/superbfs.json
 ```
 
+## Dockerized Solver
+
 To use the dockerize version of the PDDL planner you will need to get the image for [Planutils](https://github.com/AI-Planning/planutils/tree/main/environments/server) (follow the instructions in the README) and it's necessary so replace the content of the file `PddlOnlineSolver.js` with the content of the file `custom/online_solver_custom.js` in order to connect to the local server.
+
+## Dashboard
 
 In case you want to run multiple separate instances of GolovoJS on the same machine you may need to change the port in order to access the different dashboards. By the default the port is 3000 and the address is `http://localhost:3000`.
 
