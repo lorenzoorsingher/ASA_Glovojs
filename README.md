@@ -4,6 +4,10 @@
 
 **GlovoJS** is a system that allows to run simultaneously multiple agents with an optimized algorithm that creates the best delivery strategy to maximize the number of delivered parcels, even in the presence of antagonistic agents.
 
+| <a href="https://github.com/lorenzoorsingher/ASA_Glovojs/blob/main/ASA_2024___Glovo_JS.pdf"><img src="images/report_front.png" width="300"/></a> |
+| :----------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                                             Click to download report                                                             |
+
 ## Project Structure
 
 ```
@@ -127,10 +131,6 @@ Below the grid there is a synthetic summary of the parcels currently being carri
 - **Optimized Pathfinding** - the system uses a Breadth First Search algorithm to compute the shortest path between two points on the grid. However, the BFS is optimized to avoid recomputing the path for the same points, this is done by **caching the results of the BFS** and reusing them when needed this means that the performance actually increases as teh game progresses and the agents move around the grid.
 
 - **Parallelized Pathfinding** - the PDDL planner is parallelized to compute the shortest path between tiles in parallel.
-
-| <a href="https://github.com/lorenzoorsingher/ASA_Glovojs/blob/main/ASA_2024___Glovo_JS.pdf"><img src="images/report_front.png" width="300"/></a> |
-| :----------------------------------------------------------------------------------------------------------------------------------------------: |
-|                                                                Click to download                                                                 |
 
 ## Authors
 
