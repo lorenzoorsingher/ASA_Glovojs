@@ -7,7 +7,6 @@ import { Rider } from "./rider.js";
 import { Genetic } from "./geneticBrain.js";
 import { Beliefset } from "@unitn-asa/pddl-client";
 import { manhattanDistance, hasCompletedMovement, parseArgs } from "./utils.js";
-
 export const VERBOSE = false;
 
 const [
@@ -48,9 +47,10 @@ let PARCEL_DECAY = 1000;
 // create riders
 let riders = [];
 let names = ["BLUE", "PINK", "GREY", "GREEN", "BLACK", "WHITE"];
+let uname = "";
 for (let i = 0; i < NRIDERS; i++) {
   //let uname = Math.random().toString(36).substring(5) + "_" + pop + "_" + gen;
-  let uname = PREFIX + "_" + names[i] + "_" + POP + "_" + GEN;
+  uname = PREFIX + "_" + names[i] + "_" + POP + "_" + GEN;
   riders.push(new Rider(uname));
 }
 
@@ -100,6 +100,7 @@ riders.forEach((rider, index) => {
       all_players_ready = all_ready;
     }
     rider.updatePosition(x, y);
+    rider.score = score;
   });
 
   parcelsBeliefSet = new Beliefset();
