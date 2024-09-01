@@ -1,5 +1,19 @@
 # GlovoJS
 
+<p align="center">
+<img src="images/logojs.png" style="display:block;float:none;margin-left:auto;margin-right:auto;width:40%"/>
+</p>
+
+---
+
+## Authors
+
+- [@lorenzoorsingher](https://github.com/lorenzoorsingher)
+- [@Edomenegaz](https://github.com/Edomenegaz)
+- [GitHub repo](https://github.com/lorenzoorsingher/ASA_Glovojs)
+
+## What is GlovoJS?
+
 [Deliveroo.js](https://github.com/unitn-ASA/Deliveroo.js) is an educational game developed for the course of Automonous Software Agents at the University of Trento. The game is a simplified version of Deliveroo's delivery system where agents must pick up parcels and deliver them to the correct delivery zones. The game is played on a grid where agents can move in the four cardinal directions and pick up and carry multiple parcels.
 
 **GlovoJS** is a system that allows to run simultaneously multiple agents with an optimized algorithm that creates the best delivery strategy to maximize the number of delivered parcels, even in the presence of antagonistic agents.
@@ -131,9 +145,3 @@ Below the grid there is a synthetic summary of the parcels currently being carri
 - **Optimized Pathfinding** - the system uses a Breadth First Search algorithm to compute the shortest path between two points on the grid. However, the BFS is optimized to avoid recomputing the path for the same points, this is done by **caching the results of the BFS** and reusing them when needed this means that the performance actually increases as teh game progresses and the agents move around the grid.
 
 - **Parallelized Pathfinding** - the PDDL planner is parallelized to compute the shortest path between tiles in parallel.
-
-## Authors
-
-- [@lorenzoorsingher](https://github.com/lorenzoorsingher)
-- [@Edomenegaz](https://github.com/Edomenegaz)
-- [GitHub repo](https://github.com/lorenzoorsingher/ASA_Glovojs)
