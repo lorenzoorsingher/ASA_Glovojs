@@ -74,38 +74,38 @@ export function parseArgs(args) {
   } else {
     for (let i = 0; i < args.length; i += 2) {
       switch (args[i]) {
-        case "pddl":
+        case "USE_PDDL":
           params.USE_PDDL = args[i + 1] === "true";
           break;
 
-        case "boost":
+        case "BOOST":
           params.BOOST = args[i + 1] === "true";
           break;
-        case "blk":
+        case "BLOCKING_DISTANCE":
           params.BLOCKING_DISTANCE = Number(args[i + 1]);
           break;
-        case "cls_dlv":
+        case "CLS_DLV":
           params.CLS_DLV = Number(args[i + 1]);
           break;
-        case "cls_par":
+        case "CLS_PAR":
           params.CLS_PAR = Number(args[i + 1]);
           break;
-        case "nriders":
+        case "NRIDERS":
           params.NRIDERS = Number(args[i + 1]);
           break;
-        case "pop":
+        case "POP":
           params.POP = Number(args[i + 1]);
           break;
-        case "gen":
+        case "GEN":
           GEN = Number(args[i + 1]);
           break;
-        case "port":
+        case "PORT":
           PORT = Number(args[i + 1]);
           break;
-        case "prefix":
+        case "PREFIX":
           PREFIX = args[i + 1];
           break;
-        case "prc_obs":
+        case "PRC_OBS":
           PRC_OBS = Number(args[i + 1]);
           break;
       }
