@@ -8,22 +8,38 @@
 
 ```
 GlovoJS
+├── configs
+│   ├── allbfs.json
+│   ├── allpddl.json
+│   ├── boostpddl.json
+│   ├── gigabfs.json
+│   ├── stubborn.json
+│   └── superbfs.json
+├── custom
+│   ├── online_solver_bkp.js
+│   └── online_solver_custom.js
+├── dashboard
+│   ├── dashboard.css
+│   ├── multi_dashboard.html
+│   └── server.js
 ├── data
 │   ├── action.js
 │   ├── field.js
-│   ├── geneticBrain.js
 │   ├── position.js
-│   ├── rider.js
-│   ├── server.js
-│   ├── tile.js
-│   └── utils.js
+│   └── tile.js
 ├── images
+│   └── ...
+├── planner
+│   ├── bfs_pddl.js
+│   └── plan_cacher.js
 ├── agent.js
-├── dashboard.css
+├── geneticBrain.js
 ├── index.js
-├── multi_dashboard.html
 ├── package.json
-└── README.md
+├── package-lock.json
+├── README.md
+├── rider.js
+└── utils.js
 ```
 
 ## Implementation
@@ -39,6 +55,8 @@ The system is implemented in JavaScript via Node.js, each component is implement
 - **Field** - this class represents the game field, it contains all the information about the parcels, delivery zones and spawn zones which is used to generate the graph that is used by the genetic algorithm.
 
 - **Dashboard** - the dashboard offers a real time visualization of the game state and the agents' actions. Thanks so this tool it's possible to visualize not only the agent's actual percept but also the plans that the agents are following, great for debug.
+
+- **Planner** - this class is used to interface with the PDDL solver and to generate the plans for the agents. It contains all the logic translate a request into a PDDL problem and parsing the result
 
 Some additional components are present to have handy representations of actions, positions and other data structures.
 
@@ -56,20 +74,35 @@ After that you can run the system with:
 npm start
 ```
 
-You can provide some parameters to change the configuration of the system, the parameters are in order:
+You can provide some parameters to change the configuration of the system, to specify the parameters you want to change you can provide them in the command line. The parameters are:
 
-- **agents** - the number of agents that will be spawned in the game _(default 1)_
-- **pop** - the population of the genetic algorithm _(default 100)_
-- **gen** - the number of generations that the genetic algorithm will run _(default 30)_
-- **port** - the port of the dashboard _(default 8080)_
+- **USE_PDDL** - if true the system will use the PDDL solver to generate the plans
+- **BOOST** - if true the system will use the boosted BFS to populate the cache before the game starts
+- **BLOCKING_DISTANCE** - define maximum distance to consider other agents blocking the way (lower is faster)
+- **PRC_OBS** - define maximum distance to consider parcels in the agent's percept (lower is faster)
+- **CLS_DLV** - define the number of delivery zones considered in the graph building (lower is faster)
+- **CLS_PAR** - define the number of parcels considered in the graph building (lower is faster)
+- **NRIDERS** - define the size of the agent fleet
+- **POP** - define the size of the population for the genetic algorithm
+- **GEN** - define the number of generations for the genetic algorithm
+- **PORT** - define the port for the dashboard
+- **PREFIX** - define the prefix for the agent name
 
-For example to run the system with 2 agents, a population of 50 and 20 generations you can run:
+You can run the system with the default parameters or you can change them to test different configurations, for example this command will run the system with 3 agents and a population of 100 for 50 generations:
 
 ```bash
-npm start 2 50 20
+npm start NRIDERS 3 POP 100 GEN 50
 ```
 
-In case you want to run multiple separate instances of GolovoJS on the same machine you may need to change the port in order to access the different dashboards. By the default the address of the dashboard is `http://localhost:3000`.
+Alternatively you can run the system with a predefined configuration by using the configuration files in the `configs` folder or a custom one:
+
+```bash
+npm start configs/superbfs.json
+```
+
+To use the dockerize version of the PDDL planner you will need to get the image for [Planutils](https://github.com/AI-Planning/planutils/tree/main/environments/server) (follow the instructions in the README) and it's necessary so replace the content of the file `PddlOnlineSolver.js` with the content of the file `custom/online_solver_custom.js` in order to connect to the local server.
+
+In case you want to run multiple separate instances of GolovoJS on the same machine you may need to change the port in order to access the different dashboards. By the default the port is 3000 and the address is `http://localhost:3000`.
 
 <img src="images/dash.png"  width="400"/>
 
@@ -93,82 +126,7 @@ Below the grid there is a synthetic summary of the parcels currently being carri
 
 - **Optimized Pathfinding** - the system uses a Breadth First Search algorithm to compute the shortest path between two points on the grid. However, the BFS is optimized to avoid recomputing the path for the same points, this is done by **caching the results of the BFS** and reusing them when needed this means that the performance actually increases as teh game progresses and the agents move around the grid.
 
-  The hit rate of the cache is very high as the agents tend to move between spawnable tiles and delivery zones, hit rates range from 50% to 95% depending on the map and the number of agents.
-
-## NOTES
-
-- high populations seem to work better in more open maps whereas low populations work better in more closed maps. Might be due to the higher chance of replanning in busier maps that penalize the high pupulation agent since planning is more costly and it impacts the speed of the agent. While the plans might be better the speed of the "dumber" agents allows them to steal parcels and deliver them faster.
-
-## TODO
-
-- [x] Define interfaces
-- [x] Implement actions data structure
-- [x] Implement actions actuation
-- [x] Implement dashboard
-- [x] Implement planner
-- [x] Improve reasoning to pick up multiple parcels instead of delivering asap
-- [x] Stop going after parcels that have already been delivered
-- [x] Anytime the agent steps on a parcel, pick it up
-- [x] Anytime the agent steps on a delivery zone, deliver
-- [x] (kinda) Prevent moving to unreachable tiles
-- [x] Contain all planning inside the brain
-- [x] Make sure planner doesnt miss new or previously discovered parcels
-- [x] Planner must consider other agent's positions
-- [x] Planner must make sure agent can get unstuck
-- [x] Make sure planner doesnt forget he's carrying parcels when replanning
-- [x] Double check for closest delivery point
-
-- [x] Make sure agent knows how much (and how many parcels) he can carry when replanning
-- [x] Penalize overly long paths
-- [x] make sure agent forgets parcels left in memory when the tile comes back in view and the parcel is gone
-
-- [x] Make sure agent doesnt crash when NO plan is found (og no parcels, no delivery zones, no reachable tiles)
-
-- [x] reimplement agent blocking logic
-
-- [x] fix crossover for multiple agents
-- [x] make sure player_parcels are handled correctly in the planner
-- [x] make sure parcels are correctly memorized
-- [x] fix bfs crashing when position is not round
-- [x] penalize too many plan changes
-- [x] check if carried parcels are correcly evaluated when replanning
-- [x] rework parcels clock
-- [x] figure out why agent crashes when 2-action long backup plan is created and after consuming action
-
-- [x] make sure it's possible to generate a plan with delivery only in case one agent has parcels
-- [x] fix the stuff about fitness in delivery only
-- [x] rethink logic when it's time to replan (due to delivery or plan end)
-
-- [x] fix dashboard now highlighting all the parcels to be picked up
-- [x] fix plans swapping between agents (might be an indexing issue)
-- [x] make sure a valid plan is created if one agent has no reachable parcels
-- [x] make sure in geneticTSP when one rider has no nodes (so zero genes) it doesn't happen that a random plan is generated for ALL riders.
-- [x] fix agent not seeing (?) parcel when in the same cell (might be due to delayed replanning OR too short bfs)
-
-- [ ] fix order of parcels in plan generation
-- [x] add caching system for bfs
-- [ ] make sure cache doesn't get too big
-- [ ] penalize riders that don't deliver for too long (exp in case of non-decaying parcels)
-- [ ] add replanning when parcels are stolen
-- [x] clean code
-- [x] search&destroy legacy variables
-- [x] reimplement parcel decay in fitness
-- [x] is the dummy_parcel in builGraphInOut even needed? (might be a leftover from the old implementation)
-- [x] make sure chances are computed correctly in rouletteWheel, in particular in case of negative fit (for the moment I set a lower bound for fitness as -Infinity screws with the probabilities and removed the rounding of the chances) THIS MUST BE VERIFIED
-- [x] dynamically change STEP_COST and penalities based on the config
-- [ ] exponential decay for metrics might not be that beneficial
-- [x] reimplement parcels clock
-
-- [x] revert back graph building to the old version
-- [x] getClosestDeliveryZones and getRandomSpawnable still use normal bfs
-
-- [x] parcel paths BFSs are duplicated
-- [x] fix bfs_pddl not different between different paths
-
-- [x] also getClosestDeliveryZones must be updated to use the new parallelized
-- [x] add range to filter parcels in BFS
-- [x] add range to filter delivery zones in BFS
-- [ ] add range for agents in the caching system
+- **Parallelized Pathfinding** - the PDDL planner is parallelized to compute the shortest path between tiles in parallel.
 
 ## Authors
 
