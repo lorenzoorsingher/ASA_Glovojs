@@ -128,6 +128,10 @@ Below the grid there is a synthetic summary of the parcels currently being carri
 
 - **Parallelized Pathfinding** - the PDDL planner is parallelized to compute the shortest path between tiles in parallel.
 
+| <a href="https://github.com/AlessiaPivotto/ComputerVision/blob/main/main.pdf"><img src="images/report_front.png" width="300"/></a> |
+| :--------------------------------------------------------------------------------------------------------------------------------: |
+|                                                         Click to download                                                          |
+
 ## Authors
 
 - [@lorenzoorsingher](https://github.com/lorenzoorsingher)
