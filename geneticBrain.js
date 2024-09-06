@@ -491,12 +491,16 @@ export class Genetic {
    * @returns {number} - The cost of the step
    */
   getStepCost(cost_in, curr_carr) {
+    // aggerssiveness defines how prone the agent is to deliver parcels
+    // keep between 0.5 and 1.5
+    const AGGRESIVNESS = 1;
+
     let decay_bonus = (this.config.PARCEL_DECADING_INTERVAL - 1) / 9;
 
     let STEP_COST = 0.5 - decay_bonus * 0.2;
 
     let cost = cost_in * STEP_COST * (curr_carr + 1);
-    return cost;
+    return cost * AGGRESIVNESS;
   }
 
   /**
