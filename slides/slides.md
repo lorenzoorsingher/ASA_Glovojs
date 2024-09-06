@@ -45,7 +45,7 @@ University of Trento, a.y. 2023/2024
 - Key components:
   - **Brain** → Coordination and fitness of agents
   - **Agent** → Agent creation, setup and main loop
-  - **Rider** → Instance of every agent 
+  - **Rider** → Instance of every agent
 - Data structures
   - **Position**
   - **Tile**
@@ -64,11 +64,12 @@ University of Trento, a.y. 2023/2024
 - **Desires**: Goals (maximize score)
 - **Intentions**: Generated plans
 
-![bg right:40% 90%](./img/bdischeme_blue.drawio%20(1).png)
+![bg right:40% 90%](<./img/bdischeme_blue.drawio%20(1).png>)
 
 ---
 
 ## PDDL Integration
+
 using `Planutils` and `@unitn-asa/pddl-client`
 <br>
 
@@ -78,14 +79,15 @@ using `Planutils` and `@unitn-asa/pddl-client`
 
 <br>
 
-Note: Significant difference between local and online solver. 
-Local solver could still be improved performance-wise. 
-   
+Note: Significant difference between local and online solver.
+Local solver could still be improved performance-wise.
 
 ---
 
 ## Algorithms: Path Planning
+
 - Breadth-First Search (BFS)
+
   - Optimal for unweighted graphs
   - Simple implementation
   - Memory efficient in this case
@@ -93,25 +95,25 @@ Local solver could still be improved performance-wise.
 
   <br>
 
-Mainly used for pathfinding tasks during **Challenge #1** – 3ms time per BFS call on average 
+Mainly used for pathfinding tasks during **Challenge #1**, where we got our podium finish.
 
 ---
 
 ## Algorithms: Decision Making
 
-- Genetic Algorithm for plan optimization
+- **Genetic Algorithm** for plan optimization
 - Key features:
   - Graph representation of environment
   - Multi-crossover operation
   - Adaptive planning
   - Scalability (multi agent)
   - Long-term optimization
-<style scoped>
-  bg {
-    padding-left: 10px;
-  }
-</style>
-![bg left:50% 100%](./img/graph.png)
+    <style scoped>
+      bg {
+        padding-left: 10px;
+      }
+    </style>
+    ![bg left:50% 100%](./img/graph.png)
 
 ---
 
@@ -139,6 +141,7 @@ Mainly used for pathfinding tasks during **Challenge #1** – 3ms time per BFS c
 ---
 
 ## Performance Optimization: Parallelization
+
 Premise: PDDL calls are costly, mainly due to the `Fetch API` calls that can't be avoided
 <br>
 
@@ -151,12 +154,14 @@ Premise: PDDL calls are costly, mainly due to the `Fetch API` calls that can't b
 ---
 
 ## Performance Optimization: Parallelization
+
 Grouping multiple path finding tasks
 <br><br><br><br><br><br><br><br><br><br>
 
 ![bg 50%](./img/parall2.png)
 
 ---
+
 ## Performance Optimization: Caching
 
 - Storing precomputed paths
@@ -170,6 +175,7 @@ Grouping multiple path finding tasks
 ## Evaluation and Results
 
 - Performance metrics:
+
   - Dashboard for real-time visualization
   - Analytics for resource usage
   - Enhanced logs for debugging
@@ -183,11 +189,13 @@ Grouping multiple path finding tasks
 # Benchmarking Results
 
 ## Single-agent and Multi-agent tests
+
 ---
 
 ## Single-agent scenario:
-  - BFS agent outperformed PDDL agents
-  - BOOSTPDDL showed improvements over ALLPDDL
+
+- BFS agent outperformed PDDL agents
+- BOOSTPDDL showed improvements over ALLPDDL
 
 <br>
 
@@ -205,18 +213,18 @@ p {
 }
 </style>
 
-| scenario      | time | ALLPDDL | BOOSTPDDL | ALLBFS |
-|---------------|------|---------|-----------|--------|
-| challenge_21  | 5    | 341     | 566       | 681    |
-| challenge_21  | 10   | 351     | 518       | 680    |
-| challenge_22  | 5    | 378     | 466       | 657    |
-| challenge_22  | 10   | 401     | 523       | 670    |
-| challenge_23  | 5    | 272     | 410       | 513    |
-| challenge_23  | 10   | 377     | 394       | 530    |
+| scenario     | time | ALLPDDL | BOOSTPDDL | ALLBFS |
+| ------------ | ---- | ------- | --------- | ------ |
+| challenge_21 | 5    | 341     | 566       | 681    |
+| challenge_21 | 10   | 351     | 518       | 680    |
+| challenge_22 | 5    | 378     | 466       | 657    |
+| challenge_22 | 10   | 401     | 523       | 670    |
+| challenge_23 | 5    | 272     | 410       | 513    |
+| challenge_23 | 10   | 377     | 394       | 530    |
 
 <br>
 
-*The tables show the average **points per minute (PPM)** achieved by each agent in the different scenarios. The results are averaged over multiple runs to ensure consistency and reliability.*
+_The tables show the average **points per minute (PPM)** achieved by each agent in the different scenarios. The results are averaged over multiple runs to ensure consistency and reliability._
 
 ---
 
@@ -227,11 +235,12 @@ p {
 </style>
 
 ## Multi-agent scenario:
-  - BFS agent still performed best
-  - PDDL agents struggled in larger, sparser maps
+
+- BFS agent still performed best
+- PDDL agents struggled in larger, sparser maps
 
 | scenario | time | ALLPDDL | BOOSTPDDL | ALLBFS |
-|----------|------|---------|-----------|--------|
+| -------- | ---- | ------- | --------- | ------ |
 | 24c1_3   | 5    | 246     | 208       | 545    |
 | 24c1_3   | 10   | 246     | 209       | 544    |
 | 24c1_5   | 5    | 258     | 419       | 721    |
@@ -239,7 +248,7 @@ p {
 
 <br>
 
-*The tables show the average **points per minute (PPM)** achieved by each agent in the different scenarios. The results are averaged over multiple runs to ensure consistency and reliability.*
+_The tables show the average **points per minute (PPM)** achieved by each agent in the different scenarios. The results are averaged over multiple runs to ensure consistency and reliability._
 
 ---
 
@@ -254,7 +263,7 @@ p {
 <br>
 
 | scenario     | time | ALLBFS |
-|--------------|------|--------|
+| ------------ | ---- | ------ |
 | challenge_21 | 5    | 1248   |
 | challenge_21 | 10   | 1251   |
 | challenge_22 | 5    | 1220   |
@@ -264,7 +273,7 @@ p {
 
 <br>
 
-*For comparison, a fleet of two collaborative agents playing the single-agent scenarios.*
+_For comparison, a fleet of two collaborative agents playing the single-agent scenarios._
 
 ---
 
@@ -275,12 +284,15 @@ p {
 ## Challenges and Solutions
 
 1. Local Planner Overhead
+
    - Solution: Bundling multiple planning queries
 
 2. PDDL Goal Specification Limitations
+
    - Solution: Fallback mechanism for unachievable goals
 
 3. Large Response Payload Processing
+
    - Partial offset of gains from reduced call frequency
 
 4. Performance Limitations of Local Solver
@@ -291,9 +303,11 @@ p {
 ## Future Improvements
 
 1. Solver efficiency
+
    - Reduce overhead in PDDL solver calls
 
 2. Robust e2e communication protocols
+
    - Implement end-to-end encryption for agent communication
 
 3. Game-specific strategies
