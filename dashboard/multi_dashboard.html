@@ -35,6 +35,7 @@
         parcels = data['parc'];
         riders = data['riders'];
 
+        // preset colors for paths and riders
         let pathcolors = [
           'blue',
           'violet',
@@ -52,10 +53,10 @@
           'white',
         ];
 
+        // MAP TABLE ---------------------------------------------------------------------------------------
         const table = document.getElementById('mapTable');
         table.innerHTML = '';
 
-        // MAP TABLE ---------------------------------------------------------------------------------------
         for (let i = 0; i < h; i++) {
           let y = h - i - 1;
           let row = table.insertRow();
