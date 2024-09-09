@@ -6,20 +6,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>dashboard</title>
     <style>
+      * {
+        font-family: sans-serif;
+      }
+      body {
+        background-color: #55f7b8;
+      }
+      .header {
+        padding: 10px;
+        color: rgb(14, 78, 46);
+        font-size: 20px;
+      }
       .plan_tile {
         width: 80%;
         height: 80%;
       }
 
       .parc_table {
-        border: 1px solid black;
+        border-collapse: collapse;
+        margin: 25px 0;
+        font-size: 0.9em;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
         display: inline-block;
       }
-
+      .parc_table th,
+      .parc_table td {
+        padding: 5px 15px;
+      }
       .main_tile {
         display: table;
         width: 100%;
         height: 100%;
+      }
+      .parc_tile {
+        position: absolute;
       }
     </style>
   </head>
@@ -86,13 +106,11 @@
               if (p.x == x && p.y == y) {
                 color = 'yellow';
                 tile_html +=
-                  "<div style='position: absolute;'><b>" +
-                  p.reward +
-                  '</b></div>';
+                  "<div class='parcel_tile'><b>" + p.reward + '</b></div>';
               }
             }
 
-            // draw the plan cells and color tiles according to plan
+            // draw the plan cells and color the tiles according to plan
             cell_id = x + '-' + y;
             let to_pickup = false;
             let to_deliver = false;
@@ -105,23 +123,24 @@
               if (plan_move.includes(cell_id)) {
                 pathcolor = pathcolors[rid];
 
-                let style =
-                  'width:80%;height:80%;background-color:' + pathcolor + ';';
-                tile_html += "<div id='plan_tile' style='" + style + "'></div>";
+                let style = 'background-color:' + pathcolor + ';';
+                tile_html +=
+                  "<div class='plan_tile' style='" + style + "'></div>";
               }
 
               if (plan_pickup.includes(cell_id)) {
                 to_pickup = true;
-              } else if (plan_drop.includes(cell_id)) {
+              }
+              if (plan_drop.includes(cell_id)) {
                 to_deliver = true;
               }
             }
 
-            if (to_deliver) {
-              color = 'orange';
-            }
             if (to_pickup) {
               color = 'GreenYellow';
+            }
+            if (to_deliver) {
+              color = 'orange';
             }
 
             // draw the blocking agents
@@ -200,7 +219,9 @@
         }
       });
     </script>
-    <h1>GlovoJS</h1>
+    <div class="header">
+      <h1>GlovoJS</h1>
+    </div>
 
     <div id="mapdiv">
       <table id="myTable" class="table table-borderless table-striped">
